@@ -1,0 +1,171 @@
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { z } from "zod";
+import { prisma } from "@/lib/prisma";
+import { authOptions } from "@/lib/auth";
+
+const lineItemSchema = z.object({
+  productName: z.string().min(1),
+  quantity: z.number().int().min(1),
+  sku: z.string().optional().nullable(),
+  price: z.number().nonnegative(),
+  total: z.number().nonnegative()
+});
+
+const updateSchema = z
+  .object({
+    orderNumber: z.string().min(1).optional(),
+    customerName: z.string().min(1).optional(),
+    status: z.string().optional(),
+    financialStatus: z.string().optional().nullable(),
+    fulfillmentStatus: z.string().optional().nullable(),
+    totalAmount: z.number().nonnegative().optional(),
+    currency: z.string().optional(),
+    processedAt: z.union([z.string(), z.date()]).optional(),
+    shippingCity: z.string().optional().nullable(),
+    shippingCountry: z.string().optional().nullable(),
+    tags: z.array(z.string()).optional(),
+    notes: z.string().optional().nullable(),
+    lineItems: z.array(lineItemSchema).optional()
+  })
+  .strict();
+
+const serializeOrder = (order: any) => ({
+  id: order.id,
+  externalId: order.externalId,
+  orderNumber: order.orderNumber,
+  customerName: order.customerName,
+  status: order.status,
+  financialStatus: order.financialStatus,
+  fulfillmentStatus: order.fulfillmentStatus,
+  totalAmount: order.totalAmount,
+  currency: order.currency,
+  processedAt: order.processedAt.toISOString(),
+  shippingCity: order.shippingCity,
+  shippingCountry: order.shippingCountry,
+  tags: Array.isArray(order.tags)
+    ? order.tags.map((tag: any) => String(tag))
+    : typeof order.tags === "string"
+      ? order.tags.split(",").map((tag: string) => tag.trim())
+      : [],
+  notes: order.notes,
+  source: order.source,
+  lineItems: order.lineItems.map((item: any) => ({
+    id: item.id,
+    productName: item.productName,
+    quantity: item.quantity,
+    sku: item.sku,
+    price: item.price,
+    total: item.total
+  })),
+  shopifyStoreId: order.shopifyStoreId
+});
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
+  const orderId = Number(params.id);
+  if (Number.isNaN(orderId)) {
+    return NextResponse.json({ message: "Invalid order id" }, { status: 400 });
+  }
+
+  const body = await request.json();
+  const parsed = updateSchema.safeParse({
+    ...body,
+    processedAt: body.processedAt ? new Date(body.processedAt) : undefined
+  });
+
+  if (!parsed.success) {
+    return NextResponse.json({ message: "Invalid payload", issues: parsed.error.flatten() }, { status: 400 });
+  }
+
+  const data = parsed.data;
+
+  const existing = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { lineItems: true }
+  });
+
+  if (!existing) {
+    return NextResponse.json({ message: "Order not found" }, { status: 404 });
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.order.update({
+      where: { id: orderId },
+      data: {
+        orderNumber: data.orderNumber ?? existing.orderNumber,
+        customerName: data.customerName ?? existing.customerName,
+        status: data.status ?? existing.status,
+        financialStatus: data.financialStatus ?? existing.financialStatus,
+        fulfillmentStatus: data.fulfillmentStatus ?? existing.fulfillmentStatus,
+        totalAmount: data.totalAmount ?? existing.totalAmount,
+        currency: data.currency ?? existing.currency,
+        processedAt:
+          data.processedAt instanceof Date
+            ? data.processedAt
+            : data.processedAt
+              ? new Date(data.processedAt)
+              : existing.processedAt,
+        shippingCity: data.shippingCity ?? existing.shippingCity,
+        shippingCountry: data.shippingCountry ?? existing.shippingCountry,
+        tags: Array.isArray(data.tags) ? data.tags.join(",") : existing.tags,
+        notes: data.notes ?? existing.notes
+      }
+    });
+
+    if (Array.isArray(data.lineItems)) {
+      await tx.orderLineItem.deleteMany({ where: { orderId } });
+      if (data.lineItems.length) {
+        await tx.orderLineItem.createMany({
+          data: data.lineItems.map((item) => ({
+            orderId,
+            productName: item.productName,
+            quantity: item.quantity,
+            sku: item.sku ?? undefined,
+            price: item.price,
+            total: item.total
+          }))
+        });
+      }
+    }
+  });
+
+  const updated = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { lineItems: true }
+  });
+
+  if (!updated) {
+    return NextResponse.json({ message: "Order not found after update" }, { status: 404 });
+  }
+
+  return NextResponse.json(serializeOrder(updated));
+}
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: { id: string } }
+) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
+  const orderId = Number(params.id);
+  if (Number.isNaN(orderId)) {
+    return NextResponse.json({ message: "Invalid order id" }, { status: 400 });
+  }
+
+  await prisma.order.delete({
+    where: { id: orderId }
+  });
+
+  return NextResponse.json(null, { status: 204 });
+}

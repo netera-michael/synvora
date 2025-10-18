@@ -1,0 +1,196 @@
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { z } from "zod";
+import { prisma } from "@/lib/prisma";
+import { authOptions } from "@/lib/auth";
+
+const lineItemSchema = z.object({
+  productName: z.string().min(1),
+  quantity: z.number().int().min(1),
+  sku: z.string().optional().nullable(),
+  price: z.number().nonnegative(),
+  total: z.number().nonnegative()
+});
+
+const orderSchema = z.object({
+  orderNumber: z.string().min(1),
+  customerName: z.string().min(1),
+  status: z.string().default("Open"),
+  financialStatus: z.string().optional().nullable(),
+  fulfillmentStatus: z.string().optional().nullable(),
+  totalAmount: z.number().nonnegative(),
+  currency: z.string().default("USD"),
+  processedAt: z.union([z.string(), z.date()]),
+  shippingCity: z.string().optional().nullable(),
+  shippingCountry: z.string().optional().nullable(),
+  tags: z.array(z.string()).optional(),
+  notes: z.string().optional().nullable(),
+  lineItems: z.array(lineItemSchema).default([])
+});
+
+const dateRangeSchema = z.object({
+  month: z
+    .string()
+    .regex(/^\d{4}-\d{2}$/)
+    .optional()
+});
+
+const mapTags = (tags: unknown): string[] => {
+  if (!tags) {
+    return [];
+  }
+
+  if (Array.isArray(tags)) {
+    return tags.flatMap((tag) => {
+      if (typeof tag === "string") {
+        return tag;
+      }
+      if (typeof tag === "number") {
+        return String(tag);
+      }
+      return [];
+    });
+  }
+
+  if (typeof tags === "string") {
+    return tags
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+};
+
+const serializeOrder = (order: any) => ({
+  id: order.id,
+  externalId: order.externalId,
+  orderNumber: order.orderNumber,
+  customerName: order.customerName,
+  status: order.status,
+  financialStatus: order.financialStatus,
+  fulfillmentStatus: order.fulfillmentStatus,
+  totalAmount: order.totalAmount,
+  currency: order.currency,
+  processedAt: order.processedAt.toISOString(),
+  shippingCity: order.shippingCity,
+  shippingCountry: order.shippingCountry,
+  tags: mapTags(order.tags),
+  notes: order.notes,
+  source: order.source,
+  lineItems: order.lineItems.map((item: any) => ({
+    id: item.id,
+    productName: item.productName,
+    quantity: item.quantity,
+    sku: item.sku,
+    price: item.price,
+    total: item.total
+  })),
+  shopifyStoreId: order.shopifyStoreId
+});
+
+export async function GET(request: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const parseResult = dateRangeSchema.safeParse({
+    month: searchParams.get("month") ?? undefined
+  });
+
+  if (!parseResult.success) {
+    return NextResponse.json({ message: "Invalid filters" }, { status: 400 });
+  }
+
+  const where: any = {};
+  if (parseResult.data.month) {
+    const [year, month] = parseResult.data.month.split("-").map((value) => Number(value));
+    const start = new Date(year, month - 1, 1);
+    const end = new Date(year, month, 0, 23, 59, 59, 999);
+    where.processedAt = {
+      gte: start,
+      lte: end
+    };
+  }
+
+  const orders = await prisma.order.findMany({
+    where,
+    include: {
+      lineItems: true
+    },
+    orderBy: {
+      processedAt: "desc"
+    }
+  });
+
+  const serialized = orders.map(serializeOrder);
+
+  const totalRevenue = serialized.reduce((sum: number, order: any) => sum + Number(order.totalAmount ?? 0), 0);
+  const ordersCount = serialized.length;
+  const averageOrderValue = ordersCount ? totalRevenue / ordersCount : 0;
+  const pendingFulfillment = serialized.filter(
+    (order: any) => !order.fulfillmentStatus || order.fulfillmentStatus.toLowerCase() !== "fulfilled"
+  ).length;
+
+  return NextResponse.json({
+    orders: serialized,
+    metrics: {
+      ordersCount,
+      totalRevenue,
+      averageOrderValue,
+      pendingFulfillment
+    }
+  });
+}
+
+export async function POST(request: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
+  const body = await request.json();
+  const parsed = orderSchema.safeParse({
+    ...body,
+    processedAt: body.processedAt ? new Date(body.processedAt) : new Date()
+  });
+
+  if (!parsed.success) {
+    return NextResponse.json({ message: "Invalid payload", issues: parsed.error.flatten() }, { status: 400 });
+  }
+
+  const data = parsed.data;
+  const created = await prisma.order.create({
+    data: {
+      orderNumber: data.orderNumber,
+      customerName: data.customerName,
+      status: data.status ?? "Open",
+      financialStatus: data.financialStatus,
+      fulfillmentStatus: data.fulfillmentStatus,
+      totalAmount: data.totalAmount,
+      currency: data.currency,
+      processedAt: data.processedAt instanceof Date ? data.processedAt : new Date(data.processedAt),
+      shippingCity: data.shippingCity,
+      shippingCountry: data.shippingCountry,
+      tags: (data.tags ?? []).join(","),
+      notes: data.notes,
+      createdById: Number(session.user.id),
+      lineItems: {
+        create: data.lineItems.map((item) => ({
+          productName: item.productName,
+          quantity: item.quantity,
+          sku: item.sku ?? undefined,
+          price: item.price,
+          total: item.total
+        }))
+      }
+    },
+    include: {
+      lineItems: true
+    }
+  });
+
+  return NextResponse.json(serializeOrder(created), { status: 201 });
+}

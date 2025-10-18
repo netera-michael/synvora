@@ -1,0 +1,71 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int            @id @default(autoincrement())
+  email     String         @unique
+  password  String
+  name      String?
+  orders    Order[]        @relation("UserOrders")
+  stores    ShopifyStore[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+}
+
+model Order {
+  id                Int             @id @default(autoincrement())
+  externalId        String?         @unique
+  orderNumber       String
+  customerName      String
+  status            String
+  financialStatus   String?
+  fulfillmentStatus String?
+  totalAmount       Float
+  currency          String          @default("USD")
+  processedAt       DateTime
+  closedAt          DateTime?
+  shippingCity      String?
+  shippingCountry   String?
+  tags              String        @default("")
+  notes             String?
+  source            String          @default("synvora")
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  createdById       Int?
+  shopifyStoreId    Int?
+
+  createdBy   User?         @relation("UserOrders", fields: [createdById], references: [id])
+  shopifyStore ShopifyStore? @relation(fields: [shopifyStoreId], references: [id])
+  lineItems   OrderLineItem[]
+}
+
+model OrderLineItem {
+  id         Int     @id @default(autoincrement())
+  orderId    Int
+  productName String
+  quantity   Int      @default(1)
+  sku        String?
+  price      Float    @default(0)
+  total      Float    @default(0)
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model ShopifyStore {
+  id          Int      @id @default(autoincrement())
+  storeDomain String   @unique
+  accessToken String
+  nickname    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  ownerId     Int?
+
+  owner User? @relation(fields: [ownerId], references: [id])
+  orders Order[]
+}
