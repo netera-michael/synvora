@@ -39,7 +39,7 @@ export function OrderTable({ orders, onSelect }: OrderTableProps) {
               Payment
             </th>
             <th scope="col" className="px-6 py-4">
-              Fulfillment
+              Payout amount
             </th>
             <th scope="col" className="px-6 py-4">
               Tags
@@ -83,13 +83,8 @@ export function OrderTable({ orders, onSelect }: OrderTableProps) {
                 </span>
               </td>
               <td className="whitespace-nowrap px-6 py-4">
-                <span
-                  className={cn(
-                    "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold",
-                    BADGES[order.fulfillmentStatus ?? ""] ?? "bg-slate-100 text-slate-600"
-                  )}
-                >
-                  {order.fulfillmentStatus ?? "—"}
+                <span className="font-medium text-slate-900">
+                  {formatCurrency(order.totalAmount * 0.94, order.currency)}
                 </span>
               </td>
               <td className="px-6 py-4">
