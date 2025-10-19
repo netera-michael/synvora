@@ -42,7 +42,7 @@ export function OrderTable({ orders, onSelect }: OrderTableProps) {
               Payout amount
             </th>
             <th scope="col" className="px-6 py-4">
-              Tags
+              Original amount (EGP)
             </th>
             <th scope="col" className="px-6 py-4 text-right">
               Actions
@@ -87,21 +87,12 @@ export function OrderTable({ orders, onSelect }: OrderTableProps) {
                   {formatCurrency(order.totalAmount * 0.94, order.currency)}
                 </span>
               </td>
-              <td className="px-6 py-4">
-                <div className="flex flex-wrap gap-2">
-                  {order.tags?.length ? (
-                    order.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600"
-                      >
-                        {tag}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-xs text-slate-400">No tags</span>
-                  )}
-                </div>
+              <td className="whitespace-nowrap px-6 py-4">
+                <span className="font-medium text-slate-900">
+                  {typeof order.originalAmount === "number"
+                    ? formatCurrency(order.originalAmount, "EGP")
+                    : "—"}
+                </span>
               </td>
               <td className="whitespace-nowrap px-6 py-4 text-right">
                 <button

@@ -33,6 +33,7 @@ model Order {
   shippingCity      String?
   shippingCountry   String?
   tags              String        @default("")
+  originalAmount    Float?
   notes             String?
   source            String          @default("synvora")
   createdAt         DateTime        @default(now())

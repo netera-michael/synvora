@@ -22,6 +22,7 @@ type CreateOrderValues = {
   shippingCountry: string;
   tags: string;
   notes: string;
+  originalAmount: number | null;
   lineItems: Array<{
     productName: string;
     quantity: number;
@@ -41,7 +42,7 @@ export function CreateOrderDialog({ open, onClose, onOrderCreated }: CreateOrder
   } = useForm<CreateOrderValues>({
     defaultValues: {
       orderNumber: "",
-      customerName: "",
+      customerName: "No Customer",
       totalAmount: 0,
       currency: "USD",
       processedAt: new Date().toISOString().slice(0, 10),
@@ -49,6 +50,7 @@ export function CreateOrderDialog({ open, onClose, onOrderCreated }: CreateOrder
       shippingCountry: "",
       tags: "",
       notes: "",
+      originalAmount: null,
       lineItems: [
         {
           productName: "",
@@ -67,8 +69,16 @@ export function CreateOrderDialog({ open, onClose, onOrderCreated }: CreateOrder
   });
 
   const submit = handleSubmit(async (values) => {
+    const trimmedCustomer = values.customerName?.trim();
+    const trimmedOrderNumber = values.orderNumber?.trim();
     const payload = {
       ...values,
+      customerName: trimmedCustomer && trimmedCustomer.length > 0 ? trimmedCustomer : "No Customer",
+      orderNumber: trimmedOrderNumber && trimmedOrderNumber.length > 0 ? trimmedOrderNumber : undefined,
+      originalAmount:
+        typeof values.originalAmount === "number" && !Number.isNaN(values.originalAmount)
+          ? values.originalAmount
+          : null,
       tags: values.tags
         .split(",")
         .map((tag) => tag.trim())
@@ -151,7 +161,7 @@ export function CreateOrderDialog({ open, onClose, onOrderCreated }: CreateOrder
                   <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
                     Order number
                     <input
-                      {...register("orderNumber", { required: true })}
+                      {...register("orderNumber")}
                       className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
                       placeholder="#1050"
                     />
@@ -159,9 +169,9 @@ export function CreateOrderDialog({ open, onClose, onOrderCreated }: CreateOrder
                   <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
                     Customer name
                     <input
-                      {...register("customerName", { required: true })}
+                      {...register("customerName")}
                       className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
-                      placeholder="Jordan Lee"
+                      placeholder="No Customer"
                     />
                   </label>
                   <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
@@ -171,6 +181,16 @@ export function CreateOrderDialog({ open, onClose, onOrderCreated }: CreateOrder
                       step="0.01"
                       {...register("totalAmount", { valueAsNumber: true })}
                       className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
+                    Original amount (EGP)
+                    <input
+                      type="number"
+                      step="0.01"
+                      {...register("originalAmount", { valueAsNumber: true })}
+                      className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
+                      placeholder="2450"
                     />
                   </label>
                   <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">

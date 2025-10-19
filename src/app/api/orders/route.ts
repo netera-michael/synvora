@@ -13,8 +13,8 @@ const lineItemSchema = z.object({
 });
 
 const orderSchema = z.object({
-  orderNumber: z.string().min(1),
-  customerName: z.string().min(1),
+  orderNumber: z.string().optional().nullable(),
+  customerName: z.string().optional().nullable(),
   status: z.string().default("Open"),
   financialStatus: z.string().optional().nullable(),
   fulfillmentStatus: z.string().optional().nullable(),
@@ -25,7 +25,8 @@ const orderSchema = z.object({
   shippingCountry: z.string().optional().nullable(),
   tags: z.array(z.string()).optional(),
   notes: z.string().optional().nullable(),
-  lineItems: z.array(lineItemSchema).default([])
+  lineItems: z.array(lineItemSchema).default([]),
+  originalAmount: z.number().nonnegative().optional().nullable()
 });
 
 const dateRangeSchema = z.object({
@@ -78,6 +79,7 @@ const serializeOrder = (order: any) => ({
   tags: mapTags(order.tags),
   notes: order.notes,
   source: order.source,
+  originalAmount: order.originalAmount,
   lineItems: order.lineItems.map((item: any) => ({
     id: item.id,
     productName: item.productName,
@@ -88,6 +90,28 @@ const serializeOrder = (order: any) => ({
   })),
   shopifyStoreId: order.shopifyStoreId
 });
+
+const extractOrderNumber = (orderNumber?: string | null) => {
+  if (!orderNumber) {
+    return undefined;
+  }
+  const digits = orderNumber.match(/\d+/g);
+  if (!digits || digits.length === 0) {
+    return undefined;
+  }
+  return Number(digits[digits.length - 1]);
+};
+
+const generateNextOrderNumber = async () => {
+  const lastOrder = await prisma.order.findFirst({
+    orderBy: { id: "desc" },
+    select: { orderNumber: true }
+  });
+
+  const lastNumeric = extractOrderNumber(lastOrder?.orderNumber);
+  const nextNumeric = (lastNumeric ?? 1000) + 1;
+  return `#${nextNumeric}`;
+};
 
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
@@ -162,10 +186,18 @@ export async function POST(request: Request) {
   }
 
   const data = parsed.data;
+  const trimmedCustomerName = data.customerName?.trim();
+  const customerName = trimmedCustomerName && trimmedCustomerName.length > 0 ? trimmedCustomerName : "No Customer";
+
+  let orderNumber = data.orderNumber?.trim();
+  if (!orderNumber) {
+    orderNumber = await generateNextOrderNumber();
+  }
+
   const created = await prisma.order.create({
     data: {
-      orderNumber: data.orderNumber,
-      customerName: data.customerName,
+      orderNumber,
+      customerName,
       status: data.status ?? "Open",
       financialStatus: data.financialStatus,
       fulfillmentStatus: data.fulfillmentStatus,
@@ -176,6 +208,7 @@ export async function POST(request: Request) {
       shippingCountry: data.shippingCountry,
       tags: (data.tags ?? []).join(","),
       notes: data.notes,
+      originalAmount: typeof data.originalAmount === "number" ? data.originalAmount : null,
       createdById: Number(session.user.id),
       lineItems: {
         create: data.lineItems.map((item) => ({

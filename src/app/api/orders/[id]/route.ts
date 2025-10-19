@@ -15,7 +15,7 @@ const lineItemSchema = z.object({
 const updateSchema = z
   .object({
     orderNumber: z.string().min(1).optional(),
-    customerName: z.string().min(1).optional(),
+    customerName: z.string().optional(),
     status: z.string().optional(),
     financialStatus: z.string().optional().nullable(),
     fulfillmentStatus: z.string().optional().nullable(),
@@ -26,7 +26,8 @@ const updateSchema = z
     shippingCountry: z.string().optional().nullable(),
     tags: z.array(z.string()).optional(),
     notes: z.string().optional().nullable(),
-    lineItems: z.array(lineItemSchema).optional()
+    lineItems: z.array(lineItemSchema).optional(),
+    originalAmount: z.number().nonnegative().optional().nullable()
   })
   .strict();
 
@@ -50,6 +51,7 @@ const serializeOrder = (order: any) => ({
       : [],
   notes: order.notes,
   source: order.source,
+  originalAmount: order.originalAmount,
   lineItems: order.lineItems.map((item: any) => ({
     id: item.id,
     productName: item.productName,
@@ -96,12 +98,18 @@ export async function PATCH(
     return NextResponse.json({ message: "Order not found" }, { status: 404 });
   }
 
+  const trimmedCustomerName = data.customerName?.trim();
+  const customerName =
+    trimmedCustomerName && trimmedCustomerName.length > 0 ? trimmedCustomerName : existing.customerName ?? "No Customer";
+  const trimmedOrderNumber = data.orderNumber?.trim();
+  const orderNumber = trimmedOrderNumber && trimmedOrderNumber.length > 0 ? trimmedOrderNumber : existing.orderNumber;
+
   await prisma.$transaction(async (tx) => {
     await tx.order.update({
       where: { id: orderId },
       data: {
-        orderNumber: data.orderNumber ?? existing.orderNumber,
-        customerName: data.customerName ?? existing.customerName,
+        orderNumber,
+        customerName,
         status: data.status ?? existing.status,
         financialStatus: data.financialStatus ?? existing.financialStatus,
         fulfillmentStatus: data.fulfillmentStatus ?? existing.fulfillmentStatus,
@@ -116,7 +124,9 @@ export async function PATCH(
         shippingCity: data.shippingCity ?? existing.shippingCity,
         shippingCountry: data.shippingCountry ?? existing.shippingCountry,
         tags: Array.isArray(data.tags) ? data.tags.join(",") : existing.tags,
-        notes: data.notes ?? existing.notes
+        notes: data.notes ?? existing.notes,
+        originalAmount:
+          typeof data.originalAmount === "number" ? data.originalAmount : existing.originalAmount ?? null
       }
     });
 

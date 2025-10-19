@@ -28,6 +28,7 @@ type OrderFormValues = {
   shippingCountry: string;
   tags: string;
   notes: string;
+  originalAmount: number | null;
   lineItems: Array<Omit<OrderLineItemDto, "id"> & { id?: number }>;
 };
 
@@ -37,7 +38,7 @@ const FULFILLMENT_OPTIONS = ["Fulfilled", "Unfulfilled", "Partial", "Returned"];
 
 const mapOrderToForm = (value: OrderDto): OrderFormValues => ({
   orderNumber: value.orderNumber,
-  customerName: value.customerName,
+  customerName: value.customerName || "No Customer",
   status: value.status ?? "Open",
   financialStatus: value.financialStatus ?? "",
   fulfillmentStatus: value.fulfillmentStatus ?? "",
@@ -48,6 +49,7 @@ const mapOrderToForm = (value: OrderDto): OrderFormValues => ({
   shippingCountry: value.shippingCountry ?? "",
   tags: value.tags?.join(", ") ?? "",
   notes: value.notes ?? "",
+  originalAmount: typeof value.originalAmount === "number" ? value.originalAmount : null,
   lineItems: value.lineItems.length
     ? value.lineItems.map((item) => ({
         id: item.id,
@@ -90,6 +92,7 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
       shippingCountry: "",
       tags: "",
       notes: "",
+      originalAmount: null,
       lineItems: []
     }
   });
@@ -116,8 +119,18 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
   }
 
   const onSubmit = handleSubmit(async (values) => {
+    const trimmedCustomerName = values.customerName?.trim();
+    const customerName =
+      trimmedCustomerName && trimmedCustomerName.length > 0 ? trimmedCustomerName : "No Customer";
+    const trimmedOrderNumber = values.orderNumber?.trim();
     const payload = {
       ...values,
+      customerName,
+      orderNumber: trimmedOrderNumber && trimmedOrderNumber.length > 0 ? trimmedOrderNumber : undefined,
+      originalAmount:
+        typeof values.originalAmount === "number" && !Number.isNaN(values.originalAmount)
+          ? values.originalAmount
+          : null,
       tags: values.tags
         .split(",")
         .map((tag) => tag.trim())
@@ -205,7 +218,7 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
                       {order.orderNumber}
                     </Dialog.Title>
                     <p className="text-sm text-slate-500">
-                      {formatDate(order.processedAt)} • {order.customerName}
+                      {formatDate(order.processedAt)} • {order.customerName || "No Customer"}
                     </p>
                   </div>
                 </div>
@@ -270,9 +283,17 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
                           <p className="mt-2 text-2xl font-semibold text-slate-900">
                             {formatCurrency(order.totalAmount, order.currency)}
                           </p>
-                          <p className="mt-2 text-sm text-slate-500">
-                            {order.financialStatus ?? "Status not set"}
-                          </p>
+                        <p className="mt-2 text-sm text-slate-500">
+                          {order.financialStatus ?? "Status not set"}
+                        </p>
+                        <p className="mt-3 text-xs uppercase tracking-wide text-slate-400">
+                          Original amount (EGP)
+                        </p>
+                        <p className="text-sm font-semibold text-slate-900">
+                          {typeof order.originalAmount === "number"
+                            ? formatCurrency(order.originalAmount, "EGP")
+                            : "—"}
+                        </p>
                         </div>
                         <div className="rounded-2xl border border-slate-200 p-6">
                           <h3 className="text-sm font-semibold text-slate-900">Fulfillment</h3>
@@ -407,6 +428,15 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
                             <input
                               {...register("currency")}
                               className="uppercase rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
+                            />
+                          </label>
+                          <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
+                            Original amount (EGP)
+                            <input
+                              type="number"
+                              step="0.01"
+                              {...register("originalAmount", { valueAsNumber: true })}
+                              className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
                             />
                           </label>
                           <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">

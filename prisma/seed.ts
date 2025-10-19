@@ -30,6 +30,7 @@ async function main() {
       shippingCity: "New York",
       shippingCountry: "United States",
       tags: "VIP,Express",
+      originalAmount: 5800,
       notes: "Customer requested gift wrap.",
       lineItems: {
         create: [
@@ -62,6 +63,7 @@ async function main() {
       shippingCity: "Austin",
       shippingCountry: "United States",
       tags: "Wholesale",
+      originalAmount: 2800,
       notes: null,
       lineItems: {
         create: [
@@ -87,6 +89,7 @@ async function main() {
       shippingCity: "Milan",
       shippingCountry: "Italy",
       tags: "International",
+      originalAmount: 0,
       notes: "Full refund issued due to damaged package.",
       lineItems: {
         create: [
