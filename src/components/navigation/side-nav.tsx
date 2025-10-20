@@ -45,11 +45,6 @@ export function SideNav() {
             >
               <Icon className="h-4 w-4" />
               {item.label}
-              {item.href === "/orders" && (
-                <span className="ml-auto inline-flex h-6 min-w-[32px] items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-700">
-                  3
-                </span>
-              )}
             </Link>
           );
         })}
