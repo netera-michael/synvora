@@ -1,10 +1,11 @@
 "use client";
 
-import { Fragment } from "react";
+import { Fragment, useEffect, useMemo } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { Save, X } from "lucide-react";
 import type { OrderDto } from "@/types/orders";
+import { formatCurrency } from "@/lib/utils";
 
 type CreateOrderDialogProps = {
   open: boolean;
@@ -19,6 +20,7 @@ type CreateOrderValues = {
   totalAmount: number;
   currency: string;
   processedAt: string;
+  exchangeRate: number;
   tags: string;
   notes: string;
   originalAmount: number | null;
@@ -37,6 +39,8 @@ export function CreateOrderDialog({ open, onClose, onOrderCreated }: CreateOrder
     handleSubmit,
     control,
     reset,
+    watch,
+    setValue,
     formState: { isSubmitting }
   } = useForm<CreateOrderValues>({
     defaultValues: {
@@ -46,6 +50,7 @@ export function CreateOrderDialog({ open, onClose, onOrderCreated }: CreateOrder
       totalAmount: 0,
       currency: "USD",
       processedAt: new Date().toISOString().slice(0, 10),
+      exchangeRate: 48.5,
       tags: "",
       notes: "",
       originalAmount: null,
@@ -65,6 +70,27 @@ export function CreateOrderDialog({ open, onClose, onOrderCreated }: CreateOrder
     control,
     name: "lineItems"
   });
+
+  const originalAmount = watch("originalAmount");
+  const exchangeRate = watch("exchangeRate");
+
+  useEffect(() => {
+    if (typeof originalAmount === "number" && originalAmount >= 0 && typeof exchangeRate === "number" && exchangeRate > 0) {
+      const base = originalAmount / exchangeRate;
+      const total = Number.isFinite(base) ? Number((base * 1.035).toFixed(2)) : 0;
+      setValue("totalAmount", total, { shouldDirty: false, shouldValidate: true });
+    } else {
+      setValue("totalAmount", 0, { shouldDirty: false, shouldValidate: true });
+    }
+  }, [originalAmount, exchangeRate, setValue]);
+
+  const payoutAmount = useMemo(() => {
+    if (typeof originalAmount === "number" && originalAmount >= 0 && typeof exchangeRate === "number" && exchangeRate > 0) {
+      const base = originalAmount / exchangeRate;
+      return Number((base * 0.9825).toFixed(2));
+    }
+    return 0;
+  }, [originalAmount, exchangeRate]);
 
   const submit = handleSubmit(async (values) => {
     const trimmedCustomer = values.customerName?.trim();
@@ -95,7 +121,9 @@ export function CreateOrderDialog({ open, onClose, onOrderCreated }: CreateOrder
           price: Number(item.price),
           total: Number(item.total)
         })),
-      financialStatus: values.financialStatus?.length ? values.financialStatus : "Paid"
+      financialStatus: values.financialStatus?.length ? values.financialStatus : "Paid",
+      exchangeRate:
+        typeof values.exchangeRate === "number" && values.exchangeRate > 0 ? values.exchangeRate : 48.5
     };
 
     const response = await fetch("/api/orders", {
@@ -190,13 +218,17 @@ export function CreateOrderDialog({ open, onClose, onOrderCreated }: CreateOrder
                     />
                   </label>
                   <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
-                    Total amount
+                    Total amount (USD)
                     <input
                       type="number"
                       step="0.01"
+                      readOnly
                       {...register("totalAmount", { valueAsNumber: true })}
-                      className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
+                      className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 shadow-inner focus-visible:outline-none"
                     />
+                    <span className="text-xs font-normal text-slate-400">
+                      Auto-calculated from EGP amount × 1.035 / rate.
+                    </span>
                   </label>
                   <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
                     Original amount (EGP)
@@ -206,6 +238,15 @@ export function CreateOrderDialog({ open, onClose, onOrderCreated }: CreateOrder
                       {...register("originalAmount", { valueAsNumber: true })}
                       className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
                       placeholder="2450"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
+                    USD/EGP rate
+                    <input
+                      type="number"
+                      step="0.01"
+                      {...register("exchangeRate", { valueAsNumber: true })}
+                      className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
                     />
                   </label>
                   <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
@@ -223,6 +264,16 @@ export function CreateOrderDialog({ open, onClose, onOrderCreated }: CreateOrder
                       className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
                     />
                   </label>
+                </div>
+
+                <div className="mt-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                  <p className="font-semibold text-slate-800">Expected payout</p>
+                  <p className="mt-1 text-lg font-semibold text-slate-900">
+                    {formatCurrency(payoutAmount, "USD")}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    Calculated as 0.9825 × (EGP ÷ rate).
+                  </p>
                 </div>
 
                 <label className="mt-4 flex flex-col gap-2 text-sm font-semibold text-slate-700">

@@ -26,4 +26,5 @@ export type OrderDto = {
   lineItems: OrderLineItemDto[];
   shopifyStoreId?: number | null;
   originalAmount?: number | null;
+  exchangeRate?: number | null;
 };

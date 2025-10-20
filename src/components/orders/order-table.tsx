@@ -50,8 +50,17 @@ export function OrderTable({ orders, onSelect }: OrderTableProps) {
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100 bg-white">
-          {orders.map((order) => (
-            <tr key={order.id} className="hover:bg-slate-50/80">
+          {orders.map((order) => {
+            const payoutBase =
+              typeof order.originalAmount === "number" && order.originalAmount >= 0 && typeof order.exchangeRate === "number" && order.exchangeRate > 0
+                ? order.originalAmount / order.exchangeRate
+                : order.totalAmount;
+            const payoutValue = Number.isFinite(payoutBase)
+              ? Number((payoutBase * 0.9825).toFixed(2))
+              : 0;
+
+            return (
+              <tr key={order.id} className="hover:bg-slate-50/80">
               <td className="whitespace-nowrap px-6 py-4 font-medium text-slate-900">
                 {order.orderNumber}
               </td>
@@ -84,7 +93,7 @@ export function OrderTable({ orders, onSelect }: OrderTableProps) {
               </td>
               <td className="whitespace-nowrap px-6 py-4">
                 <span className="font-medium text-slate-900">
-                  {formatCurrency(order.totalAmount * 0.965, order.currency)}
+                  {formatCurrency(payoutValue, order.currency)}
                 </span>
               </td>
               <td className="whitespace-nowrap px-6 py-4">
@@ -104,8 +113,9 @@ export function OrderTable({ orders, onSelect }: OrderTableProps) {
                   <ChevronRight className="h-4 w-4" />
                 </button>
               </td>
-            </tr>
-          ))}
+              </tr>
+            );
+          })}
         </tbody>
       </table>
       {orders.length === 0 && (

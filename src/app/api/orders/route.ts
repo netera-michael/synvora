@@ -18,7 +18,7 @@ const orderSchema = z.object({
   status: z.string().default("Open"),
   financialStatus: z.string().optional().nullable(),
   fulfillmentStatus: z.string().optional().nullable(),
-  totalAmount: z.number().nonnegative(),
+  totalAmount: z.number().nonnegative().optional().nullable(),
   currency: z.string().default("USD"),
   processedAt: z.union([z.string(), z.date()]),
   shippingCity: z.string().optional().nullable(),
@@ -26,7 +26,8 @@ const orderSchema = z.object({
   tags: z.array(z.string()).optional(),
   notes: z.string().optional().nullable(),
   lineItems: z.array(lineItemSchema).default([]),
-  originalAmount: z.number().nonnegative().optional().nullable()
+  originalAmount: z.number().nonnegative().optional().nullable(),
+  exchangeRate: z.number().positive().optional().nullable()
 });
 
 const dateRangeSchema = z.object({
@@ -79,6 +80,7 @@ const serializeOrder = (order: any) => ({
   tags: mapTags(order.tags),
   notes: order.notes,
   source: order.source,
+  exchangeRate: order.exchangeRate,
   originalAmount: order.originalAmount,
   lineItems: order.lineItems.map((item: any) => ({
     id: item.id,
@@ -195,6 +197,14 @@ export async function POST(request: Request) {
     : await generateNextOrderNumber();
   const financialStatus =
     data.financialStatus && data.financialStatus.trim().length > 0 ? data.financialStatus.trim() : "Paid";
+  const exchangeRate =
+    typeof data.exchangeRate === "number" && data.exchangeRate > 0 ? data.exchangeRate : 48.5;
+  const originalAmount =
+    typeof data.originalAmount === "number" && data.originalAmount >= 0 ? data.originalAmount : null;
+  const baseAmount =
+    originalAmount !== null && exchangeRate > 0 ? Number((originalAmount / exchangeRate).toFixed(4)) : null;
+  const computedTotal =
+    baseAmount !== null ? Number((baseAmount * 1.035).toFixed(2)) : data.totalAmount ?? 0;
   const lineItemsData = data.lineItems
     .filter((item) => item.productName.trim().length > 0)
     .map((item) => ({
@@ -212,7 +222,7 @@ export async function POST(request: Request) {
       status: data.status ?? "Open",
       financialStatus,
       fulfillmentStatus: data.fulfillmentStatus,
-      totalAmount: data.totalAmount,
+      totalAmount: computedTotal,
       currency: data.currency,
       processedAt: data.processedAt instanceof Date ? data.processedAt : new Date(data.processedAt),
       shippingCity: data.shippingCity,
@@ -220,6 +230,7 @@ export async function POST(request: Request) {
       tags: (data.tags ?? []).join(","),
       notes: data.notes,
       originalAmount: typeof data.originalAmount === "number" ? data.originalAmount : null,
+      exchangeRate,
       createdById: Number(session.user.id),
       lineItems: {
         create: lineItemsData

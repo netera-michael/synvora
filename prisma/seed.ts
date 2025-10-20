@@ -24,13 +24,14 @@ async function main() {
       status: "Open",
       financialStatus: "Paid",
       fulfillmentStatus: "Fulfilled",
-      totalAmount: 189.96,
+      totalAmount: Number(((5800 / 48.5) * 1.035).toFixed(2)),
       currency: "USD",
       processedAt: now,
       shippingCity: "New York",
       shippingCountry: "United States",
       tags: "VIP,Express",
       originalAmount: 5800,
+      exchangeRate: 48.5,
       notes: "Customer requested gift wrap.",
       lineItems: {
         create: [
@@ -57,13 +58,14 @@ async function main() {
       status: "Open",
       financialStatus: "Pending",
       fulfillmentStatus: "Unfulfilled",
-      totalAmount: 89.99,
+      totalAmount: Number(((2800 / 48.5) * 1.035).toFixed(2)),
       currency: "USD",
       processedAt: new Date(now.getFullYear(), now.getMonth() - 1, 12),
       shippingCity: "Austin",
       shippingCountry: "United States",
       tags: "Wholesale",
       originalAmount: 2800,
+      exchangeRate: 48.5,
       notes: null,
       lineItems: {
         create: [
@@ -90,6 +92,7 @@ async function main() {
       shippingCountry: "Italy",
       tags: "International",
       originalAmount: 0,
+      exchangeRate: 48.5,
       notes: "Full refund issued due to damaged package.",
       lineItems: {
         create: [

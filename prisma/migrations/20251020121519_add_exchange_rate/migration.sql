@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Order" ADD COLUMN     "exchangeRate" DOUBLE PRECISION NOT NULL DEFAULT 48.5;

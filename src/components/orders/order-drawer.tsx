@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { Dialog, Transition, Tab } from "@headlessui/react";
 import { Trash2, Edit3, X, Save, ArrowLeft } from "lucide-react";
 import { useForm, useFieldArray } from "react-hook-form";
@@ -27,6 +27,7 @@ type OrderFormValues = {
   tags: string;
   notes: string;
   originalAmount: number | null;
+  exchangeRate: number;
   lineItems: Array<Omit<OrderLineItemDto, "id"> & { id?: number }>;
 };
 
@@ -46,6 +47,7 @@ const mapOrderToForm = (value: OrderDto): OrderFormValues => ({
   tags: value.tags?.join(", ") ?? "",
   notes: value.notes ?? "",
   originalAmount: typeof value.originalAmount === "number" ? value.originalAmount : null,
+  exchangeRate: typeof value.exchangeRate === "number" ? value.exchangeRate : 48.5,
   lineItems: value.lineItems.length
     ? value.lineItems.map((item) => ({
         id: item.id,
@@ -73,6 +75,8 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
     handleSubmit,
     control,
     reset,
+    watch,
+    setValue,
     formState: { isSubmitting }
   } = useForm<OrderFormValues>({
     defaultValues: {
@@ -87,6 +91,7 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
       tags: "",
       notes: "",
       originalAmount: null,
+      exchangeRate: 48.5,
       lineItems: []
     }
   });
@@ -95,6 +100,27 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
     control,
     name: "lineItems"
   });
+
+  const originalAmount = watch("originalAmount");
+  const exchangeRate = watch("exchangeRate");
+
+  useEffect(() => {
+    if (typeof originalAmount === "number" && originalAmount >= 0 && typeof exchangeRate === "number" && exchangeRate > 0) {
+      const base = originalAmount / exchangeRate;
+      const total = Number.isFinite(base) ? Number((base * 1.035).toFixed(2)) : 0;
+      setValue("totalAmount", total, { shouldDirty: false });
+    } else {
+      setValue("totalAmount", 0, { shouldDirty: false });
+    }
+  }, [originalAmount, exchangeRate, setValue]);
+
+  const payoutAmount = useMemo(() => {
+    if (typeof originalAmount === "number" && originalAmount >= 0 && typeof exchangeRate === "number" && exchangeRate > 0) {
+      const base = originalAmount / exchangeRate;
+      return Number((base * 0.9825).toFixed(2));
+    }
+    return 0;
+  }, [originalAmount, exchangeRate]);
 
   useEffect(() => {
     if (order) {
@@ -135,6 +161,8 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
         .map((tag) => tag.trim())
         .filter(Boolean),
       financialStatus: values.financialStatus?.length ? values.financialStatus : "Paid",
+      exchangeRate:
+        typeof values.exchangeRate === "number" && values.exchangeRate > 0 ? values.exchangeRate : 48.5,
       lineItems: values.lineItems
         .filter((item) => item.productName.trim().length > 0)
         .map((item) => ({
@@ -285,17 +313,25 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
                           <p className="mt-2 text-2xl font-semibold text-slate-900">
                             {formatCurrency(order.totalAmount, order.currency)}
                           </p>
-                        <p className="mt-2 text-sm text-slate-500">
-                          {order.financialStatus ?? "Status not set"}
-                        </p>
-                        <p className="mt-3 text-xs uppercase tracking-wide text-slate-400">
-                          Original amount (EGP)
-                        </p>
-                        <p className="text-sm font-semibold text-slate-900">
-                          {typeof order.originalAmount === "number"
-                            ? formatCurrency(order.originalAmount, "EGP")
-                            : "—"}
-                        </p>
+                          <p className="mt-2 text-sm text-slate-500">
+                            {order.financialStatus ?? "Status not set"}
+                          </p>
+                          <p className="mt-3 text-xs uppercase tracking-wide text-slate-400">
+                            Original amount (EGP)
+                          </p>
+                          <p className="text-sm font-semibold text-slate-900">
+                            {typeof order.originalAmount === "number"
+                              ? formatCurrency(order.originalAmount, "EGP")
+                              : "—"}
+                          </p>
+                          <div className="mt-3 space-y-1 text-sm text-slate-600">
+                            <p>
+                              <span className="font-semibold text-slate-900">Exchange rate:</span> {order.exchangeRate ?? 48.5}
+                            </p>
+                            <p>
+                              <span className="font-semibold text-slate-900">Payout (USD):</span> {formatCurrency(payoutAmount, order.currency)}
+                            </p>
+                          </div>
                         </div>
                         <div className="rounded-2xl border border-slate-200 p-6">
                           <h3 className="text-sm font-semibold text-slate-900">Fulfillment</h3>
@@ -417,13 +453,17 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
                             />
                           </label>
                           <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
-                            Total amount
+                            Total amount (USD)
                             <input
                               type="number"
                               step="0.01"
+                              readOnly
                               {...register("totalAmount", { valueAsNumber: true })}
-                              className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
+                              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 shadow-inner focus-visible:outline-none"
                             />
+                            <span className="text-xs font-normal text-slate-400">
+                              Auto-calculated from EGP amount × 1.035 / rate.
+                            </span>
                           </label>
                           <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
                             Currency
@@ -438,6 +478,15 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
                               type="number"
                               step="0.01"
                               {...register("originalAmount", { valueAsNumber: true })}
+                              className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
+                            />
+                          </label>
+                          <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
+                            USD/EGP rate
+                            <input
+                              type="number"
+                              step="0.01"
+                              {...register("exchangeRate", { valueAsNumber: true })}
                               className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
                             />
                           </label>
@@ -463,6 +512,16 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
                             className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
                           />
                         </label>
+
+                        <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                          <p className="font-semibold text-slate-800">Expected payout</p>
+                          <p className="mt-1 text-lg font-semibold text-slate-900">
+                            {formatCurrency(payoutAmount, "USD")}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            Calculated as 0.9825 × (EGP ÷ rate).
+                          </p>
+                        </div>
 
                         <div className="rounded-2xl border border-dashed border-slate-300 p-4">
                           <div className="flex items-center justify-between">

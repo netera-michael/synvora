@@ -27,7 +27,8 @@ const updateSchema = z
     tags: z.array(z.string()).optional(),
     notes: z.string().optional().nullable(),
     lineItems: z.array(lineItemSchema).optional(),
-    originalAmount: z.number().nonnegative().optional().nullable()
+    originalAmount: z.number().nonnegative().optional().nullable(),
+    exchangeRate: z.number().positive().optional().nullable()
   })
   .strict();
 
@@ -51,6 +52,7 @@ const serializeOrder = (order: any) => ({
       : [],
   notes: order.notes,
   source: order.source,
+  exchangeRate: order.exchangeRate,
   originalAmount: order.originalAmount,
   lineItems: order.lineItems.map((item: any) => ({
     id: item.id,
@@ -113,6 +115,24 @@ export async function PATCH(
   const filteredLineItems = Array.isArray(data.lineItems)
     ? data.lineItems.filter((item) => item.productName.trim().length > 0)
     : null;
+  const exchangeRate =
+    typeof data.exchangeRate === "number" && data.exchangeRate > 0
+      ? data.exchangeRate
+      : existing.exchangeRate ?? 48.5;
+  const originalAmount =
+    typeof data.originalAmount === "number"
+      ? data.originalAmount
+      : existing.originalAmount !== null
+        ? existing.originalAmount
+        : null;
+  const baseAmount =
+    typeof originalAmount === "number" && exchangeRate > 0
+      ? Number((originalAmount / exchangeRate).toFixed(4))
+      : null;
+  const computedTotal =
+    baseAmount !== null
+      ? Number((baseAmount * 1.035).toFixed(2))
+      : data.totalAmount ?? existing.totalAmount;
 
   await prisma.$transaction(async (tx) => {
     await tx.order.update({
@@ -123,7 +143,8 @@ export async function PATCH(
         status: data.status ?? existing.status,
         financialStatus,
         fulfillmentStatus: data.fulfillmentStatus ?? existing.fulfillmentStatus,
-        totalAmount: data.totalAmount ?? existing.totalAmount,
+        totalAmount: computedTotal,
+        exchangeRate,
         currency: data.currency ?? existing.currency,
         processedAt:
           data.processedAt instanceof Date
@@ -134,7 +155,7 @@ export async function PATCH(
         tags: Array.isArray(data.tags) ? data.tags.join(",") : existing.tags,
         notes: data.notes ?? existing.notes,
         originalAmount:
-          typeof data.originalAmount === "number" ? data.originalAmount : existing.originalAmount ?? null
+          typeof originalAmount === "number" ? originalAmount : null
       }
     });
 

@@ -34,6 +34,7 @@ model Order {
   shippingCountry   String?
   tags              String        @default("")
   originalAmount    Float?
+  exchangeRate      Float          @default(48.5)
   notes             String?
   source            String          @default("synvora")
   createdAt         DateTime        @default(now())
