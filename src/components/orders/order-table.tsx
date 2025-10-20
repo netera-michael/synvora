@@ -1,4 +1,4 @@
-import { formatCurrency, formatDate, cn } from "@/lib/utils";
+import { formatCurrency, formatDateTime, formatDayTime, cn } from "@/lib/utils";
 import type { OrderDto } from "@/types/orders";
 import { ChevronRight } from "lucide-react";
 
@@ -42,7 +42,7 @@ export function OrderTable({ orders, onSelect }: OrderTableProps) {
               Payout amount
             </th>
             <th scope="col" className="px-6 py-4">
-              Original amount (EGP)
+              Tickets value
             </th>
             <th scope="col" className="px-6 py-4 text-right">
               Actions
@@ -62,10 +62,15 @@ export function OrderTable({ orders, onSelect }: OrderTableProps) {
             return (
               <tr key={order.id} className="hover:bg-slate-50/80">
               <td className="whitespace-nowrap px-6 py-4 font-medium text-slate-900">
-                {order.orderNumber}
+                <div className="flex flex-col">
+                  <span>{order.orderNumber}</span>
+                  <span className="text-xs font-medium text-slate-500">
+                    {formatDateTime(order.processedAt)}
+                  </span>
+                </div>
               </td>
               <td className="whitespace-nowrap px-6 py-4 text-slate-600">
-                {formatDate(order.processedAt)}
+                {formatDayTime(order.processedAt)}
               </td>
               <td className="whitespace-nowrap px-6 py-4 text-slate-700">
                 <div className="flex flex-col">

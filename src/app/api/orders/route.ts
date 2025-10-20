@@ -153,11 +153,12 @@ export async function GET(request: Request) {
 
   const serialized = orders.map(serializeOrder);
 
-  const totalRevenue = serialized.reduce((sum: number, order: any) => sum + Number(order.totalAmount ?? 0), 0);
+  const totalRevenue = serialized.reduce((sum: number, order) => sum + Number(order.totalAmount ?? 0), 0);
   const ordersCount = serialized.length;
   const averageOrderValue = ordersCount ? totalRevenue / ordersCount : 0;
+  const totalPayout = serialized.reduce((sum, order) => sum + calculatePayout(order), 0);
   const pendingFulfillment = serialized.filter(
-    (order: any) => !order.fulfillmentStatus || order.fulfillmentStatus.toLowerCase() !== "fulfilled"
+    (order) => !order.fulfillmentStatus || order.fulfillmentStatus.toLowerCase() !== "fulfilled"
   ).length;
 
   return NextResponse.json({
@@ -166,6 +167,7 @@ export async function GET(request: Request) {
       ordersCount,
       totalRevenue,
       averageOrderValue,
+      totalPayout,
       pendingFulfillment
     }
   });
@@ -243,3 +245,10 @@ export async function POST(request: Request) {
 
   return NextResponse.json(serializeOrder(created), { status: 201 });
 }
+const calculatePayout = (order: ReturnType<typeof serializeOrder>) => {
+  if (order.originalAmount !== null && typeof order.originalAmount === "number" && order.exchangeRate && order.exchangeRate > 0) {
+    const base = order.originalAmount / order.exchangeRate;
+    return base * 0.9825;
+  }
+  return order.totalAmount * 0.9825;
+};

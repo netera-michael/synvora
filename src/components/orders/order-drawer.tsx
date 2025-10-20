@@ -5,7 +5,7 @@ import { Dialog, Transition, Tab } from "@headlessui/react";
 import { Trash2, Edit3, X, Save, ArrowLeft } from "lucide-react";
 import { useForm, useFieldArray } from "react-hook-form";
 import type { OrderDto, OrderLineItemDto } from "@/types/orders";
-import { formatCurrency, formatDate, formatDateTime, cn } from "@/lib/utils";
+import { formatCurrency, formatDateTime, formatDateTimeForInput, cn } from "@/lib/utils";
 
 type OrderDrawerProps = {
   open: boolean;
@@ -43,7 +43,7 @@ const mapOrderToForm = (value: OrderDto): OrderFormValues => ({
   fulfillmentStatus: value.fulfillmentStatus ?? "",
   totalAmount: value.totalAmount,
   currency: value.currency,
-  processedAt: value.processedAt.slice(0, 10),
+  processedAt: formatDateTimeForInput(value.processedAt),
   tags: value.tags?.join(", ") ?? "",
   notes: value.notes ?? "",
   originalAmount: typeof value.originalAmount === "number" ? value.originalAmount : null,
@@ -87,7 +87,7 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
       fulfillmentStatus: "Unfulfilled",
       totalAmount: 0,
       currency: "USD",
-      processedAt: new Date().toISOString().slice(0, 10),
+      processedAt: formatDateTimeForInput(new Date()),
       tags: "",
       notes: "",
       originalAmount: null,
@@ -447,7 +447,7 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
                           <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
                             Processed at
                             <input
-                              type="date"
+                              type="datetime-local"
                               {...register("processedAt")}
                               className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
                             />
@@ -627,7 +627,7 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
                         <li className="rounded-xl border border-slate-200 px-4 py-3">
                           <p className="text-sm font-semibold text-slate-700">Created in Synvora</p>
                           <p className="text-xs text-slate-400">
-                            {formatDate(order.processedAt)} • {order.customerName}
+                            {formatDateTime(order.processedAt)} • {order.customerName}
                           </p>
                         </li>
                       </ul>

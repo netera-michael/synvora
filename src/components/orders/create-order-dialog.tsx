@@ -5,7 +5,7 @@ import { Dialog, Transition } from "@headlessui/react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { Save, X } from "lucide-react";
 import type { OrderDto } from "@/types/orders";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatDateTimeForInput } from "@/lib/utils";
 
 type CreateOrderDialogProps = {
   open: boolean;
@@ -34,6 +34,28 @@ type CreateOrderValues = {
 };
 
 export function CreateOrderDialog({ open, onClose, onOrderCreated }: CreateOrderDialogProps) {
+  const defaultValues: CreateOrderValues = {
+    orderNumber: "",
+    customerName: "No Customer",
+    financialStatus: "Paid",
+    totalAmount: 0,
+    currency: "USD",
+    processedAt: formatDateTimeForInput(new Date()),
+    exchangeRate: 48.5,
+    tags: "",
+    notes: "",
+    originalAmount: null,
+    lineItems: [
+      {
+        productName: "",
+        quantity: 1,
+        sku: "",
+        price: 0,
+        total: 0
+      }
+    ]
+  };
+
   const {
     register,
     handleSubmit,
@@ -43,27 +65,7 @@ export function CreateOrderDialog({ open, onClose, onOrderCreated }: CreateOrder
     setValue,
     formState: { isSubmitting }
   } = useForm<CreateOrderValues>({
-    defaultValues: {
-      orderNumber: "",
-      customerName: "No Customer",
-       financialStatus: "Paid",
-      totalAmount: 0,
-      currency: "USD",
-      processedAt: new Date().toISOString().slice(0, 10),
-      exchangeRate: 48.5,
-      tags: "",
-      notes: "",
-      originalAmount: null,
-      lineItems: [
-        {
-          productName: "",
-          quantity: 1,
-          sku: "",
-          price: 0,
-          total: 0
-        }
-      ]
-    }
+    defaultValues
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -141,7 +143,10 @@ export function CreateOrderDialog({ open, onClose, onOrderCreated }: CreateOrder
 
     const order = (await response.json()) as OrderDto;
     onOrderCreated(order);
-    reset();
+    reset({
+      ...defaultValues,
+      processedAt: formatDateTimeForInput(new Date())
+    });
     onClose();
   });
 
@@ -259,7 +264,7 @@ export function CreateOrderDialog({ open, onClose, onOrderCreated }: CreateOrder
                   <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
                     Processed at
                     <input
-                      type="date"
+                      type="datetime-local"
                       {...register("processedAt")}
                       className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
                     />

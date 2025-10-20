@@ -33,3 +33,21 @@ export function formatDateTime(date: Date | string) {
     hour12: true
   }).toLowerCase()}`;
 }
+
+export function formatDayTime(date: Date | string) {
+  const parsed = typeof date === "string" ? new Date(date) : date;
+  return `${parsed.toLocaleDateString("en-US", { weekday: "long" })} at ${parsed
+    .toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true
+    })
+    .toLowerCase()}`;
+}
+
+const pad = (value: number) => value.toString().padStart(2, "0");
+
+export function formatDateTimeForInput(date: Date | string) {
+  const parsed = typeof date === "string" ? new Date(date) : date;
+  return `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(parsed.getDate())}T${pad(parsed.getHours())}:${pad(parsed.getMinutes())}`;
+}

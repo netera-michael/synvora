@@ -17,11 +17,20 @@ type OrdersResponse = {
     ordersCount: number;
     totalRevenue: number;
     averageOrderValue: number;
+    totalPayout: number;
     pendingFulfillment: number;
   };
 };
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
+const calculatePayout = (order: OrderDto) => {
+  if (order.originalAmount !== null && typeof order.originalAmount === "number" && order.exchangeRate && order.exchangeRate > 0) {
+    const base = order.originalAmount / order.exchangeRate;
+    return base * 0.9825;
+  }
+  return order.totalAmount * 0.9825;
+};
 
 export default function OrdersPage() {
   const router = useRouter();
@@ -85,7 +94,8 @@ export default function OrdersPage() {
                 ordersCount: current.metrics.ordersCount + 1,
                 totalRevenue: current.metrics.totalRevenue + order.totalAmount,
                 averageOrderValue:
-                  (current.metrics.totalRevenue + order.totalAmount) / (current.metrics.ordersCount + 1)
+                  (current.metrics.totalRevenue + order.totalAmount) / (current.metrics.ordersCount + 1),
+                totalPayout: current.metrics.totalPayout + calculatePayout(order)
               }
             }
           : current,
@@ -116,10 +126,26 @@ export default function OrdersPage() {
           ? {
               ...current,
               orders: current.orders.filter((item) => item.id !== orderId),
-              metrics: {
-                ...current.metrics,
-                ordersCount: Math.max(0, current.metrics.ordersCount - 1)
-              }
+              metrics: (() => {
+                const removed = current.orders.find((item) => item.id === orderId);
+                const nextOrdersCount = Math.max(0, current.metrics.ordersCount - 1);
+                const nextTotalRevenue = removed
+                  ? current.metrics.totalRevenue - removed.totalAmount
+                  : current.metrics.totalRevenue;
+                const nextTotalPayout = removed
+                  ? current.metrics.totalPayout - calculatePayout(removed)
+                  : current.metrics.totalPayout;
+                const nextAverage = nextOrdersCount
+                  ? nextTotalRevenue / nextOrdersCount
+                  : 0;
+                return {
+                  ...current.metrics,
+                  ordersCount: nextOrdersCount,
+                  totalRevenue: nextTotalRevenue,
+                  totalPayout: nextTotalPayout,
+                  averageOrderValue: nextAverage
+                };
+              })()
             }
           : current,
       false
@@ -203,15 +229,11 @@ export default function OrdersPage() {
           <p className="mt-1 text-sm text-slate-500">Total order value</p>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Average order</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Total payout</p>
           <p className="mt-3 text-2xl font-semibold text-slate-900">
-            {data
-              ? `$${data.metrics.averageOrderValue.toFixed(2)}`
-              : isLoading
-                ? "…"
-                : "$0.00"}
+            {data ? `${data.metrics.totalPayout.toFixed(2)}` : isLoading ? "…" : "$0.00"}
           </p>
-          <p className="mt-1 text-sm text-slate-500">Per order in view</p>
+          <p className="mt-1 text-sm text-slate-500">Expected net amount</p>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Pending fulfill.</p>
