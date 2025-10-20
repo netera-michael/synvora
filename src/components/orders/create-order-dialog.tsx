@@ -103,10 +103,13 @@ export function CreateOrderDialog({ open, onClose, onOrderCreated }: CreateOrder
           ? trimmedOrderNumber
           : `#${trimmedOrderNumber}`
         : undefined;
+    const processedAtIso = values.processedAt ? new Date(values.processedAt).toISOString() : new Date().toISOString();
+
     const payload = {
       ...values,
       customerName: trimmedCustomer && trimmedCustomer.length > 0 ? trimmedCustomer : "No Customer",
       orderNumber: normalizedOrderNumber,
+      processedAt: processedAtIso,
       originalAmount:
         typeof values.originalAmount === "number" && !Number.isNaN(values.originalAmount)
           ? values.originalAmount

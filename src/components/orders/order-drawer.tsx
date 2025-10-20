@@ -147,11 +147,13 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
           : `#${trimmedOrderNumber}`
         : undefined;
     const trimmedCustomerName = values.customerName?.trim();
+    const processedAtIso = values.processedAt ? new Date(values.processedAt).toISOString() : new Date().toISOString();
     const payload = {
       ...values,
       customerName:
         trimmedCustomerName && trimmedCustomerName.length > 0 ? trimmedCustomerName : "No Customer",
       orderNumber: normalizedOrderNumber,
+      processedAt: processedAtIso,
       originalAmount:
         typeof values.originalAmount === "number" && !Number.isNaN(values.originalAmount)
           ? values.originalAmount
