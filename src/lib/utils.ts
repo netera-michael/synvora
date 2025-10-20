@@ -20,3 +20,16 @@ export function formatDate(date: Date | string) {
     year: "numeric"
   });
 }
+
+export function formatDateTime(date: Date | string) {
+  const parsed = typeof date === "string" ? new Date(date) : date;
+  return `${parsed.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric"
+  })} at ${parsed.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true
+  }).toLowerCase()}`;
+}

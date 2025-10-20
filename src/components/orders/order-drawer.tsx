@@ -5,7 +5,7 @@ import { Dialog, Transition, Tab } from "@headlessui/react";
 import { Trash2, Edit3, X, Save, ArrowLeft } from "lucide-react";
 import { useForm, useFieldArray } from "react-hook-form";
 import type { OrderDto, OrderLineItemDto } from "@/types/orders";
-import { formatCurrency, formatDate, cn } from "@/lib/utils";
+import { formatCurrency, formatDate, formatDateTime, cn } from "@/lib/utils";
 
 type OrderDrawerProps = {
   open: boolean;
@@ -248,7 +248,7 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
                       {order.orderNumber}
                     </Dialog.Title>
                     <p className="text-sm text-slate-500">
-                      {formatDate(order.processedAt)} • {order.customerName || "No Customer"}
+                      {formatDateTime(order.processedAt)} • {order.customerName || "No Customer"}
                     </p>
                   </div>
                 </div>
