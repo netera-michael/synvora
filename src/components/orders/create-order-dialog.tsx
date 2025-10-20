@@ -9,6 +9,7 @@ import { formatCurrency, formatDateTimeForInput } from "@/lib/utils";
 
 type CreateOrderDialogProps = {
   open: boolean;
+  initialOrder?: OrderDto | null;
   onClose: () => void;
   onOrderCreated: (order: OrderDto) => void;
 };
@@ -33,7 +34,49 @@ type CreateOrderValues = {
   }>;
 };
 
-export function CreateOrderDialog({ open, onClose, onOrderCreated }: CreateOrderDialogProps) {
+const mapOrderToForm = (order: OrderDto): CreateOrderValues => {
+  const exchangeRate =
+    typeof order.exchangeRate === "number" && order.exchangeRate > 0 ? order.exchangeRate : 48.5;
+  const originalAmount =
+    typeof order.originalAmount === "number" && order.originalAmount >= 0 ? order.originalAmount : null;
+  const base =
+    originalAmount !== null ? originalAmount / exchangeRate : order.totalAmount;
+  const totalAmount =
+    originalAmount !== null ? Number((base * 1.035).toFixed(2)) : order.totalAmount;
+
+  return {
+    orderNumber: "",
+    customerName: order.customerName ?? "No Customer",
+    financialStatus: order.financialStatus ?? "Paid",
+    totalAmount,
+    currency: order.currency ?? "USD",
+    processedAt: formatDateTimeForInput(order.processedAt),
+    exchangeRate,
+    tags: order.tags?.join(", ") ?? "",
+    notes: order.notes ?? "",
+    originalAmount,
+    lineItems:
+      order.lineItems && order.lineItems.length
+        ? order.lineItems.map((item) => ({
+            productName: item.productName,
+            quantity: item.quantity,
+            sku: item.sku ?? "",
+            price: item.price,
+            total: item.total
+          }))
+        : [
+            {
+              productName: "",
+              quantity: 1,
+              sku: "",
+              price: 0,
+              total: 0
+            }
+          ]
+  };
+};
+
+export function CreateOrderDialog({ open, initialOrder, onClose, onOrderCreated }: CreateOrderDialogProps) {
   const defaultValues: CreateOrderValues = {
     orderNumber: "",
     customerName: "No Customer",
@@ -75,6 +118,25 @@ export function CreateOrderDialog({ open, onClose, onOrderCreated }: CreateOrder
 
   const originalAmount = watch("originalAmount");
   const exchangeRate = watch("exchangeRate");
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    if (initialOrder) {
+      const mapped = mapOrderToForm(initialOrder);
+      reset({
+        ...defaultValues,
+        ...mapped
+      });
+    } else {
+      reset({
+        ...defaultValues,
+        processedAt: formatDateTimeForInput(new Date())
+      });
+    }
+  }, [open, initialOrder, reset]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (typeof originalAmount === "number" && originalAmount >= 0 && typeof exchangeRate === "number" && exchangeRate > 0) {
@@ -154,7 +216,10 @@ export function CreateOrderDialog({ open, onClose, onOrderCreated }: CreateOrder
   });
 
   const close = () => {
-    reset();
+    reset({
+      ...defaultValues,
+      processedAt: formatDateTimeForInput(new Date())
+    });
     onClose();
   };
 

@@ -5,6 +5,7 @@ import { ChevronRight } from "lucide-react";
 type OrderTableProps = {
   orders: OrderDto[];
   onSelect: (order: OrderDto) => void;
+  onDuplicate: (order: OrderDto) => void;
 };
 
 const BADGES: Record<string, string> = {
@@ -17,7 +18,7 @@ const BADGES: Record<string, string> = {
   Closed: "bg-slate-200 text-slate-600"
 };
 
-export function OrderTable({ orders, onSelect }: OrderTableProps) {
+export function OrderTable({ orders, onSelect, onDuplicate }: OrderTableProps) {
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <table className="min-w-full divide-y divide-slate-200 text-sm">
@@ -116,6 +117,13 @@ export function OrderTable({ orders, onSelect }: OrderTableProps) {
                 >
                   View
                   <ChevronRight className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onDuplicate(order)}
+                  className="ml-2 inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-synvora-primary hover:text-synvora-primary"
+                >
+                  Duplicate
                 </button>
               </td>
               </tr>

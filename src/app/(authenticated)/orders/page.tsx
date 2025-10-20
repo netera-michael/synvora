@@ -43,6 +43,7 @@ export default function OrdersPage() {
   const [isSyncOpen, setIsSyncOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderDto | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [duplicateOrder, setDuplicateOrder] = useState<OrderDto | null>(null);
 
   const months = useMemo(() => {
     const now = new Date();
@@ -102,6 +103,7 @@ export default function OrdersPage() {
       false
     );
     mutate();
+    setDuplicateOrder(null);
   };
 
   const handleOrderUpdated = (order: OrderDto) => {
@@ -152,6 +154,11 @@ export default function OrdersPage() {
     );
     mutate();
     closeDrawer();
+  };
+
+  const handleDuplicate = (order: OrderDto) => {
+    setDuplicateOrder(order);
+    setIsCreateOpen(true);
   };
 
   if (error) {
@@ -245,7 +252,7 @@ export default function OrdersPage() {
       </div>
 
       <div>
-        <OrderTable orders={data?.orders ?? []} onSelect={openDrawer} />
+        <OrderTable orders={data?.orders ?? []} onSelect={openDrawer} onDuplicate={handleDuplicate} />
       </div>
 
       <OrderDrawer
@@ -258,7 +265,11 @@ export default function OrdersPage() {
 
       <CreateOrderDialog
         open={isCreateOpen}
-        onClose={() => setIsCreateOpen(false)}
+        initialOrder={duplicateOrder}
+        onClose={() => {
+          setIsCreateOpen(false);
+          setDuplicateOrder(null);
+        }}
         onOrderCreated={handleOrderCreated}
       />
 
