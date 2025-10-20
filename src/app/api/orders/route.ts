@@ -3,6 +3,12 @@ import { getServerSession } from "next-auth";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
+import {
+  calculateFromOriginalAmount,
+  calculatePayoutFromOrder,
+  DEFAULT_EXCHANGE_RATE,
+  generateNextOrderNumber
+} from "@/lib/order-utils";
 
 const lineItemSchema = z.object({
   productName: z.string().min(1),
@@ -93,28 +99,6 @@ const serializeOrder = (order: any) => ({
   shopifyStoreId: order.shopifyStoreId
 });
 
-const extractOrderNumber = (orderNumber?: string | null) => {
-  if (!orderNumber) {
-    return undefined;
-  }
-  const digits = orderNumber.match(/\d+/g);
-  if (!digits || digits.length === 0) {
-    return undefined;
-  }
-  return Number(digits[digits.length - 1]);
-};
-
-const generateNextOrderNumber = async () => {
-  const lastOrder = await prisma.order.findFirst({
-    orderBy: { id: "desc" },
-    select: { orderNumber: true }
-  });
-
-  const lastNumeric = extractOrderNumber(lastOrder?.orderNumber);
-  const nextNumeric = (lastNumeric ?? 1000) + 1;
-  return `#${nextNumeric}`;
-};
-
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session) {
@@ -156,7 +140,7 @@ export async function GET(request: Request) {
   const totalRevenue = serialized.reduce((sum: number, order) => sum + Number(order.totalAmount ?? 0), 0);
   const ordersCount = serialized.length;
   const averageOrderValue = ordersCount ? totalRevenue / ordersCount : 0;
-  const totalPayout = serialized.reduce((sum, order) => sum + calculatePayout(order), 0);
+  const totalPayout = serialized.reduce((sum, order) => sum + calculatePayoutFromOrder(order), 0);
   const pendingFulfillment = serialized.filter(
     (order) => !order.fulfillmentStatus || order.fulfillmentStatus.toLowerCase() !== "fulfilled"
   ).length;
@@ -202,13 +186,11 @@ export async function POST(request: Request) {
   const financialStatus =
     data.financialStatus && data.financialStatus.trim().length > 0 ? data.financialStatus.trim() : "Paid";
   const exchangeRate =
-    typeof data.exchangeRate === "number" && data.exchangeRate > 0 ? data.exchangeRate : 48.5;
+    typeof data.exchangeRate === "number" && data.exchangeRate > 0 ? data.exchangeRate : DEFAULT_EXCHANGE_RATE;
   const originalAmount =
     typeof data.originalAmount === "number" && data.originalAmount >= 0 ? data.originalAmount : null;
-  const baseAmount =
-    originalAmount !== null && exchangeRate > 0 ? Number((originalAmount / exchangeRate).toFixed(4)) : null;
-  const computedTotal =
-    baseAmount !== null ? Number((baseAmount * 1.035).toFixed(2)) : data.totalAmount ?? 0;
+  const { totalAmount: computedTotal } = calculateFromOriginalAmount(originalAmount, exchangeRate);
+  const totalAmount = computedTotal > 0 ? computedTotal : data.totalAmount ?? 0;
   const lineItemsData = data.lineItems
     .filter((item) => item.productName.trim().length > 0)
     .map((item) => ({
@@ -226,7 +208,7 @@ export async function POST(request: Request) {
       status: data.status ?? "Open",
       financialStatus,
       fulfillmentStatus: data.fulfillmentStatus,
-      totalAmount: computedTotal,
+      totalAmount,
       currency: data.currency,
       processedAt: data.processedAt instanceof Date ? data.processedAt : new Date(data.processedAt),
       shippingCity: data.shippingCity,

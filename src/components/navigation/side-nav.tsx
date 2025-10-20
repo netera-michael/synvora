@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType } from "react";
 import { cn } from "@/lib/utils";
-import { ClipboardList, Package, BarChart3, Users, Settings } from "lucide-react";
+import { ClipboardList, Package, BarChart3, Users, Settings, Upload } from "lucide-react";
 import type { Route } from "next";
 
 type NavItem = {
@@ -18,7 +18,8 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/products", label: "Products", icon: Package },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/customers", label: "Customers", icon: Users },
-  { href: "/settings", label: "Settings", icon: Settings }
+  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/settings/import", label: "Import CSV", icon: Upload }
 ];
 
 export function SideNav() {

@@ -97,7 +97,9 @@ export default function OrdersPage() {
                 totalRevenue: current.metrics.totalRevenue + order.totalAmount,
                 averageOrderValue:
                   (current.metrics.totalRevenue + order.totalAmount) / (current.metrics.ordersCount + 1),
-                totalPayout: current.metrics.totalPayout + calculatePayout(order)
+                totalPayout: current.metrics.totalPayout + calculatePayout(order),
+                totalTicketsValue:
+                  current.metrics.totalTicketsValue + (typeof order.originalAmount === "number" ? order.originalAmount : 0)
               }
             }
           : current,
@@ -138,6 +140,9 @@ export default function OrdersPage() {
                 const nextTotalPayout = removed
                   ? current.metrics.totalPayout - calculatePayout(removed)
                   : current.metrics.totalPayout;
+                const nextTicketsValue = removed
+                  ? current.metrics.totalTicketsValue - (typeof removed.originalAmount === "number" ? removed.originalAmount : 0)
+                  : current.metrics.totalTicketsValue;
                 const nextAverage = nextOrdersCount
                   ? nextTotalRevenue / nextOrdersCount
                   : 0;
@@ -146,6 +151,7 @@ export default function OrdersPage() {
                   ordersCount: nextOrdersCount,
                   totalRevenue: nextTotalRevenue,
                   totalPayout: nextTotalPayout,
+                  totalTicketsValue: nextTicketsValue,
                   averageOrderValue: nextAverage
                 };
               })()
