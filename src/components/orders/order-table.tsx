@@ -45,7 +45,7 @@ export function OrderTable({ orders, onSelect, onDuplicate }: OrderTableProps) {
             <th scope="col" className="px-6 py-4">
               Tickets value
             </th>
-            <th scope="col" className="px-6 py-4 text-right">
+            <th scope="col" className="px-6 py-4 text-right print:hidden">
               Actions
             </th>
           </tr>
@@ -109,7 +109,7 @@ export function OrderTable({ orders, onSelect, onDuplicate }: OrderTableProps) {
                     : "—"}
                 </span>
               </td>
-              <td className="whitespace-nowrap px-6 py-4 text-right">
+              <td className="whitespace-nowrap px-6 py-4 text-right print:hidden">
                 <button
                   type="button"
                   onClick={() => onSelect(order)}
