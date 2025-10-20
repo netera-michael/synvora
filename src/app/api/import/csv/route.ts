@@ -10,12 +10,13 @@ import {
 } from "@/lib/order-utils";
 
 const importSchema = z.object({
+  customerName: z.string().optional(),
+  exchangeRate: z.number().positive().optional(),
   orders: z
     .array(
       z.object({
         processedAt: z.union([z.string(), z.date()]),
-        originalAmount: z.number().nonnegative(),
-        exchangeRate: z.number().positive().optional()
+        originalAmount: z.number().nonnegative()
       })
     )
     .min(1)
@@ -34,6 +35,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Invalid payload", issues: parsed.error.flatten() }, { status: 400 });
   }
 
+  const customerName = parsed.data.customerName?.trim() || "CSV Import";
+  const batchExchangeRate =
+    typeof parsed.data.exchangeRate === "number" && parsed.data.exchangeRate > 0
+      ? parsed.data.exchangeRate
+      : DEFAULT_EXCHANGE_RATE;
+
   let imported = 0;
 
   for (const item of parsed.data.orders) {
@@ -45,10 +52,7 @@ export async function POST(request: Request) {
     }
 
     const originalAmount = Number(item.originalAmount);
-    const exchangeRate =
-      typeof item.exchangeRate === "number" && item.exchangeRate > 0
-        ? item.exchangeRate
-        : DEFAULT_EXCHANGE_RATE;
+    const exchangeRate = batchExchangeRate;
 
     const { totalAmount } = calculateFromOriginalAmount(originalAmount, exchangeRate);
     const orderNumber = await generateNextOrderNumber();
@@ -56,7 +60,7 @@ export async function POST(request: Request) {
     await prisma.order.create({
       data: {
         orderNumber,
-        customerName: "CSV Import",
+        customerName,
         status: "Open",
         financialStatus: "Paid",
         totalAmount,

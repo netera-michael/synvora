@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatDateTime } from "@/lib/utils";
 
+const DEFAULT_EXCHANGE_RATE = 48.5;
+
 type ParsedOrder = {
   processedAt: string;
   originalAmount: number;
@@ -17,6 +19,11 @@ export default function ImportOrdersPage() {
   const [errors, setErrors] = useState<string[]>([]);
   const [status, setStatus] = useState<"idle" | "parsing" | "ready" | "importing" | "success" | "error">("idle");
   const [message, setMessage] = useState<string>("");
+  const [customerName, setCustomerName] = useState("CSV Import");
+  const [exchangeRate, setExchangeRate] = useState(String(DEFAULT_EXCHANGE_RATE));
+
+  const parsedRate = Number(exchangeRate);
+  const exchangeRateDisplay = Number.isNaN(parsedRate) || parsedRate <= 0 ? DEFAULT_EXCHANGE_RATE : parsedRate;
 
   const resetState = () => {
     setRows([]);
@@ -101,6 +108,15 @@ export default function ImportOrdersPage() {
     setStatus("importing");
     setMessage("");
 
+    const trimmedCustomer = customerName.trim() || "CSV Import";
+    const rateNumber = Number(exchangeRate);
+
+    if (Number.isNaN(rateNumber) || rateNumber <= 0) {
+      setStatus("error");
+      setErrors(["Please provide a valid USD/EGP exchange rate greater than zero."]);
+      return;
+    }
+
     try {
       const response = await fetch("/api/import/csv", {
         method: "POST",
@@ -108,6 +124,8 @@ export default function ImportOrdersPage() {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
+          customerName: trimmedCustomer,
+          exchangeRate: rateNumber,
           orders: rows.map((row) => ({
             processedAt: row.processedAt,
             originalAmount: row.originalAmount
@@ -150,6 +168,30 @@ export default function ImportOrdersPage() {
       </div>
 
       <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-6">
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
+            Customer name
+            <input
+              value={customerName}
+              onChange={(event) => setCustomerName(event.target.value)}
+              placeholder="CSV Import"
+              className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
+            />
+          </label>
+          <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
+            USD/EGP rate
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={exchangeRate}
+              onChange={(event) => setExchangeRate(event.target.value)}
+              placeholder="48.5"
+              className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
+            />
+          </label>
+        </div>
+
         <label className="flex flex-col gap-3 text-sm font-semibold text-slate-700">
           Select CSV file
           <input
@@ -169,7 +211,7 @@ export default function ImportOrdersPage() {
           <div className="mt-6 space-y-4">
             <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
               <p className="font-semibold text-slate-900">Preview ({rows.length} rows)</p>
-              <p>First 5 rows shown below. Import uses default USD/EGP rate of 48.5.</p>
+              <p>First 5 rows shown below. Selected USD/EGP rate: {exchangeRateDisplay.toFixed(2)}.</p>
             </div>
             <table className="min-w-full divide-y divide-slate-200 text-sm">
               <thead className="bg-slate-100 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
