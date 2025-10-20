@@ -1,7 +1,7 @@
 "use client";
 
 import useSWR from "swr";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Route } from "next";
 import { Plus, Printer } from "lucide-react";
@@ -57,16 +57,28 @@ const toDateInputValue = (value: string) => {
 export default function OrdersPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const tzOffset = new Date().getTimezoneOffset();
   const monthFilter = searchParams.get("month") ?? "all";
   const dateFilter = searchParams.get("date") ?? "";
   const dateInputValue = toDateInputValue(dateFilter);
-  const queryString = searchParams.toString();
+  const paramsWithTz = new URLSearchParams(searchParams.toString());
+  paramsWithTz.set("tzOffset", String(tzOffset));
+  const queryString = paramsWithTz.toString();
   const { data, error, mutate, isLoading } = useSWR<OrdersResponse>(`/api/orders${queryString ? `?${queryString}` : ""}`, fetcher);
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderDto | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [duplicateOrder, setDuplicateOrder] = useState<OrderDto | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (params.get("tzOffset") !== String(tzOffset)) {
+      params.set("tzOffset", String(tzOffset));
+      const qs = params.toString();
+      router.replace(qs ? (`/orders?${qs}` as Route) : ("/orders" as Route));
+    }
+  }, [searchParams, tzOffset, router]);
 
   const months = useMemo(() => {
     const now = new Date();
@@ -86,6 +98,7 @@ export default function OrdersPage() {
     } else {
       params.set("month", value);
     }
+    params.set("tzOffset", String(tzOffset));
 
     const qs = params.toString();
     const target = qs ? `/orders?${qs}` : "/orders";
@@ -104,6 +117,7 @@ export default function OrdersPage() {
         params.delete("date");
       }
     }
+    params.set("tzOffset", String(tzOffset));
 
     const qs = params.toString();
     const target = qs ? `/orders?${qs}` : "/orders";
@@ -113,6 +127,7 @@ export default function OrdersPage() {
   const handleClearDate = () => {
     const params = new URLSearchParams(searchParams.toString());
     params.delete("date");
+    params.set("tzOffset", String(tzOffset));
     const qs = params.toString();
     const target = qs ? `/orders?${qs}` : "/orders";
     router.replace(target as Route);

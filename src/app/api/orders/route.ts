@@ -114,6 +114,8 @@ export async function GET(request: Request) {
     month: searchParams.get("month") ?? undefined,
     date: searchParams.get("date") ?? undefined
   });
+  const tzOffsetMinutes = Number(searchParams.get("tzOffset") ?? "0");
+  const tzOffsetMs = tzOffsetMinutes * 60 * 1000;
 
   if (!parseResult.success) {
     return NextResponse.json({ message: "Invalid filters" }, { status: 400 });
@@ -122,16 +124,16 @@ export async function GET(request: Request) {
   const where: any = {};
   if (parseResult.data.date) {
     const [day, month, year] = parseResult.data.date.split("/").map((value) => Number(value));
-    const start = new Date(year, month - 1, day, 0, 0, 0, 0);
-    const end = new Date(year, month - 1, day, 23, 59, 59, 999);
+    const start = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0) + tzOffsetMs);
+    const end = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999) + tzOffsetMs);
     where.processedAt = {
       gte: start,
       lte: end
     };
   } else if (parseResult.data.month) {
     const [year, month] = parseResult.data.month.split("-").map((value) => Number(value));
-    const start = new Date(year, month - 1, 1);
-    const end = new Date(year, month, 0, 23, 59, 59, 999);
+    const start = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0) + tzOffsetMs);
+    const end = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999) + tzOffsetMs);
     where.processedAt = {
       gte: start,
       lte: end
