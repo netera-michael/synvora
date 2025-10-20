@@ -257,7 +257,7 @@ export default function OrdersPage() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">Orders</h1>
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="mt-2 text-sm text-slate-500 print:hidden">
             Monitor and manage your Synvora and Shopify orders in a single command center.
           </p>
         </div>
