@@ -32,6 +32,16 @@ const calculatePayout = (order: OrderDto) => {
   return order.totalAmount * 0.9825;
 };
 
+const formatCurrencyValue = (value: number, currency = "USD") =>
+  new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 2
+  }).format(value);
+
+const formatNumber = (value: number) =>
+  new Intl.NumberFormat("en-US", { minimumFractionDigits: 2 }).format(value);
+
 const toDateParam = (value: string) => {
   if (!value) {
     return "";
@@ -332,21 +342,21 @@ export default function OrdersPage() {
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Revenue</p>
           <p className="mt-3 text-2xl font-semibold text-slate-900">
-            {data ? `$${data.metrics.totalRevenue.toFixed(2)}` : isLoading ? "…" : "$0.00"}
+            {data ? formatCurrencyValue(data.metrics.totalRevenue) : isLoading ? "…" : "$0.00"}
           </p>
           <p className="mt-1 text-sm text-slate-500">Total order value</p>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Total payout</p>
           <p className="mt-3 text-2xl font-semibold text-slate-900">
-            {data ? `${data.metrics.totalPayout.toFixed(2)}` : isLoading ? "…" : "$0.00"}
+            {data ? formatCurrencyValue(data.metrics.totalPayout) : isLoading ? "…" : "$0.00"}
           </p>
           <p className="mt-1 text-sm text-slate-500">Expected net amount</p>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Tickets value (EGP)</p>
           <p className="mt-3 text-2xl font-semibold text-slate-900">
-            {data ? `EGP ${data.metrics.totalTicketsValue.toFixed(2)}` : isLoading ? "…" : "EGP 0.00"}
+            {data ? `EGP ${formatNumber(data.metrics.totalTicketsValue)}` : isLoading ? "…" : "EGP 0.00"}
           </p>
           <p className="mt-1 text-sm text-slate-500">Sum of original amounts</p>
         </div>
