@@ -15,11 +15,10 @@ type CreateOrderDialogProps = {
 type CreateOrderValues = {
   orderNumber: string;
   customerName: string;
+  financialStatus: string;
   totalAmount: number;
   currency: string;
   processedAt: string;
-  shippingCity: string;
-  shippingCountry: string;
   tags: string;
   notes: string;
   originalAmount: number | null;
@@ -43,11 +42,10 @@ export function CreateOrderDialog({ open, onClose, onOrderCreated }: CreateOrder
     defaultValues: {
       orderNumber: "",
       customerName: "No Customer",
+       financialStatus: "Paid",
       totalAmount: 0,
       currency: "USD",
       processedAt: new Date().toISOString().slice(0, 10),
-      shippingCity: "",
-      shippingCountry: "",
       tags: "",
       notes: "",
       originalAmount: null,
@@ -71,10 +69,16 @@ export function CreateOrderDialog({ open, onClose, onOrderCreated }: CreateOrder
   const submit = handleSubmit(async (values) => {
     const trimmedCustomer = values.customerName?.trim();
     const trimmedOrderNumber = values.orderNumber?.trim();
+    const normalizedOrderNumber =
+      trimmedOrderNumber && trimmedOrderNumber.length > 0
+        ? trimmedOrderNumber.startsWith("#")
+          ? trimmedOrderNumber
+          : `#${trimmedOrderNumber}`
+        : undefined;
     const payload = {
       ...values,
       customerName: trimmedCustomer && trimmedCustomer.length > 0 ? trimmedCustomer : "No Customer",
-      orderNumber: trimmedOrderNumber && trimmedOrderNumber.length > 0 ? trimmedOrderNumber : undefined,
+      orderNumber: normalizedOrderNumber,
       originalAmount:
         typeof values.originalAmount === "number" && !Number.isNaN(values.originalAmount)
           ? values.originalAmount
@@ -83,12 +87,15 @@ export function CreateOrderDialog({ open, onClose, onOrderCreated }: CreateOrder
         .split(",")
         .map((tag) => tag.trim())
         .filter(Boolean),
-      lineItems: values.lineItems.map((item) => ({
-        ...item,
-        quantity: Number(item.quantity),
-        price: Number(item.price),
-        total: Number(item.total)
-      }))
+      lineItems: values.lineItems
+        .filter((item) => item.productName.trim().length > 0)
+        .map((item) => ({
+          ...item,
+          quantity: Number(item.quantity),
+          price: Number(item.price),
+          total: Number(item.total)
+        })),
+      financialStatus: values.financialStatus?.length ? values.financialStatus : "Paid"
     };
 
     const response = await fetch("/api/orders", {
@@ -175,6 +182,14 @@ export function CreateOrderDialog({ open, onClose, onOrderCreated }: CreateOrder
                     />
                   </label>
                   <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
+                    Payment status
+                    <input
+                      {...register("financialStatus")}
+                      className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
+                      placeholder="Paid"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
                     Total amount
                     <input
                       type="number"
@@ -205,20 +220,6 @@ export function CreateOrderDialog({ open, onClose, onOrderCreated }: CreateOrder
                     <input
                       type="date"
                       {...register("processedAt")}
-                      className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
-                    />
-                  </label>
-                  <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
-                    Shipping city
-                    <input
-                      {...register("shippingCity")}
-                      className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
-                    />
-                  </label>
-                  <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
-                    Shipping country
-                    <input
-                      {...register("shippingCountry")}
                       className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
                     />
                   </label>
@@ -260,15 +261,13 @@ export function CreateOrderDialog({ open, onClose, onOrderCreated }: CreateOrder
                       <div key={field.id} className="rounded-xl border border-slate-200 p-4">
                         <div className="flex items-center justify-between">
                           <p className="text-sm font-semibold text-slate-700">Item {index + 1}</p>
-                          {fields.length > 1 ? (
-                            <button
-                              type="button"
-                              onClick={() => remove(index)}
-                              className="text-xs font-semibold text-rose-500"
-                            >
-                              Remove
-                            </button>
-                          ) : null}
+                          <button
+                            type="button"
+                            onClick={() => remove(index)}
+                            className="text-xs font-semibold text-rose-500"
+                          >
+                            Remove
+                          </button>
                         </div>
                         <div className="mt-3 grid gap-3 md:grid-cols-4">
                           <input

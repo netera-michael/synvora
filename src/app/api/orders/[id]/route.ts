@@ -102,7 +102,17 @@ export async function PATCH(
   const customerName =
     trimmedCustomerName && trimmedCustomerName.length > 0 ? trimmedCustomerName : existing.customerName ?? "No Customer";
   const trimmedOrderNumber = data.orderNumber?.trim();
-  const orderNumber = trimmedOrderNumber && trimmedOrderNumber.length > 0 ? trimmedOrderNumber : existing.orderNumber;
+  const orderNumber =
+    trimmedOrderNumber && trimmedOrderNumber.length > 0
+      ? `#${trimmedOrderNumber.replace(/^#+/, "")}`
+      : existing.orderNumber;
+  const financialStatus =
+    data.financialStatus && data.financialStatus.trim().length > 0
+      ? data.financialStatus.trim()
+      : existing.financialStatus ?? "Paid";
+  const filteredLineItems = Array.isArray(data.lineItems)
+    ? data.lineItems.filter((item) => item.productName.trim().length > 0)
+    : null;
 
   await prisma.$transaction(async (tx) => {
     await tx.order.update({
@@ -111,7 +121,7 @@ export async function PATCH(
         orderNumber,
         customerName,
         status: data.status ?? existing.status,
-        financialStatus: data.financialStatus ?? existing.financialStatus,
+        financialStatus,
         fulfillmentStatus: data.fulfillmentStatus ?? existing.fulfillmentStatus,
         totalAmount: data.totalAmount ?? existing.totalAmount,
         currency: data.currency ?? existing.currency,
@@ -121,8 +131,6 @@ export async function PATCH(
             : data.processedAt
               ? new Date(data.processedAt)
               : existing.processedAt,
-        shippingCity: data.shippingCity ?? existing.shippingCity,
-        shippingCountry: data.shippingCountry ?? existing.shippingCountry,
         tags: Array.isArray(data.tags) ? data.tags.join(",") : existing.tags,
         notes: data.notes ?? existing.notes,
         originalAmount:
@@ -130,11 +138,11 @@ export async function PATCH(
       }
     });
 
-    if (Array.isArray(data.lineItems)) {
+    if (Array.isArray(filteredLineItems)) {
       await tx.orderLineItem.deleteMany({ where: { orderId } });
-      if (data.lineItems.length) {
+      if (filteredLineItems.length) {
         await tx.orderLineItem.createMany({
-          data: data.lineItems.map((item) => ({
+          data: filteredLineItems.map((item) => ({
             orderId,
             productName: item.productName,
             quantity: item.quantity,

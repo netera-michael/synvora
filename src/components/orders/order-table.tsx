@@ -84,7 +84,7 @@ export function OrderTable({ orders, onSelect }: OrderTableProps) {
               </td>
               <td className="whitespace-nowrap px-6 py-4">
                 <span className="font-medium text-slate-900">
-                  {formatCurrency(order.totalAmount * 0.94, order.currency)}
+                  {formatCurrency(order.totalAmount * 0.965, order.currency)}
                 </span>
               </td>
               <td className="whitespace-nowrap px-6 py-4">

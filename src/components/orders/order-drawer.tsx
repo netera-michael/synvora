@@ -24,8 +24,6 @@ type OrderFormValues = {
   totalAmount: number;
   currency: string;
   processedAt: string;
-  shippingCity: string;
-  shippingCountry: string;
   tags: string;
   notes: string;
   originalAmount: number | null;
@@ -40,13 +38,11 @@ const mapOrderToForm = (value: OrderDto): OrderFormValues => ({
   orderNumber: value.orderNumber,
   customerName: value.customerName || "No Customer",
   status: value.status ?? "Open",
-  financialStatus: value.financialStatus ?? "",
+  financialStatus: value.financialStatus ?? "Paid",
   fulfillmentStatus: value.fulfillmentStatus ?? "",
   totalAmount: value.totalAmount,
   currency: value.currency,
   processedAt: value.processedAt.slice(0, 10),
-  shippingCity: value.shippingCity ?? "",
-  shippingCountry: value.shippingCountry ?? "",
   tags: value.tags?.join(", ") ?? "",
   notes: value.notes ?? "",
   originalAmount: typeof value.originalAmount === "number" ? value.originalAmount : null,
@@ -88,8 +84,6 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
       totalAmount: 0,
       currency: "USD",
       processedAt: new Date().toISOString().slice(0, 10),
-      shippingCity: "",
-      shippingCountry: "",
       tags: "",
       notes: "",
       originalAmount: null,
@@ -119,14 +113,19 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
   }
 
   const onSubmit = handleSubmit(async (values) => {
-    const trimmedCustomerName = values.customerName?.trim();
-    const customerName =
-      trimmedCustomerName && trimmedCustomerName.length > 0 ? trimmedCustomerName : "No Customer";
     const trimmedOrderNumber = values.orderNumber?.trim();
+    const normalizedOrderNumber =
+      trimmedOrderNumber && trimmedOrderNumber.length > 0
+        ? trimmedOrderNumber.startsWith("#")
+          ? trimmedOrderNumber
+          : `#${trimmedOrderNumber}`
+        : undefined;
+    const trimmedCustomerName = values.customerName?.trim();
     const payload = {
       ...values,
-      customerName,
-      orderNumber: trimmedOrderNumber && trimmedOrderNumber.length > 0 ? trimmedOrderNumber : undefined,
+      customerName:
+        trimmedCustomerName && trimmedCustomerName.length > 0 ? trimmedCustomerName : "No Customer",
+      orderNumber: normalizedOrderNumber,
       originalAmount:
         typeof values.originalAmount === "number" && !Number.isNaN(values.originalAmount)
           ? values.originalAmount
@@ -135,12 +134,15 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
         .split(",")
         .map((tag) => tag.trim())
         .filter(Boolean),
-      lineItems: values.lineItems.map((item) => ({
-        ...item,
-        quantity: Number(item.quantity),
-        price: Number(item.price),
-        total: Number(item.total)
-      }))
+      financialStatus: values.financialStatus?.length ? values.financialStatus : "Paid",
+      lineItems: values.lineItems
+        .filter((item) => item.productName.trim().length > 0)
+        .map((item) => ({
+          ...item,
+          quantity: Number(item.quantity),
+          price: Number(item.price),
+          total: Number(item.total)
+        }))
     };
 
     const response = await fetch(`/api/orders/${order.id}`, {
@@ -436,20 +438,6 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
                               type="number"
                               step="0.01"
                               {...register("originalAmount", { valueAsNumber: true })}
-                              className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
-                            />
-                          </label>
-                          <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
-                            Shipping city
-                            <input
-                              {...register("shippingCity")}
-                              className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
-                            />
-                          </label>
-                          <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
-                            Shipping country
-                            <input
-                              {...register("shippingCountry")}
                               className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
                             />
                           </label>

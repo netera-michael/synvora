@@ -189,17 +189,28 @@ export async function POST(request: Request) {
   const trimmedCustomerName = data.customerName?.trim();
   const customerName = trimmedCustomerName && trimmedCustomerName.length > 0 ? trimmedCustomerName : "No Customer";
 
-  let orderNumber = data.orderNumber?.trim();
-  if (!orderNumber) {
-    orderNumber = await generateNextOrderNumber();
-  }
+  const rawOrderNumber = data.orderNumber?.trim();
+  const orderNumber = rawOrderNumber && rawOrderNumber.length > 0
+    ? `#${rawOrderNumber.replace(/^#+/, "")}`
+    : await generateNextOrderNumber();
+  const financialStatus =
+    data.financialStatus && data.financialStatus.trim().length > 0 ? data.financialStatus.trim() : "Paid";
+  const lineItemsData = data.lineItems
+    .filter((item) => item.productName.trim().length > 0)
+    .map((item) => ({
+      productName: item.productName,
+      quantity: item.quantity,
+      sku: item.sku ?? undefined,
+      price: item.price,
+      total: item.total
+    }));
 
   const created = await prisma.order.create({
     data: {
       orderNumber,
       customerName,
       status: data.status ?? "Open",
-      financialStatus: data.financialStatus,
+      financialStatus,
       fulfillmentStatus: data.fulfillmentStatus,
       totalAmount: data.totalAmount,
       currency: data.currency,
@@ -211,13 +222,7 @@ export async function POST(request: Request) {
       originalAmount: typeof data.originalAmount === "number" ? data.originalAmount : null,
       createdById: Number(session.user.id),
       lineItems: {
-        create: data.lineItems.map((item) => ({
-          productName: item.productName,
-          quantity: item.quantity,
-          sku: item.sku ?? undefined,
-          price: item.price,
-          total: item.total
-        }))
+        create: lineItemsData
       }
     },
     include: {
