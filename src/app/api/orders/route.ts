@@ -41,7 +41,11 @@ const dateRangeSchema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}$/)
     .optional(),
-  date: z
+  startDate: z
+    .string()
+    .regex(/^\d{2}\/\d{2}\/\d{4}$/)
+    .optional(),
+  endDate: z
     .string()
     .regex(/^\d{2}\/\d{2}\/\d{4}$/)
     .optional()
@@ -112,7 +116,8 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const parseResult = dateRangeSchema.safeParse({
     month: searchParams.get("month") ?? undefined,
-    date: searchParams.get("date") ?? undefined
+    startDate: searchParams.get("startDate") ?? undefined,
+    endDate: searchParams.get("endDate") ?? undefined
   });
   const tzOffsetMinutes = Number(searchParams.get("tzOffset") ?? "0");
   const tzOffsetMs = tzOffsetMinutes * 60 * 1000;
@@ -122,13 +127,50 @@ export async function GET(request: Request) {
   }
 
   const where: any = {};
-  if (parseResult.data.date) {
-    const [day, month, year] = parseResult.data.date.split("/").map((value) => Number(value));
-    const start = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0) + tzOffsetMs);
-    const end = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999) + tzOffsetMs);
+  let rangeStart: Date | undefined;
+  let rangeEnd: Date | undefined;
+
+  const parseLocalDate = (value?: string | null) => {
+    if (!value) return undefined;
+    const parts = value.split('/');
+    if (parts.length !== 3) return undefined;
+    const [day, month, year] = parts.map((segment) => Number(segment));
+    if (Number.isNaN(day) || Number.isNaN(month) || Number.isNaN(year)) {
+      return undefined;
+    }
+    return { day, month, year };
+  };
+
+  const startPayload = parseLocalDate(parseResult.data.startDate);
+  const endPayload = parseLocalDate(parseResult.data.endDate);
+
+  if (startPayload || endPayload) {
+    const start = startPayload ?? endPayload!;
+    const end = endPayload ?? startPayload!;
+
+    let startDate = new Date(Date.UTC(start.year, start.month - 1, start.day, 0, 0, 0, 0) + tzOffsetMs);
+    let endDate = new Date(Date.UTC(end.year, end.month - 1, end.day, 23, 59, 59, 999) + tzOffsetMs);
+
+    if (startDate > endDate) {
+      const temp = startDate;
+      startDate = endDate;
+      endDate = temp;
+    }
+
+    rangeStart = startDate;
+    rangeEnd = endDate;
+  } else if (parseResult.data.month) {
+    const [year, month] = parseResult.data.month.split('-').map((value) => Number(value));
+    const startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0) + tzOffsetMs);
+    const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999) + tzOffsetMs);
+    rangeStart = startDate;
+    rangeEnd = endDate;
+  }
+
+  if (rangeStart && rangeEnd) {
     where.processedAt = {
-      gte: start,
-      lte: end
+      gte: rangeStart,
+      lte: rangeEnd
     };
   } else if (parseResult.data.month) {
     const [year, month] = parseResult.data.month.split("-").map((value) => Number(value));

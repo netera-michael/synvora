@@ -59,8 +59,10 @@ export default function OrdersPage() {
   const searchParams = useSearchParams();
   const tzOffset = new Date().getTimezoneOffset();
   const monthFilter = searchParams.get("month") ?? "all";
-  const dateFilter = searchParams.get("date") ?? "";
-  const dateInputValue = toDateInputValue(dateFilter);
+  const startDateFilter = searchParams.get("startDate") ?? "";
+  const endDateFilter = searchParams.get("endDate") ?? "";
+  const startDateInputValue = toDateInputValue(startDateFilter);
+  const endDateInputValue = toDateInputValue(endDateFilter);
   const paramsWithTz = new URLSearchParams(searchParams.toString());
   paramsWithTz.set("tzOffset", String(tzOffset));
   const queryString = paramsWithTz.toString();
@@ -97,6 +99,8 @@ export default function OrdersPage() {
       params.delete("month");
     } else {
       params.set("month", value);
+      params.delete("startDate");
+      params.delete("endDate");
     }
     params.set("tzOffset", String(tzOffset));
 
@@ -105,18 +109,23 @@ export default function OrdersPage() {
     router.replace(target as Route);
   };
 
-  const handleDateChange = (value: string) => {
+  const handleDateChange = (key: "startDate" | "endDate", value: string) => {
     const params = new URLSearchParams(searchParams.toString());
     if (!value) {
-      params.delete("date");
+      params.delete(key);
     } else {
       const formatted = toDateParam(value);
       if (formatted) {
-        params.set("date", formatted);
+        params.set(key, formatted);
       } else {
-        params.delete("date");
+        params.delete(key);
       }
     }
+
+    if (key === "startDate" || key === "endDate") {
+      params.delete("month");
+    }
+
     params.set("tzOffset", String(tzOffset));
 
     const qs = params.toString();
@@ -124,9 +133,10 @@ export default function OrdersPage() {
     router.replace(target as Route);
   };
 
-  const handleClearDate = () => {
+  const handleClearRange = () => {
     const params = new URLSearchParams(searchParams.toString());
-    params.delete("date");
+    params.delete("startDate");
+    params.delete("endDate");
     params.set("tzOffset", String(tzOffset));
     const qs = params.toString();
     const target = qs ? `/orders?${qs}` : "/orders";
@@ -263,20 +273,32 @@ export default function OrdersPage() {
               </option>
             ))}
           </select>
-          <div className="flex items-center gap-2">
-            <input
-              type="date"
-              value={dateInputValue}
-              onChange={(event) => handleDateChange(event.target.value)}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 shadow-sm focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
-            />
-            {dateFilter && (
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+              From
+              <input
+                type="date"
+                value={startDateInputValue}
+                onChange={(event) => handleDateChange("startDate", event.target.value)}
+                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 shadow-sm focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
+              />
+            </label>
+            <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+              To
+              <input
+                type="date"
+                value={endDateInputValue}
+                onChange={(event) => handleDateChange("endDate", event.target.value)}
+                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 shadow-sm focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
+              />
+            </label>
+            {(startDateFilter || endDateFilter) && (
               <button
                 type="button"
-                onClick={handleClearDate}
+                onClick={handleClearRange}
                 className="text-xs font-semibold text-slate-500 hover:text-synvora-primary"
               >
-                Clear date
+                Clear range
               </button>
             )}
           </div>
