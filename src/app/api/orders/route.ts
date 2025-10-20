@@ -40,6 +40,10 @@ const dateRangeSchema = z.object({
   month: z
     .string()
     .regex(/^\d{4}-\d{2}$/)
+    .optional(),
+  date: z
+    .string()
+    .regex(/^\d{2}\/\d{2}\/\d{4}$/)
     .optional()
 });
 
@@ -107,7 +111,8 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const parseResult = dateRangeSchema.safeParse({
-    month: searchParams.get("month") ?? undefined
+    month: searchParams.get("month") ?? undefined,
+    date: searchParams.get("date") ?? undefined
   });
 
   if (!parseResult.success) {
@@ -115,7 +120,15 @@ export async function GET(request: Request) {
   }
 
   const where: any = {};
-  if (parseResult.data.month) {
+  if (parseResult.data.date) {
+    const [day, month, year] = parseResult.data.date.split("/").map((value) => Number(value));
+    const start = new Date(year, month - 1, day, 0, 0, 0, 0);
+    const end = new Date(year, month - 1, day, 23, 59, 59, 999);
+    where.processedAt = {
+      gte: start,
+      lte: end
+    };
+  } else if (parseResult.data.month) {
     const [year, month] = parseResult.data.month.split("-").map((value) => Number(value));
     const start = new Date(year, month - 1, 1);
     const end = new Date(year, month, 0, 23, 59, 59, 999);
