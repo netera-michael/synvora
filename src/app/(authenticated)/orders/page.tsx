@@ -18,6 +18,7 @@ type OrdersResponse = {
     totalRevenue: number;
     averageOrderValue: number;
     totalPayout: number;
+    totalTicketsValue: number;
     pendingFulfillment: number;
   };
 };
@@ -243,11 +244,11 @@ export default function OrdersPage() {
           <p className="mt-1 text-sm text-slate-500">Expected net amount</p>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Pending fulfill.</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Tickets value (EGP)</p>
           <p className="mt-3 text-2xl font-semibold text-slate-900">
-            {data?.metrics.pendingFulfillment ?? (isLoading ? "…" : 0)}
+            {data ? `EGP ${data.metrics.totalTicketsValue.toFixed(2)}` : isLoading ? "…" : "EGP 0.00"}
           </p>
-          <p className="mt-1 text-sm text-slate-500">Orders needing fulfillment</p>
+          <p className="mt-1 text-sm text-slate-500">Sum of original amounts</p>
         </div>
       </div>
 

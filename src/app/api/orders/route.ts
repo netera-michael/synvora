@@ -160,6 +160,7 @@ export async function GET(request: Request) {
   const pendingFulfillment = serialized.filter(
     (order) => !order.fulfillmentStatus || order.fulfillmentStatus.toLowerCase() !== "fulfilled"
   ).length;
+  const totalTicketsValue = serialized.reduce((sum, order) => sum + (typeof order.originalAmount === "number" ? order.originalAmount : 0), 0);
 
   return NextResponse.json({
     orders: serialized,
@@ -168,6 +169,7 @@ export async function GET(request: Request) {
       totalRevenue,
       averageOrderValue,
       totalPayout,
+      totalTicketsValue,
       pendingFulfillment
     }
   });
