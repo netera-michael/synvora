@@ -7,7 +7,6 @@ import {
   calculateFromOriginalAmount,
   calculatePayoutFromOrder,
   DEFAULT_EXCHANGE_RATE,
-  ensureVenue,
   generateNextOrderNumber
 } from "@/lib/order-utils";
 
@@ -85,18 +84,7 @@ const serializeOrder = (order: any) => ({
   externalId: order.externalId,
   orderNumber: order.orderNumber,
   customerName: order.customerName,
-  venueId: order.venueId,
-  venue: order.venue
-    ? {
-        id: order.venue.id,
-        name: order.venue.name,
-        slug: order.venue.slug
-      }
-    : {
-        id: 0,
-        name: "CICCIO",
-        slug: "ciccio"
-      },
+  venue: order.venue,
   status: order.status,
   financialStatus: order.financialStatus,
   fulfillmentStatus: order.fulfillmentStatus,
@@ -199,8 +187,7 @@ export async function GET(request: Request) {
   const orders = await prisma.order.findMany({
     where,
     include: {
-      lineItems: true,
-      venue: true
+      lineItems: true
     },
     orderBy: {
       processedAt: "desc"
@@ -251,8 +238,7 @@ export async function POST(request: Request) {
   const trimmedCustomerName = data.customerName?.trim();
   const customerName = trimmedCustomerName && trimmedCustomerName.length > 0 ? trimmedCustomerName : "No Customer";
   const trimmedVenue = data.venue?.trim();
-  const venueName = trimmedVenue && trimmedVenue.length > 0 ? trimmedVenue : "CICCIO";
-  const venueRecord = await ensureVenue(venueName);
+  const venue = trimmedVenue && trimmedVenue.length > 0 ? trimmedVenue : "CICCIO";
 
   const rawOrderNumber = data.orderNumber?.trim();
   const orderNumber = rawOrderNumber && rawOrderNumber.length > 0
@@ -280,7 +266,7 @@ export async function POST(request: Request) {
     data: {
       orderNumber,
       customerName,
-      venueId: venueRecord.id,
+      venue,
       status: data.status ?? "Open",
       financialStatus,
       fulfillmentStatus: data.fulfillmentStatus,
@@ -299,8 +285,7 @@ export async function POST(request: Request) {
       }
     },
     include: {
-      lineItems: true,
-      venue: true
+      lineItems: true
     }
   });
 

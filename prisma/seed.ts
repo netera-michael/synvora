@@ -16,29 +16,12 @@ async function main() {
     }
   });
 
-  const ciccioVenue = await prisma.venue.upsert({
-    where: { slug: "ciccio" },
-    update: { name: "CICCIO" },
-    create: {
-      name: "CICCIO",
-      slug: "ciccio"
-    }
-  });
-
-  await prisma.user.update({
-    where: { id: admin.id },
-    data: {
-      venues: {
-        connect: { id: ciccioVenue.id }
-      }
-    }
-  });
-
   const now = new Date();
   const sampleOrders = [
     {
       orderNumber: "#1001",
       customerName: "Ava Johnson",
+      venue: "CICCIO",
       status: "Open",
       financialStatus: "Paid",
       fulfillmentStatus: "Fulfilled",
@@ -51,7 +34,6 @@ async function main() {
       originalAmount: 5800,
       exchangeRate: 48.5,
       notes: "Customer requested gift wrap.",
-      venueId: ciccioVenue.id,
       lineItems: {
         create: [
           {
@@ -74,6 +56,7 @@ async function main() {
     {
       orderNumber: "#1002",
       customerName: "Noah Carter",
+      venue: "CICCIO",
       status: "Open",
       financialStatus: "Pending",
       fulfillmentStatus: "Unfulfilled",
@@ -86,7 +69,6 @@ async function main() {
       originalAmount: 2800,
       exchangeRate: 48.5,
       notes: null,
-      venueId: ciccioVenue.id,
       lineItems: {
         create: [
           {
@@ -102,6 +84,7 @@ async function main() {
     {
       orderNumber: "#1003",
       customerName: "Isabella Rossi",
+      venue: "CICCIO",
       status: "Closed",
       financialStatus: "Refunded",
       fulfillmentStatus: "Returned",
@@ -114,7 +97,6 @@ async function main() {
       originalAmount: 0,
       exchangeRate: 48.5,
       notes: "Full refund issued due to damaged package.",
-      venueId: ciccioVenue.id,
       lineItems: {
         create: [
           {
