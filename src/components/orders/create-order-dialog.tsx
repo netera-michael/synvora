@@ -48,7 +48,7 @@ const mapOrderToForm = (order: OrderDto): CreateOrderValues => {
   return {
     orderNumber: "",
     customerName: order.customerName ?? "No Customer",
-    venue: order.venue ?? "CICCIO",
+    venue: order.venue?.name ?? "CICCIO",
     financialStatus: order.financialStatus ?? "Paid",
     totalAmount,
     currency: order.currency ?? "USD",

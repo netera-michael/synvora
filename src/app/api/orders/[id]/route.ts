@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { ensureVenue } from "@/lib/order-utils";
 import { authOptions } from "@/lib/auth";
 
 const lineItemSchema = z.object({
@@ -38,7 +39,17 @@ const serializeOrder = (order: any) => ({
   externalId: order.externalId,
   orderNumber: order.orderNumber,
   customerName: order.customerName,
-  venue: order.venue,
+  venue: order.venue
+    ? {
+        id: order.venue.id,
+        name: order.venue.name,
+        slug: order.venue.slug
+      }
+    : {
+        id: 0,
+        name: "CICCIO",
+        slug: "ciccio"
+      },
   status: order.status,
   financialStatus: order.financialStatus,
   fulfillmentStatus: order.fulfillmentStatus,
@@ -95,7 +106,7 @@ export async function PATCH(
 
   const existing = await prisma.order.findUnique({
     where: { id: orderId },
-    include: { lineItems: true }
+    include: { lineItems: true, venue: true }
   });
 
   if (!existing) {
@@ -106,7 +117,11 @@ export async function PATCH(
   const customerName =
     trimmedCustomerName && trimmedCustomerName.length > 0 ? trimmedCustomerName : existing.customerName ?? "No Customer";
   const trimmedVenue = data.venue?.trim();
-  const venue = trimmedVenue && trimmedVenue.length > 0 ? trimmedVenue : existing.venue ?? "CICCIO";
+  const nextVenueName =
+    trimmedVenue && trimmedVenue.length > 0
+      ? trimmedVenue
+      : existing.venue?.name ?? "CICCIO";
+  const venueRecord = await ensureVenue(nextVenueName);
   const trimmedOrderNumber = data.orderNumber?.trim();
   const orderNumber =
     trimmedOrderNumber && trimmedOrderNumber.length > 0
@@ -144,7 +159,7 @@ export async function PATCH(
       data: {
         orderNumber,
         customerName,
-        venue,
+        venueId: venueRecord.id,
         status: data.status ?? existing.status,
         financialStatus,
         fulfillmentStatus: data.fulfillmentStatus ?? existing.fulfillmentStatus,
@@ -183,7 +198,7 @@ export async function PATCH(
 
   const updated = await prisma.order.findUnique({
     where: { id: orderId },
-    include: { lineItems: true }
+    include: { lineItems: true, venue: true }
   });
 
   if (!updated) {

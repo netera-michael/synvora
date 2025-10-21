@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import {
   DEFAULT_EXCHANGE_RATE,
   calculateFromOriginalAmount,
+  ensureVenue,
   generateNextOrderNumber
 } from "@/lib/order-utils";
 
@@ -37,7 +38,8 @@ export async function POST(request: Request) {
   }
 
   const customerName = parsed.data.customerName?.trim() || "CSV Import";
-  const venue = parsed.data.venue?.trim() || "CICCIO";
+  const venueName = parsed.data.venue?.trim() || "CICCIO";
+  const venueRecord = await ensureVenue(venueName);
   const batchExchangeRate =
     typeof parsed.data.exchangeRate === "number" && parsed.data.exchangeRate > 0
       ? parsed.data.exchangeRate
@@ -63,7 +65,7 @@ export async function POST(request: Request) {
       data: {
         orderNumber,
         customerName,
-        venue,
+        venueId: venueRecord.id,
         status: "Open",
         financialStatus: "Paid",
         totalAmount,

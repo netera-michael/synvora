@@ -39,7 +39,7 @@ const FULFILLMENT_OPTIONS = ["Fulfilled", "Unfulfilled", "Partial", "Returned"];
 const mapOrderToForm = (value: OrderDto): OrderFormValues => ({
   orderNumber: value.orderNumber,
   customerName: value.customerName || "No Customer",
-  venue: value.venue || "CICCIO",
+  venue: value.venue?.name ?? "CICCIO",
   status: value.status ?? "Open",
   financialStatus: value.financialStatus ?? "Paid",
   fulfillmentStatus: value.fulfillmentStatus ?? "",

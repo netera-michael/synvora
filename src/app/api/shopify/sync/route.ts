@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
 import { fetchShopifyOrders, transformShopifyOrders } from "@/lib/shopify";
+import { ensureVenue } from "@/lib/order-utils";
 
 const schema = z.object({
   storeDomain: z.string().min(5),
@@ -40,6 +41,16 @@ export async function POST(request: Request) {
     const shopifyOrders = await fetchShopifyOrders({ storeDomain, accessToken, sinceId });
     const transformed = transformShopifyOrders(shopifyOrders);
 
+    const userVenueIds = session.user.venueIds ?? [];
+    let defaultVenueId = userVenueIds[0];
+    if (!defaultVenueId) {
+      const venueRecord = await ensureVenue("CICCIO");
+      defaultVenueId = venueRecord.id;
+    }
+    if (!defaultVenueId) {
+      throw new Error("Unable to resolve a venue for Shopify orders");
+    }
+
     let imported = 0;
     let updatedCount = 0;
 
@@ -70,7 +81,8 @@ export async function POST(request: Request) {
               tags: order.tags.join(","),
               notes: order.notes,
               shopifyStoreId: store.id,
-              source: "shopify"
+              source: "shopify",
+              venueId: existing.venueId ?? defaultVenueId
             }
           });
           await tx.orderLineItem.deleteMany({ where: { orderId: existing.id } });
@@ -107,6 +119,7 @@ export async function POST(request: Request) {
             createdById: Number(session.user.id),
             shopifyStoreId: store.id,
             source: "shopify",
+            venueId: defaultVenueId,
             lineItems: {
               create: order.lineItems.map((item) => ({
                 productName: item.productName,
