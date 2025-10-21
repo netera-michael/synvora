@@ -21,6 +21,7 @@ const lineItemSchema = z.object({
 const orderSchema = z.object({
   orderNumber: z.string().optional().nullable(),
   customerName: z.string().optional().nullable(),
+  venue: z.string().optional().nullable(),
   status: z.string().default("Open"),
   financialStatus: z.string().optional().nullable(),
   fulfillmentStatus: z.string().optional().nullable(),
@@ -83,6 +84,7 @@ const serializeOrder = (order: any) => ({
   externalId: order.externalId,
   orderNumber: order.orderNumber,
   customerName: order.customerName,
+  venue: order.venue,
   status: order.status,
   financialStatus: order.financialStatus,
   fulfillmentStatus: order.fulfillmentStatus,
@@ -235,6 +237,8 @@ export async function POST(request: Request) {
   const data = parsed.data;
   const trimmedCustomerName = data.customerName?.trim();
   const customerName = trimmedCustomerName && trimmedCustomerName.length > 0 ? trimmedCustomerName : "No Customer";
+  const trimmedVenue = data.venue?.trim();
+  const venue = trimmedVenue && trimmedVenue.length > 0 ? trimmedVenue : "CICCIO";
 
   const rawOrderNumber = data.orderNumber?.trim();
   const orderNumber = rawOrderNumber && rawOrderNumber.length > 0
@@ -262,6 +266,7 @@ export async function POST(request: Request) {
     data: {
       orderNumber,
       customerName,
+      venue,
       status: data.status ?? "Open",
       financialStatus,
       fulfillmentStatus: data.fulfillmentStatus,

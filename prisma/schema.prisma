@@ -23,6 +23,7 @@ model Order {
   externalId        String?         @unique
   orderNumber       String
   customerName      String
+  venue             String          @default("CICCIO")
   status            String
   financialStatus   String?
   fulfillmentStatus String?

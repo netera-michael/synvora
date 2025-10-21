@@ -17,6 +17,7 @@ type CreateOrderDialogProps = {
 type CreateOrderValues = {
   orderNumber: string;
   customerName: string;
+  venue: string;
   financialStatus: string;
   totalAmount: number;
   currency: string;
@@ -47,6 +48,7 @@ const mapOrderToForm = (order: OrderDto): CreateOrderValues => {
   return {
     orderNumber: "",
     customerName: order.customerName ?? "No Customer",
+    venue: order.venue ?? "CICCIO",
     financialStatus: order.financialStatus ?? "Paid",
     totalAmount,
     currency: order.currency ?? "USD",
@@ -80,6 +82,7 @@ export function CreateOrderDialog({ open, initialOrder, onClose, onOrderCreated 
   const defaultValues: CreateOrderValues = {
     orderNumber: "",
     customerName: "No Customer",
+    venue: "CICCIO",
     financialStatus: "Paid",
     totalAmount: 0,
     currency: "USD",
@@ -158,6 +161,7 @@ export function CreateOrderDialog({ open, initialOrder, onClose, onOrderCreated 
 
   const submit = handleSubmit(async (values) => {
     const trimmedCustomer = values.customerName?.trim();
+    const trimmedVenue = values.venue?.trim();
     const trimmedOrderNumber = values.orderNumber?.trim();
     const normalizedOrderNumber =
       trimmedOrderNumber && trimmedOrderNumber.length > 0
@@ -170,6 +174,7 @@ export function CreateOrderDialog({ open, initialOrder, onClose, onOrderCreated 
     const payload = {
       ...values,
       customerName: trimmedCustomer && trimmedCustomer.length > 0 ? trimmedCustomer : "No Customer",
+      venue: trimmedVenue && trimmedVenue.length > 0 ? trimmedVenue : "CICCIO",
       orderNumber: normalizedOrderNumber,
       processedAt: processedAtIso,
       originalAmount:
@@ -265,23 +270,32 @@ export function CreateOrderDialog({ open, initialOrder, onClose, onOrderCreated 
               </div>
 
               <form onSubmit={submit} className="max-h-[70vh] overflow-y-auto px-6 py-6">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
-                    Order number
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
+            Order number
                     <input
                       {...register("orderNumber")}
                       className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
                       placeholder="#1050"
                     />
                   </label>
-                  <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
-                    Customer name
-                    <input
-                      {...register("customerName")}
-                      className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
-                      placeholder="No Customer"
-                    />
-                  </label>
+          <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
+            Customer name
+            <input
+              {...register("customerName")}
+              className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
+              placeholder="No Customer"
+            />
+          </label>
+          <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
+            Venue
+            <select
+              {...register("venue")}
+              className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
+            >
+              <option value="CICCIO">CICCIO</option>
+            </select>
+          </label>
                   <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
                     Payment status
                     <input

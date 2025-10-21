@@ -16,6 +16,7 @@ const updateSchema = z
   .object({
     orderNumber: z.string().min(1).optional(),
     customerName: z.string().optional(),
+    venue: z.string().optional(),
     status: z.string().optional(),
     financialStatus: z.string().optional().nullable(),
     fulfillmentStatus: z.string().optional().nullable(),
@@ -37,6 +38,7 @@ const serializeOrder = (order: any) => ({
   externalId: order.externalId,
   orderNumber: order.orderNumber,
   customerName: order.customerName,
+  venue: order.venue,
   status: order.status,
   financialStatus: order.financialStatus,
   fulfillmentStatus: order.fulfillmentStatus,
@@ -103,6 +105,8 @@ export async function PATCH(
   const trimmedCustomerName = data.customerName?.trim();
   const customerName =
     trimmedCustomerName && trimmedCustomerName.length > 0 ? trimmedCustomerName : existing.customerName ?? "No Customer";
+  const trimmedVenue = data.venue?.trim();
+  const venue = trimmedVenue && trimmedVenue.length > 0 ? trimmedVenue : existing.venue ?? "CICCIO";
   const trimmedOrderNumber = data.orderNumber?.trim();
   const orderNumber =
     trimmedOrderNumber && trimmedOrderNumber.length > 0
@@ -140,6 +144,7 @@ export async function PATCH(
       data: {
         orderNumber,
         customerName,
+        venue,
         status: data.status ?? existing.status,
         financialStatus,
         fulfillmentStatus: data.fulfillmentStatus ?? existing.fulfillmentStatus,

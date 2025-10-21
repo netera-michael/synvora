@@ -12,6 +12,7 @@ import {
 const importSchema = z.object({
   customerName: z.string().optional(),
   exchangeRate: z.number().positive().optional(),
+  venue: z.string().optional(),
   orders: z
     .array(
       z.object({
@@ -36,6 +37,7 @@ export async function POST(request: Request) {
   }
 
   const customerName = parsed.data.customerName?.trim() || "CSV Import";
+  const venue = parsed.data.venue?.trim() || "CICCIO";
   const batchExchangeRate =
     typeof parsed.data.exchangeRate === "number" && parsed.data.exchangeRate > 0
       ? parsed.data.exchangeRate
@@ -61,6 +63,7 @@ export async function POST(request: Request) {
       data: {
         orderNumber,
         customerName,
+        venue,
         status: "Open",
         financialStatus: "Paid",
         totalAmount,

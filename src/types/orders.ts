@@ -12,6 +12,7 @@ export type OrderDto = {
   externalId?: string | null;
   orderNumber: string;
   customerName: string;
+  venue: string;
   status: string;
   financialStatus?: string | null;
   fulfillmentStatus?: string | null;

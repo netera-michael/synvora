@@ -18,6 +18,7 @@ type OrderDrawerProps = {
 type OrderFormValues = {
   orderNumber: string;
   customerName: string;
+  venue: string;
   status: string;
   financialStatus: string;
   fulfillmentStatus: string;
@@ -38,6 +39,7 @@ const FULFILLMENT_OPTIONS = ["Fulfilled", "Unfulfilled", "Partial", "Returned"];
 const mapOrderToForm = (value: OrderDto): OrderFormValues => ({
   orderNumber: value.orderNumber,
   customerName: value.customerName || "No Customer",
+  venue: value.venue || "CICCIO",
   status: value.status ?? "Open",
   financialStatus: value.financialStatus ?? "Paid",
   fulfillmentStatus: value.fulfillmentStatus ?? "",
@@ -82,6 +84,7 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
     defaultValues: {
       orderNumber: "",
       customerName: "",
+      venue: "CICCIO",
       status: "Open",
       financialStatus: "Paid",
       fulfillmentStatus: "Unfulfilled",
@@ -404,6 +407,15 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
                               {...register("customerName", { required: true })}
                               className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
                             />
+                          </label>
+                          <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
+                            Venue
+                            <select
+                              {...register("venue", { required: true })}
+                              className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
+                            >
+                              <option value="CICCIO">CICCIO</option>
+                            </select>
                           </label>
                           <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
                             Status

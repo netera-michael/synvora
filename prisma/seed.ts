@@ -21,6 +21,7 @@ async function main() {
     {
       orderNumber: "#1001",
       customerName: "Ava Johnson",
+      venue: "CICCIO",
       status: "Open",
       financialStatus: "Paid",
       fulfillmentStatus: "Fulfilled",
@@ -55,6 +56,7 @@ async function main() {
     {
       orderNumber: "#1002",
       customerName: "Noah Carter",
+      venue: "CICCIO",
       status: "Open",
       financialStatus: "Pending",
       fulfillmentStatus: "Unfulfilled",
@@ -82,6 +84,7 @@ async function main() {
     {
       orderNumber: "#1003",
       customerName: "Isabella Rossi",
+      venue: "CICCIO",
       status: "Closed",
       financialStatus: "Refunded",
       fulfillmentStatus: "Returned",

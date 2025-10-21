@@ -21,6 +21,7 @@ export default function ImportOrdersPage() {
   const [message, setMessage] = useState<string>("");
   const [customerName, setCustomerName] = useState("CSV Import");
   const [exchangeRate, setExchangeRate] = useState(String(DEFAULT_EXCHANGE_RATE));
+  const [venue, setVenue] = useState("CICCIO");
 
   const parsedRate = Number(exchangeRate);
   const exchangeRateDisplay = Number.isNaN(parsedRate) || parsedRate <= 0 ? DEFAULT_EXCHANGE_RATE : parsedRate;
@@ -109,6 +110,7 @@ export default function ImportOrdersPage() {
     setMessage("");
 
     const trimmedCustomer = customerName.trim() || "CSV Import";
+    const trimmedVenue = venue.trim() || "CICCIO";
     const rateNumber = Number(exchangeRate);
 
     if (Number.isNaN(rateNumber) || rateNumber <= 0) {
@@ -125,6 +127,7 @@ export default function ImportOrdersPage() {
         },
         body: JSON.stringify({
           customerName: trimmedCustomer,
+          venue: trimmedVenue,
           exchangeRate: rateNumber,
           orders: rows.map((row) => ({
             processedAt: row.processedAt,
@@ -177,6 +180,16 @@ export default function ImportOrdersPage() {
               placeholder="CSV Import"
               className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
             />
+          </label>
+          <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
+            Venue
+            <select
+              value={venue}
+              onChange={(event) => setVenue(event.target.value)}
+              className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
+            >
+              <option value="CICCIO">CICCIO</option>
+            </select>
           </label>
           <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
             USD/EGP rate
