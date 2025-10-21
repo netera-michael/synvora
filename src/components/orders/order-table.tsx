@@ -29,9 +29,6 @@ export function OrderTable({ orders, onSelect, onDuplicate, canManage = true }: 
               Order
             </th>
             <th scope="col" className="px-6 py-4">
-              Date
-            </th>
-            <th scope="col" className="px-6 py-4">
               Customer
             </th>
             <th scope="col" className="px-6 py-4">
@@ -73,9 +70,6 @@ export function OrderTable({ orders, onSelect, onDuplicate, canManage = true }: 
                     {formatDateTime(order.processedAt)}
                   </span>
                 </div>
-              </td>
-              <td className="whitespace-nowrap px-6 py-4 text-slate-600">
-                {formatDayTime(order.processedAt)}
               </td>
               <td className="whitespace-nowrap px-6 py-4 text-slate-700">
                 <div className="flex flex-col">
