@@ -16,6 +16,8 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.email = user.email;
         token.name = user.name;
+        token.role = (user as any).role;
+        token.venueIds = (user as any).venueIds;
       }
       return token;
     },
@@ -24,6 +26,8 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string;
         session.user.email = token.email as string;
         session.user.name = token.name as string | undefined;
+        session.user.role = (token.role as "ADMIN" | "USER") ?? "USER";
+        session.user.venueIds = (token.venueIds as number[]) ?? [];
       }
       return session;
     }
@@ -41,7 +45,12 @@ export const authOptions: NextAuthOptions = {
         }
 
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email }
+          where: { email: credentials.email },
+          include: {
+            venues: {
+              select: { id: true }
+            }
+          }
         });
 
         if (!user) {
@@ -57,7 +66,9 @@ export const authOptions: NextAuthOptions = {
         return {
           id: String(user.id),
           email: user.email,
-          name: user.name ?? "Synvora Admin"
+          name: user.name ?? "Synvora Admin",
+          role: user.role,
+          venueIds: user.venues.map((venue) => venue.id)
         };
       }
     })

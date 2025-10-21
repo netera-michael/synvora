@@ -39,6 +39,7 @@ const serializeOrder = (order: any) => ({
   externalId: order.externalId,
   orderNumber: order.orderNumber,
   customerName: order.customerName,
+  venueId: order.venueId,
   venue: order.venue
     ? {
         id: order.venue.id,
