@@ -40,6 +40,24 @@ export const calculatePayoutFromOrder = (order: {
   return order.totalAmount * 0.9825;
 };
 
+export const slugify = (value: string) =>
+  value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)+/g, "") || "venue";
+
+export const ensureVenue = async (name: string) => {
+  const safeName = name.trim() || "CICCIO";
+  const slug = slugify(safeName);
+
+  return prisma.venue.upsert({
+    where: { slug },
+    update: { name: safeName },
+    create: { name: safeName, slug }
+  });
+};
+
 export const extractOrderNumber = (orderNumber?: string | null) => {
   if (!orderNumber) {
     return undefined;

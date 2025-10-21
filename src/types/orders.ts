@@ -1,3 +1,9 @@
+export type VenueDto = {
+  id: number;
+  name: string;
+  slug: string;
+};
+
 export type OrderLineItemDto = {
   id: number;
   productName: string;
@@ -12,7 +18,8 @@ export type OrderDto = {
   externalId?: string | null;
   orderNumber: string;
   customerName: string;
-  venue: string;
+  venue: VenueDto;
+  venueId: number;
   status: string;
   financialStatus?: string | null;
   fulfillmentStatus?: string | null;
@@ -24,8 +31,8 @@ export type OrderDto = {
   tags: string[];
   notes?: string | null;
   source: string;
-  lineItems: OrderLineItemDto[];
-  shopifyStoreId?: number | null;
   originalAmount?: number | null;
   exchangeRate?: number | null;
+  lineItems: OrderLineItemDto[];
+  shopifyStoreId?: number | null;
 };
