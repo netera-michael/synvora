@@ -17,8 +17,8 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
   const [formState, setFormState] = useState({
-    email: "admin@synvora.com",
-    password: "Admin123!",
+    email: "",
+    password: "",
     loading: false,
     message: ""
   });
