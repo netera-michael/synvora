@@ -336,18 +336,7 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
                           <p className="mt-2 text-sm text-slate-500">
                             {order.financialStatus ?? "Status not set"}
                           </p>
-                          <p className="mt-3 text-xs uppercase tracking-wide text-slate-400">
-                            Original amount (EGP)
-                          </p>
-                          <p className="text-sm font-semibold text-slate-900">
-                            {typeof order.originalAmount === "number"
-                              ? formatCurrency(order.originalAmount, "EGP")
-                              : "—"}
-                          </p>
                           <div className="mt-3 space-y-1 text-sm text-slate-600">
-                            <p>
-                              <span className="font-semibold text-slate-900">Exchange rate:</span> {order.exchangeRate ?? 48.5}
-                            </p>
                             <p>
                               <span className="font-semibold text-slate-900">Payout (USD):</span> {formatCurrency(payoutAmount, order.currency)}
                             </p>
