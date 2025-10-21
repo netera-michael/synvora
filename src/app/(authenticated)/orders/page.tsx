@@ -21,17 +21,15 @@ type OrdersResponse = {
     totalTicketsValue: number;
     pendingFulfillment: number;
   };
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalCount: number;
+    totalPages: number;
+  };
 };
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
-
-const calculatePayout = (order: OrderDto) => {
-  if (order.originalAmount !== null && typeof order.originalAmount === "number" && order.exchangeRate && order.exchangeRate > 0) {
-    const base = order.originalAmount / order.exchangeRate;
-    return base * 0.9825;
-  }
-  return order.totalAmount * 0.9825;
-};
 
 const formatCurrencyValue = (value: number, currency = "USD") =>
   new Intl.NumberFormat("en-US", {
@@ -80,6 +78,7 @@ export default function OrdersPage() {
   const { data, error, mutate, isLoading } = useSWR<OrdersResponse>(`/api/orders${queryString ? `?${queryString}` : ""}`, fetcher);
   const { data: session } = useSession();
   const isAdmin = session?.user.role === "ADMIN";
+  const pagination = data?.pagination;
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderDto | null>(null);
@@ -116,6 +115,7 @@ export default function OrdersPage() {
       params.delete("endDate");
     }
     params.set("tzOffset", String(tzOffset));
+    params.delete("page");
 
     const qs = params.toString();
     const target = qs ? `/orders?${qs}` : "/orders";
@@ -140,6 +140,7 @@ export default function OrdersPage() {
     }
 
     params.set("tzOffset", String(tzOffset));
+    params.delete("page");
 
     const qs = params.toString();
     const target = qs ? `/orders?${qs}` : "/orders";
@@ -151,6 +152,7 @@ export default function OrdersPage() {
     params.delete("startDate");
     params.delete("endDate");
     params.set("tzOffset", String(tzOffset));
+    params.delete("page");
     const qs = params.toString();
     const target = qs ? `/orders?${qs}` : "/orders";
     router.replace(target as Route);
@@ -170,83 +172,43 @@ export default function OrdersPage() {
     window.print();
   };
 
-  const handleOrderCreated = (order: OrderDto) => {
-    mutate(
-      (current) =>
-        current
-          ? {
-              ...current,
-              orders: [order, ...current.orders],
-              metrics: {
-                ...current.metrics,
-                ordersCount: current.metrics.ordersCount + 1,
-                totalRevenue: current.metrics.totalRevenue + order.totalAmount,
-                averageOrderValue:
-                  (current.metrics.totalRevenue + order.totalAmount) / (current.metrics.ordersCount + 1),
-                totalPayout: current.metrics.totalPayout + calculatePayout(order),
-                totalTicketsValue:
-                  current.metrics.totalTicketsValue + (typeof order.originalAmount === "number" ? order.originalAmount : 0)
-              }
-            }
-          : current,
-      false
-    );
+  const handleOrderCreated = (_order: OrderDto) => {
     mutate();
     setDuplicateOrder(null);
   };
 
   const handleOrderUpdated = (order: OrderDto) => {
-    mutate(
-      (current) =>
-        current
-          ? {
-              ...current,
-              orders: current.orders.map((existing) => (existing.id === order.id ? order : existing))
-            }
-          : current,
-      false
-    );
     mutate();
     setSelectedOrder(order);
   };
 
-  const handleOrderDeleted = (orderId: number) => {
-    mutate(
-      (current) =>
-        current
-          ? {
-              ...current,
-              orders: current.orders.filter((item) => item.id !== orderId),
-              metrics: (() => {
-                const removed = current.orders.find((item) => item.id === orderId);
-                const nextOrdersCount = Math.max(0, current.metrics.ordersCount - 1);
-                const nextTotalRevenue = removed
-                  ? current.metrics.totalRevenue - removed.totalAmount
-                  : current.metrics.totalRevenue;
-                const nextTotalPayout = removed
-                  ? current.metrics.totalPayout - calculatePayout(removed)
-                  : current.metrics.totalPayout;
-                const nextTicketsValue = removed
-                  ? current.metrics.totalTicketsValue - (typeof removed.originalAmount === "number" ? removed.originalAmount : 0)
-                  : current.metrics.totalTicketsValue;
-                const nextAverage = nextOrdersCount
-                  ? nextTotalRevenue / nextOrdersCount
-                  : 0;
-                return {
-                  ...current.metrics,
-                  ordersCount: nextOrdersCount,
-                  totalRevenue: nextTotalRevenue,
-                  totalPayout: nextTotalPayout,
-                  totalTicketsValue: nextTicketsValue,
-                  averageOrderValue: nextAverage
-                };
-              })()
-            }
-          : current,
-      false
-    );
+  const handleOrderDeleted = (_orderId: number) => {
     mutate();
     closeDrawer();
+  };
+
+  const handlePageChange = (nextPage: number) => {
+    if (!pagination) {
+      return;
+    }
+
+    const totalPagesValue = pagination.totalPages || 1;
+    if (nextPage < 1 || nextPage > totalPagesValue) {
+      return;
+    }
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tzOffset", String(tzOffset));
+
+    if (nextPage === 1) {
+      params.delete("page");
+    } else {
+      params.set("page", String(nextPage));
+    }
+
+    const qs = params.toString();
+    const target = qs ? `/orders?${qs}` : "/orders";
+    router.replace(target as Route);
   };
 
   const handleDuplicate = (order: OrderDto) => {
@@ -402,6 +364,60 @@ export default function OrdersPage() {
         />
       ) : null}
 
+      <PaginationControls
+        pagination={pagination}
+        isLoading={isLoading}
+        onPageChange={handlePageChange}
+      />
+
+    </div>
+  );
+}
+
+type PaginationProps = {
+  pagination?: OrdersResponse["pagination"];
+  isLoading: boolean;
+  onPageChange: (page: number) => void;
+};
+
+function PaginationControls({ pagination, isLoading, onPageChange }: PaginationProps) {
+  if (!pagination || pagination.totalCount === 0) {
+    return null;
+  }
+
+  const { page, pageSize, totalCount, totalPages } = pagination;
+  const safeTotalPages = totalPages || 1;
+  const start = (page - 1) * pageSize + 1;
+  const end = Math.min(start + pageSize - 1, totalCount);
+
+  return (
+    <div className="flex flex-col items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-sm md:flex-row">
+      <span>
+        Showing <span className="font-semibold text-slate-900">{start}</span>–
+        <span className="font-semibold text-slate-900">{end}</span> of
+        <span className="font-semibold text-slate-900"> {totalCount}</span> orders
+      </span>
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => onPageChange(page - 1)}
+          disabled={isLoading || page <= 1}
+          className="inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-600 transition hover:border-synvora-primary hover:text-synvora-primary disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Previous
+        </button>
+        <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+          Page {page} of {safeTotalPages}
+        </span>
+        <button
+          type="button"
+          onClick={() => onPageChange(page + 1)}
+          disabled={isLoading || page >= safeTotalPages}
+          className="inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-600 transition hover:border-synvora-primary hover:text-synvora-primary disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Next
+        </button>
+      </div>
     </div>
   );
 }

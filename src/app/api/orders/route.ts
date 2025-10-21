@@ -129,6 +129,15 @@ export async function GET(request: Request) {
 
   const isAdmin = session.user.role === "ADMIN";
   const venueIds = (session.user.venueIds ?? []).map((id) => Number(id)).filter((id) => !Number.isNaN(id));
+  let page = Number.parseInt(request.url ? new URL(request.url).searchParams.get("page") ?? "1" : "1", 10);
+  if (Number.isNaN(page) || page < 1) {
+    page = 1;
+  }
+  let pageSize = Number.parseInt(request.url ? new URL(request.url).searchParams.get("pageSize") ?? "20" : "20", 10);
+  if (Number.isNaN(pageSize) || pageSize < 1) {
+    pageSize = 20;
+  }
+  pageSize = Math.min(pageSize, 100);
 
   const { searchParams } = new URL(request.url);
   const parseResult = dateRangeSchema.safeParse({
@@ -210,13 +219,45 @@ export async function GET(request: Request) {
         pendingFulfillment: 0
       };
 
-      return NextResponse.json({ orders: [], metrics: emptyMetrics });
+      return NextResponse.json({
+        orders: [],
+        metrics: emptyMetrics,
+        pagination: {
+          page: 1,
+          pageSize,
+          totalCount: 0,
+          totalPages: 0
+        }
+      });
     }
 
     where.venueId = {
       in: venueIds
     };
   }
+
+  const totalCount = await prisma.order.count({ where });
+  const totalPages = totalCount === 0 ? 0 : Math.ceil(totalCount / pageSize);
+
+  if (totalPages > 0 && page > totalPages) {
+    page = totalPages;
+  }
+
+  if (totalPages === 0) {
+    page = 1;
+  }
+
+  const skip = totalPages === 0 ? 0 : (page - 1) * pageSize;
+
+  const metricOrders = await prisma.order.findMany({
+    where,
+    select: {
+      totalAmount: true,
+      originalAmount: true,
+      exchangeRate: true,
+      fulfillmentStatus: true
+    }
+  });
 
   const orders = await prisma.order.findMany({
     where,
@@ -226,19 +267,24 @@ export async function GET(request: Request) {
     },
     orderBy: {
       processedAt: "desc"
-    }
+    },
+    skip,
+    take: pageSize
   });
 
   const serialized = orders.map(serializeOrder);
 
-  const totalRevenue = serialized.reduce((sum: number, order) => sum + Number(order.totalAmount ?? 0), 0);
-  const ordersCount = serialized.length;
+  const ordersCount = totalCount;
+  const totalRevenue = metricOrders.reduce((sum, order) => sum + Number(order.totalAmount ?? 0), 0);
   const averageOrderValue = ordersCount ? totalRevenue / ordersCount : 0;
-  const totalPayout = serialized.reduce((sum, order) => sum + calculatePayoutFromOrder(order), 0);
-  const pendingFulfillment = serialized.filter(
+  const totalPayout = metricOrders.reduce((sum, order) => sum + calculatePayoutFromOrder(order), 0);
+  const pendingFulfillment = metricOrders.filter(
     (order) => !order.fulfillmentStatus || order.fulfillmentStatus.toLowerCase() !== "fulfilled"
   ).length;
-  const totalTicketsValue = serialized.reduce((sum, order) => sum + (typeof order.originalAmount === "number" ? order.originalAmount : 0), 0);
+  const totalTicketsValue = metricOrders.reduce(
+    (sum, order) => sum + (typeof order.originalAmount === "number" ? order.originalAmount : 0),
+    0
+  );
 
   return NextResponse.json({
     orders: serialized,
@@ -249,6 +295,12 @@ export async function GET(request: Request) {
       totalPayout,
       totalTicketsValue,
       pendingFulfillment
+    },
+    pagination: {
+      page,
+      pageSize,
+      totalCount,
+      totalPages
     }
   });
 }
