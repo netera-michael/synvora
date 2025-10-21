@@ -24,7 +24,7 @@ export function DashboardShell({ session, children }: DashboardShellProps) {
             sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
           )}
         >
-          <SideNav />
+          <SideNav session={session} />
         </div>
         {sidebarOpen && (
           <button

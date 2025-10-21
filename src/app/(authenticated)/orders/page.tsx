@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Route } from "next";
 import { Plus, Printer } from "lucide-react";
+import { useSession } from "next-auth/react";
 import type { OrderDto } from "@/types/orders";
 import { OrderTable } from "@/components/orders/order-table";
 import { OrderDrawer } from "@/components/orders/order-drawer";
@@ -77,6 +78,8 @@ export default function OrdersPage() {
   paramsWithTz.set("tzOffset", String(tzOffset));
   const queryString = paramsWithTz.toString();
   const { data, error, mutate, isLoading } = useSWR<OrdersResponse>(`/api/orders${queryString ? `?${queryString}` : ""}`, fetcher);
+  const { data: session } = useSession();
+  const isAdmin = session?.user.role === "ADMIN";
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderDto | null>(null);
@@ -247,6 +250,9 @@ export default function OrdersPage() {
   };
 
   const handleDuplicate = (order: OrderDto) => {
+    if (!isAdmin) {
+      return;
+    }
     setDuplicateOrder(order);
     setIsCreateOpen(true);
   };
@@ -268,7 +274,9 @@ export default function OrdersPage() {
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">Orders</h1>
           <p className="mt-2 text-sm text-slate-500 print:hidden">
-            Monitor and manage your Synvora and Shopify orders in a single command center.
+            {isAdmin
+              ? "Monitor and manage your Synvora and Shopify orders in a single command center."
+              : "Review the latest activity across the venues you have access to."}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -320,14 +328,16 @@ export default function OrdersPage() {
             <Printer className="h-4 w-4" />
             Print
           </button>
-          <button
-            type="button"
-            onClick={() => setIsCreateOpen(true)}
-            className="inline-flex items-center gap-2 rounded-xl bg-synvora-primary px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-synvora-primary/90"
-          >
-            <Plus className="h-4 w-4" />
-            Create order
-          </button>
+          {isAdmin ? (
+            <button
+              type="button"
+              onClick={() => setIsCreateOpen(true)}
+              className="inline-flex items-center gap-2 rounded-xl bg-synvora-primary px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-synvora-primary/90"
+            >
+              <Plus className="h-4 w-4" />
+              Create order
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -363,7 +373,12 @@ export default function OrdersPage() {
       </div>
 
       <div>
-        <OrderTable orders={data?.orders ?? []} onSelect={openDrawer} onDuplicate={handleDuplicate} />
+        <OrderTable
+          orders={data?.orders ?? []}
+          onSelect={openDrawer}
+          onDuplicate={isAdmin ? handleDuplicate : undefined}
+          canManage={isAdmin}
+        />
       </div>
 
       <OrderDrawer
@@ -372,17 +387,20 @@ export default function OrdersPage() {
         onClose={closeDrawer}
         onOrderUpdated={handleOrderUpdated}
         onOrderDeleted={handleOrderDeleted}
+        canManage={isAdmin}
       />
 
-      <CreateOrderDialog
-        open={isCreateOpen}
-        initialOrder={duplicateOrder}
-        onClose={() => {
-          setIsCreateOpen(false);
-          setDuplicateOrder(null);
-        }}
-        onOrderCreated={handleOrderCreated}
-      />
+      {isAdmin ? (
+        <CreateOrderDialog
+          open={isCreateOpen}
+          initialOrder={duplicateOrder}
+          onClose={() => {
+            setIsCreateOpen(false);
+            setDuplicateOrder(null);
+          }}
+          onOrderCreated={handleOrderCreated}
+        />
+      ) : null}
 
     </div>
   );

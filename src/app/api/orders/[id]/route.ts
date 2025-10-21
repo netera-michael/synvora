@@ -88,6 +88,10 @@ export async function PATCH(
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
+  if (session.user.role !== "ADMIN") {
+    return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+  }
+
   const orderId = Number(params.id);
   if (Number.isNaN(orderId)) {
     return NextResponse.json({ message: "Invalid order id" }, { status: 400 });
@@ -216,6 +220,10 @@ export async function DELETE(
   const session = await getServerSession(authOptions);
   if (!session) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
+  if (session.user.role !== "ADMIN") {
+    return NextResponse.json({ message: "Forbidden" }, { status: 403 });
   }
 
   const orderId = Number(params.id);

@@ -13,6 +13,7 @@ type OrderDrawerProps = {
   onClose: () => void;
   onOrderUpdated: (order: OrderDto) => void;
   onOrderDeleted: (orderId: number) => void;
+  canManage?: boolean;
 };
 
 type OrderFormValues = {
@@ -70,7 +71,7 @@ const mapOrderToForm = (value: OrderDto): OrderFormValues => ({
       ]
 });
 
-export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDeleted }: OrderDrawerProps) {
+export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDeleted, canManage = true }: OrderDrawerProps) {
   const [mode, setMode] = useState<"view" | "edit">("view");
   const {
     register,
@@ -137,9 +138,17 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
     }
   }, [open]);
 
+  useEffect(() => {
+    if (!canManage) {
+      setMode("view");
+    }
+  }, [canManage]);
+
   if (!order) {
     return null;
   }
+
+  const isEditing = mode === "edit" && canManage;
 
   const onSubmit = handleSubmit(async (values) => {
     const trimmedOrderNumber = values.orderNumber?.trim();
@@ -197,6 +206,10 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
   });
 
   const handleDelete = async () => {
+    if (!canManage) {
+      return;
+    }
+
     if (!confirm("Delete this order? This action cannot be undone.")) {
       return;
     }
@@ -239,7 +252,7 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
             <Dialog.Panel className="relative flex h-[80vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
               <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
                 <div className="flex items-center gap-3">
-                  {mode === "edit" ? (
+                  {isEditing ? (
                     <button
                       type="button"
                       className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-slate-300"
@@ -258,7 +271,7 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {mode === "view" ? (
+                  {canManage && mode === "view" ? (
                     <button
                       type="button"
                       onClick={() => setMode("edit")}
@@ -268,14 +281,16 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
                       Edit
                     </button>
                   ) : null}
-                  <button
-                    type="button"
-                    onClick={handleDelete}
-                    className="inline-flex items-center gap-2 rounded-xl border border-transparent bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-600 transition hover:bg-rose-100"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    Delete
-                  </button>
+                  {canManage ? (
+                    <button
+                      type="button"
+                      onClick={handleDelete}
+                      className="inline-flex items-center gap-2 rounded-xl border border-transparent bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-600 transition hover:bg-rose-100"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Delete
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     onClick={onClose}
@@ -311,7 +326,7 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
                 </Tab.List>
                 <Tab.Panels className="flex-1 overflow-y-auto px-6 py-6">
                   <Tab.Panel className="space-y-6">
-                    {mode === "view" ? (
+                    {!isEditing ? (
                       <div className="grid gap-6 lg:grid-cols-3">
                         <div className="rounded-2xl border border-slate-200 p-6">
                           <h3 className="text-sm font-semibold text-slate-900">Payment</h3>
@@ -335,6 +350,9 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
                             </p>
                             <p>
                               <span className="font-semibold text-slate-900">Payout (USD):</span> {formatCurrency(payoutAmount, order.currency)}
+                            </p>
+                            <p>
+                              <span className="font-semibold text-slate-900">Venue:</span> {order.venue?.name ?? "CICCIO"}
                             </p>
                           </div>
                         </div>

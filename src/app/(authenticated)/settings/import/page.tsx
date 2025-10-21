@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { formatDateTime } from "@/lib/utils";
 
@@ -15,6 +16,7 @@ type ParsedOrder = {
 
 export default function ImportOrdersPage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const [rows, setRows] = useState<ParsedOrder[]>([]);
   const [errors, setErrors] = useState<string[]>([]);
   const [status, setStatus] = useState<"idle" | "parsing" | "ready" | "importing" | "success" | "error">("idle");
@@ -22,6 +24,14 @@ export default function ImportOrdersPage() {
   const [customerName, setCustomerName] = useState("CSV Import");
   const [exchangeRate, setExchangeRate] = useState(String(DEFAULT_EXCHANGE_RATE));
   const [venue, setVenue] = useState("CICCIO");
+
+  if (session?.user.role !== "ADMIN") {
+    return (
+      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-amber-800">
+        You need administrator access to import orders.
+      </div>
+    );
+  }
 
   const parsedRate = Number(exchangeRate);
   const exchangeRateDisplay = Number.isNaN(parsedRate) || parsedRate <= 0 ? DEFAULT_EXCHANGE_RATE : parsedRate;

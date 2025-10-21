@@ -6,6 +6,7 @@ import type { ComponentType } from "react";
 import { cn } from "@/lib/utils";
 import { ClipboardList, Package, BarChart3, Users, Settings, Upload } from "lucide-react";
 import type { Route } from "next";
+import type { Session } from "next-auth";
 
 type NavItem = {
   href: Route;
@@ -22,14 +23,23 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/settings/import", label: "Import CSV", icon: Upload }
 ];
 
-export function SideNav() {
+const ADMIN_ONLY_PATHS = new Set<Route>(["/settings", "/settings/import"]);
+
+type SideNavProps = {
+  session: Session;
+};
+
+export function SideNav({ session }: SideNavProps) {
   const pathname = usePathname();
+  const isAdmin = session.user.role === "ADMIN";
+
+  const items = isAdmin ? NAV_ITEMS : NAV_ITEMS.filter((item) => !ADMIN_ONLY_PATHS.has(item.href));
 
   return (
     <aside className="hidden w-64 flex-none border-r border-slate-200 bg-white pb-16 lg:block">
       <nav className="flex h-full flex-col gap-2 p-4">
         <p className="px-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Manage</p>
-        {NAV_ITEMS.map((item) => {
+        {items.map((item) => {
           const isActive = pathname.startsWith(item.href);
           const Icon = item.icon;
           return (

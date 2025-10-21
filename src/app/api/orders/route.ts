@@ -127,6 +127,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
+  const isAdmin = session.user.role === "ADMIN";
+  const venueIds = (session.user.venueIds ?? []).map((id) => Number(id)).filter((id) => !Number.isNaN(id));
+
   const { searchParams } = new URL(request.url);
   const parseResult = dateRangeSchema.safeParse({
     month: searchParams.get("month") ?? undefined,
@@ -196,6 +199,25 @@ export async function GET(request: Request) {
     };
   }
 
+  if (!isAdmin) {
+    if (!venueIds.length) {
+      const emptyMetrics = {
+        ordersCount: 0,
+        totalRevenue: 0,
+        averageOrderValue: 0,
+        totalPayout: 0,
+        totalTicketsValue: 0,
+        pendingFulfillment: 0
+      };
+
+      return NextResponse.json({ orders: [], metrics: emptyMetrics });
+    }
+
+    where.venueId = {
+      in: venueIds
+    };
+  }
+
   const orders = await prisma.order.findMany({
     where,
     include: {
@@ -235,6 +257,10 @@ export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
+  if (session.user.role !== "ADMIN") {
+    return NextResponse.json({ message: "Forbidden" }, { status: 403 });
   }
 
   const body = await request.json();

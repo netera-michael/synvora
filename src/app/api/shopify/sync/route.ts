@@ -18,6 +18,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
+  if (session.user.role !== "ADMIN") {
+    return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+  }
+
   const payload = await request.json();
   const parsed = schema.safeParse(payload);
 
