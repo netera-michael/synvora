@@ -24,22 +24,32 @@ CREATE TABLE IF NOT EXISTS "Venue" (
 -- Add venueId column to Order
 ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "venueId" INTEGER;
 
--- Populate venues from existing data
+-- Ensure default venue exists
 INSERT INTO "Venue" ("name", "slug")
-SELECT DISTINCT COALESCE(NULLIF(TRIM("venue"), ''), 'CICCIO') AS "name",
-       lower(regexp_replace(COALESCE(NULLIF(TRIM("venue"), ''), 'CICCIO'), '[^a-z0-9]+', '-', 'g')) AS "slug"
-FROM "Order"
-WHERE "venueId" IS NULL
+VALUES ('CICCIO', 'ciccio')
 ON CONFLICT ("slug") DO NOTHING;
 
--- Assign venueId to orders
-UPDATE "Order" o
-SET "venueId" = v.id
-FROM "Venue" v
-WHERE o."venueId" IS NULL
-  AND lower(regexp_replace(COALESCE(NULLIF(TRIM(o."venue"), ''), 'CICCIO'), '[^a-z0-9]+', '-', 'g')) = v."slug";
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'Order' AND column_name = 'venue'
+    ) THEN
+        INSERT INTO "Venue" ("name", "slug")
+        SELECT DISTINCT COALESCE(NULLIF(TRIM("venue"), ''), 'CICCIO') AS "name",
+               lower(regexp_replace(COALESCE(NULLIF(TRIM("venue"), ''), 'CICCIO'), '[^a-z0-9]+', '-', 'g')) AS "slug"
+        FROM "Order"
+        WHERE "venueId" IS NULL
+        ON CONFLICT ("slug") DO NOTHING;
 
--- Ensure venueId is set
+        UPDATE "Order" o
+        SET "venueId" = v.id
+        FROM "Venue" v
+        WHERE o."venueId" IS NULL
+          AND lower(regexp_replace(COALESCE(NULLIF(TRIM(o."venue"), ''), 'CICCIO'), '[^a-z0-9]+', '-', 'g')) = v."slug";
+    END IF;
+END $$;
+
 UPDATE "Order"
 SET "venueId" = v.id
 FROM "Venue" v
