@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useMemo } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { Save, X } from "lucide-react";
@@ -79,6 +79,9 @@ const mapOrderToForm = (order: OrderDto): CreateOrderValues => {
 };
 
 export function CreateOrderDialog({ open, initialOrder, onClose, onOrderCreated }: CreateOrderDialogProps) {
+  const [currentExchangeRate, setCurrentExchangeRate] = useState<number>(48.5);
+  const [isLoadingRate, setIsLoadingRate] = useState(false);
+
   const defaultValues: CreateOrderValues = {
     orderNumber: "",
     customerName: "No Customer",
@@ -87,7 +90,7 @@ export function CreateOrderDialog({ open, initialOrder, onClose, onOrderCreated 
     totalAmount: 0,
     currency: "USD",
     processedAt: formatDateTimeForInput(new Date()),
-    exchangeRate: 48.5,
+    exchangeRate: currentExchangeRate,
     tags: "",
     notes: "",
     originalAmount: null,
@@ -122,6 +125,37 @@ export function CreateOrderDialog({ open, initialOrder, onClose, onOrderCreated 
   const originalAmount = watch("originalAmount");
   const exchangeRate = watch("exchangeRate");
 
+  // Fetch current exchange rate when dialog opens
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const fetchExchangeRate = async () => {
+      setIsLoadingRate(true);
+      try {
+        const response = await fetch("/api/exchange-rate");
+        if (response.ok) {
+          const data = await response.json();
+          if (data.rate && typeof data.rate === "number") {
+            setCurrentExchangeRate(data.rate);
+            // Only update the form's exchange rate if not editing an existing order
+            if (!initialOrder) {
+              setValue("exchangeRate", data.rate);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch exchange rate:", error);
+        // Keep using the default rate (48.5)
+      } finally {
+        setIsLoadingRate(false);
+      }
+    };
+
+    fetchExchangeRate();
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (!open) {
       return;
@@ -136,10 +170,11 @@ export function CreateOrderDialog({ open, initialOrder, onClose, onOrderCreated 
     } else {
       reset({
         ...defaultValues,
+        exchangeRate: currentExchangeRate,
         processedAt: formatDateTimeForInput(new Date())
       });
     }
-  }, [open, initialOrder, reset]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, initialOrder, reset, currentExchangeRate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (typeof originalAmount === "number" && originalAmount >= 0 && typeof exchangeRate === "number" && exchangeRate > 0) {
@@ -335,6 +370,9 @@ export function CreateOrderDialog({ open, initialOrder, onClose, onOrderCreated 
                       {...register("exchangeRate", { valueAsNumber: true })}
                       className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
                     />
+                    <span className="text-xs font-normal text-slate-400">
+                      {isLoadingRate ? "Loading current rate..." : `Current live rate from exchange API`}
+                    </span>
                   </label>
                   <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
                     Currency
