@@ -247,6 +247,33 @@ export async function GET(request: Request) {
     };
   }
 
+  const searchTermRaw = searchParams.get("search") ?? "";
+  const searchTerm = searchTermRaw.trim();
+
+  if (searchTerm) {
+    const normalized = searchTerm.startsWith("#") ? searchTerm.slice(1) : searchTerm;
+    const searchConditions: any[] = [
+      { orderNumber: { contains: searchTerm, mode: "insensitive" } },
+      { customerName: { contains: searchTerm, mode: "insensitive" } },
+      { financialStatus: { contains: searchTerm, mode: "insensitive" } },
+      { fulfillmentStatus: { contains: searchTerm, mode: "insensitive" } },
+      { shippingCity: { contains: searchTerm, mode: "insensitive" } },
+      { shippingCountry: { contains: searchTerm, mode: "insensitive" } },
+      { tags: { contains: searchTerm, mode: "insensitive" } }
+    ];
+
+    if (normalized && normalized !== searchTerm) {
+      searchConditions.push({ orderNumber: { contains: normalized, mode: "insensitive" } });
+    }
+
+    where.AND = [
+      ...(where.AND ?? []),
+      {
+        OR: searchConditions
+      }
+    ];
+  }
+
   const totalCount = await prisma.order.count({ where });
   let totalPages = 0;
 

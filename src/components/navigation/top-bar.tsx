@@ -3,7 +3,9 @@
 import { signOut } from "next-auth/react";
 import { Menu, Search, Bell } from "lucide-react";
 import type { Session } from "next-auth";
-import { useState } from "react";
+import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import type { Route } from "next";
 
 type TopBarProps = {
   session: Session;
@@ -12,6 +14,47 @@ type TopBarProps = {
 
 export function TopBar({ session, onToggleSidebar }: TopBarProps) {
   const [searchValue, setSearchValue] = useState("");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const current = searchParams.get("search") ?? "";
+    setSearchValue(current);
+  }, [searchParams]);
+
+  const applySearch = (value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    const trimmed = value.trim();
+
+    if (trimmed) {
+      params.set("search", trimmed);
+      params.delete("page");
+    } else {
+      params.delete("search");
+      params.delete("page");
+    }
+
+    const qs = params.toString();
+    const target = qs ? `${pathname}?${qs}` : pathname;
+    router.replace(target as Route);
+  };
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    applySearch(searchValue);
+  };
+
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    setSearchValue(value);
+  };
+
+  const handleBlur = () => {
+    if (!searchValue.trim() && searchParams.get("search")) {
+      applySearch("");
+    }
+  };
 
   return (
     <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 lg:px-8 print:hidden">
@@ -35,15 +78,16 @@ export function TopBar({ session, onToggleSidebar }: TopBarProps) {
       </div>
 
       <div className="flex max-w-md flex-1 items-center gap-3 px-4">
-        <div className="relative flex w-full items-center">
+        <form className="relative flex w-full items-center" onSubmit={handleSubmit}>
           <Search className="absolute left-3 h-4 w-4 text-slate-400" />
           <input
             className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-10 pr-3 text-sm text-slate-700 shadow-inner focus:border-synvora-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
             placeholder="Search orders, customers, drafts"
             value={searchValue}
-            onChange={(event) => setSearchValue(event.target.value)}
+            onChange={handleChange}
+            onBlur={handleBlur}
           />
-        </div>
+        </form>
       </div>
 
       <div className="flex items-center gap-4">
