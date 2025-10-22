@@ -30,8 +30,20 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   const name = parsed.data.name.trim();
   const slug = slugify(name);
 
-  const existingSlug = await prisma.venue.findUnique({ where: { slug } });
-  if (existingSlug && existingSlug.id !== venueId) {
+  // Check for existing venue by slug OR name (case-insensitive), excluding current venue
+  const [existingSlug, existingName] = await Promise.all([
+    prisma.venue.findUnique({ where: { slug } }),
+    prisma.venue.findFirst({
+      where: {
+        name: {
+          equals: name,
+          mode: 'insensitive'
+        }
+      }
+    })
+  ]);
+
+  if ((existingSlug && existingSlug.id !== venueId) || (existingName && existingName.id !== venueId)) {
     return NextResponse.json({ message: "Another venue already uses this name" }, { status: 409 });
   }
 

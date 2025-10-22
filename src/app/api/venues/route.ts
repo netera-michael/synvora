@@ -56,8 +56,20 @@ export async function POST(request: Request) {
   const name = parsed.data.name.trim();
   const slug = slugify(name);
 
-  const existing = await prisma.venue.findUnique({ where: { slug } });
-  if (existing) {
+  // Check for existing venue by slug OR name (case-insensitive)
+  const [existingBySlug, existingByName] = await Promise.all([
+    prisma.venue.findUnique({ where: { slug } }),
+    prisma.venue.findFirst({
+      where: {
+        name: {
+          equals: name,
+          mode: 'insensitive'
+        }
+      }
+    })
+  ]);
+
+  if (existingBySlug || existingByName) {
     return NextResponse.json({ message: "A venue with this name already exists" }, { status: 409 });
   }
 
