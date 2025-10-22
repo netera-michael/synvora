@@ -129,17 +129,28 @@ export async function GET(request: Request) {
 
   const isAdmin = session.user.role === "ADMIN";
   const venueIds = (session.user.venueIds ?? []).map((id) => Number(id)).filter((id) => !Number.isNaN(id));
-  let page = Number.parseInt(request.url ? new URL(request.url).searchParams.get("page") ?? "1" : "1", 10);
-  if (Number.isNaN(page) || page < 1) {
-    page = 1;
-  }
-  let pageSize = Number.parseInt(request.url ? new URL(request.url).searchParams.get("pageSize") ?? "20" : "20", 10);
-  if (Number.isNaN(pageSize) || pageSize < 1) {
-    pageSize = 20;
-  }
-  pageSize = Math.min(pageSize, 100);
+  const url = new URL(request.url);
+  const { searchParams } = url;
+  const rawPage = searchParams.get("page");
+  const rawPageSize = searchParams.get("pageSize");
+  const allPagesRequested = rawPage?.toLowerCase() === "all";
 
-  const { searchParams } = new URL(request.url);
+  let page = 1;
+  let pageSize = 20;
+
+  if (!allPagesRequested) {
+    const parsedPage = rawPage ? Number.parseInt(rawPage, 10) : Number.NaN;
+    if (!Number.isNaN(parsedPage) && parsedPage > 0) {
+      page = parsedPage;
+    }
+
+    const parsedPageSize = rawPageSize ? Number.parseInt(rawPageSize, 10) : Number.NaN;
+    if (!Number.isNaN(parsedPageSize) && parsedPageSize > 0) {
+      pageSize = Math.min(parsedPageSize, 100);
+    }
+  } else {
+    pageSize = 0;
+  }
   const parseResult = dateRangeSchema.safeParse({
     month: searchParams.get("month") ?? undefined,
     startDate: searchParams.get("startDate") ?? undefined,
@@ -237,17 +248,25 @@ export async function GET(request: Request) {
   }
 
   const totalCount = await prisma.order.count({ where });
-  const totalPages = totalCount === 0 ? 0 : Math.ceil(totalCount / pageSize);
+  let totalPages = 0;
 
-  if (totalPages > 0 && page > totalPages) {
-    page = totalPages;
+  if (allPagesRequested) {
+    totalPages = totalCount === 0 ? 0 : 1;
+    page = totalCount === 0 ? 1 : 1;
+    pageSize = totalCount;
+  } else {
+    totalPages = totalCount === 0 ? 0 : Math.ceil(totalCount / pageSize);
+
+    if (totalPages > 0 && page > totalPages) {
+      page = totalPages;
+    }
+
+    if (totalPages === 0) {
+      page = 1;
+    }
   }
 
-  if (totalPages === 0) {
-    page = 1;
-  }
-
-  const skip = totalPages === 0 ? 0 : (page - 1) * pageSize;
+  const skip = !allPagesRequested && totalPages !== 0 ? (page - 1) * pageSize : 0;
 
   const metricOrders = await prisma.order.findMany({
     where,
@@ -268,8 +287,12 @@ export async function GET(request: Request) {
     orderBy: {
       processedAt: "desc"
     },
-    skip,
-    take: pageSize
+    ...(allPagesRequested || totalPages === 0
+      ? {}
+      : {
+          skip,
+          take: pageSize
+        })
   });
 
   const serialized = orders.map(serializeOrder);
@@ -297,8 +320,8 @@ export async function GET(request: Request) {
       pendingFulfillment
     },
     pagination: {
-      page,
-      pageSize,
+      page: allPagesRequested ? 1 : page,
+      pageSize: allPagesRequested ? totalCount : pageSize,
       totalCount,
       totalPages
     }

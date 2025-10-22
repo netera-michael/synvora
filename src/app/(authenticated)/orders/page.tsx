@@ -78,7 +78,13 @@ export default function OrdersPage() {
   const { data, error, mutate, isLoading } = useSWR<OrdersResponse>(`/api/orders${queryString ? `?${queryString}` : ""}`, fetcher);
   const { data: session } = useSession();
   const isAdmin = session?.user.role === "ADMIN";
-  const pagination = data?.pagination;
+  const [printMode, setPrintMode] = useState(false);
+  const [printOrders, setPrintOrders] = useState<OrderDto[] | null>(null);
+  const [printMetrics, setPrintMetrics] = useState<OrdersResponse["metrics"] | null>(null);
+  const [isPrinting, setIsPrinting] = useState(false);
+  const metrics = printMode && printMetrics ? printMetrics : data?.metrics;
+  const ordersList = printMode && printOrders ? printOrders : data?.orders ?? [];
+  const pagination = printMode ? undefined : data?.pagination;
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderDto | null>(null);
@@ -168,8 +174,34 @@ export default function OrdersPage() {
     setSelectedOrder(null);
   };
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = async () => {
+    if (isPrinting) {
+      return;
+    }
+
+    try {
+      setIsPrinting(true);
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("tzOffset", String(tzOffset));
+      params.set("page", "all");
+      const query = params.toString();
+      const response = await fetch(`/api/orders${query ? `?${query}` : ""}`);
+      if (!response.ok) {
+        throw new Error("Failed to load orders for printing");
+      }
+      const payload = (await response.json()) as OrdersResponse;
+      setPrintMode(true);
+      setPrintOrders(payload.orders);
+      setPrintMetrics(payload.metrics);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      window.print();
+    } catch (printError) {
+      console.error(printError);
+      setPrintMode(false);
+      setPrintOrders(null);
+      setPrintMetrics(null);
+      setIsPrinting(false);
+    }
   };
 
   const handleOrderCreated = (_order: OrderDto) => {
@@ -186,6 +218,18 @@ export default function OrdersPage() {
     mutate();
     closeDrawer();
   };
+
+  useEffect(() => {
+    const handleAfterPrint = () => {
+      setPrintMode(false);
+      setPrintOrders(null);
+      setPrintMetrics(null);
+      setIsPrinting(false);
+    };
+
+    window.addEventListener("afterprint", handleAfterPrint);
+    return () => window.removeEventListener("afterprint", handleAfterPrint);
+  }, []);
 
   const handlePageChange = (nextPage: number) => {
     if (!pagination) {
@@ -285,10 +329,11 @@ export default function OrdersPage() {
           <button
             type="button"
             onClick={handlePrint}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-synvora-primary hover:text-synvora-primary"
+            disabled={isPrinting}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-synvora-primary hover:text-synvora-primary disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Printer className="h-4 w-4" />
-            Print
+            {isPrinting ? "Preparing…" : "Print"}
           </button>
           {isAdmin ? (
             <button
@@ -307,28 +352,28 @@ export default function OrdersPage() {
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Orders</p>
           <p className="mt-3 text-2xl font-semibold text-slate-900">
-            {data?.metrics.ordersCount ?? (isLoading ? "…" : 0)}
+            {metrics?.ordersCount ?? (isLoading ? "…" : 0)}
           </p>
           <p className="mt-1 text-sm text-slate-500">Across selected timeframe</p>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Revenue</p>
           <p className="mt-3 text-2xl font-semibold text-slate-900">
-            {data ? formatCurrencyValue(data.metrics.totalRevenue) : isLoading ? "…" : "$0.00"}
+            {metrics ? formatCurrencyValue(metrics.totalRevenue) : isLoading ? "…" : "$0.00"}
           </p>
           <p className="mt-1 text-sm text-slate-500">Total order value</p>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Total payout</p>
           <p className="mt-3 text-2xl font-semibold text-slate-900">
-            {data ? formatCurrencyValue(data.metrics.totalPayout) : isLoading ? "…" : "$0.00"}
+            {metrics ? formatCurrencyValue(metrics.totalPayout) : isLoading ? "…" : "$0.00"}
           </p>
           <p className="mt-1 text-sm text-slate-500">Expected net amount</p>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Tickets value (EGP)</p>
           <p className="mt-3 text-2xl font-semibold text-slate-900">
-            {data ? `EGP ${formatNumber(data.metrics.totalTicketsValue)}` : isLoading ? "…" : "EGP 0.00"}
+            {metrics ? `EGP ${formatNumber(metrics.totalTicketsValue)}` : isLoading ? "…" : "EGP 0.00"}
           </p>
           <p className="mt-1 text-sm text-slate-500">Sum of original amounts</p>
         </div>
@@ -336,7 +381,7 @@ export default function OrdersPage() {
 
       <div>
         <OrderTable
-          orders={data?.orders ?? []}
+          orders={ordersList}
           onSelect={openDrawer}
           onDuplicate={isAdmin ? handleDuplicate : undefined}
           canManage={isAdmin}
