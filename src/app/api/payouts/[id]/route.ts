@@ -12,7 +12,7 @@ const payoutSchema = z.object({
   account: z.string().optional(),
   processedAt: z.union([z.string(), z.date()]).optional(),
   notes: z.string().optional().nullable(),
-  venueId: z.number().int().optional().nullable()
+  venueId: z.number().int().optional()
 });
 
 const serialize = (payout: any) => ({

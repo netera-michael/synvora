@@ -7,8 +7,7 @@ import { authOptions } from "@/lib/auth";
 const paginationSchema = z.object({
   page: z.coerce.number().int().positive().optional(),
   pageSize: z.coerce.number().int().positive().max(100).optional(),
-  search: z.string().optional(),
-  tzOffset: z.coerce.number().optional()
+  search: z.string().optional()
 });
 
 const payoutSchema = z.object({
@@ -19,7 +18,7 @@ const payoutSchema = z.object({
   account: z.string().default("Payouts"),
   processedAt: z.union([z.string(), z.date()]),
   notes: z.string().optional().nullable(),
-  venueId: z.number().int().optional().nullable()
+  venueId: z.number().int()
 });
 
 const serialize = (payout: any) => ({
@@ -61,7 +60,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ message: "Invalid query" }, { status: 400 });
   }
 
-  const { page = 1, pageSize = 20, search, tzOffset = 0 } = parseParams.data;
+  const { page = 1, pageSize = 20, search } = parseParams.data;
   const isAdmin = session.user.role === "ADMIN";
   const accessibleVenues = (session.user.venueIds ?? []).map((id) => Number(id)).filter((id) => !Number.isNaN(id));
 
@@ -150,7 +149,7 @@ export async function POST(request: Request) {
       account: parsed.data.account ?? "Payouts",
       processedAt: parsed.data.processedAt instanceof Date ? parsed.data.processedAt : new Date(parsed.data.processedAt),
       notes: parsed.data.notes ?? null,
-      venueId: parsed.data.venueId ?? null,
+      venueId: parsed.data.venueId,
       createdById: Number(session.user.id)
     },
     include: {

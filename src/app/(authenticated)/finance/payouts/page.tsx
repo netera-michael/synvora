@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useSession } from "next-auth/react";
@@ -19,10 +19,16 @@ type PayoutsResponse = {
   };
 };
 
+type VenuesResponse = {
+  venues: Array<{ id: number; name: string; slug: string }>;
+};
+
 export default function PayoutsPage() {
   const { data: session } = useSession();
   const isAdmin = session?.user.role === "ADMIN";
   const { data, error, isLoading, mutate } = useSWR<PayoutsResponse>("/api/payouts", fetcher);
+  const { data: venuesData, isLoading: venuesLoading } = useSWR<VenuesResponse>(isAdmin ? "/api/venues" : null, fetcher);
+  const venues = venuesData?.venues ?? [];
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [editingPayout, setEditingPayout] = useState<PayoutDto | null>(null);
 
@@ -61,6 +67,7 @@ export default function PayoutsPage() {
           <button
             type="button"
             onClick={openCreate}
+            disabled={venuesLoading || venues.length === 0}
             className="inline-flex items-center gap-2 rounded-xl bg-synvora-primary px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-synvora-primary/90"
           >
             <Plus className="h-4 w-4" />
@@ -82,6 +89,7 @@ export default function PayoutsPage() {
                 <th className="px-6 py-3">Status</th>
                 <th className="px-6 py-3">Description</th>
                 <th className="px-6 py-3">Account</th>
+                <th className="px-6 py-3">Venue</th>
                 <th className="px-6 py-3 text-right">Amount</th>
                 {isAdmin ? <th className="px-6 py-3 text-right">Actions</th> : null}
               </tr>
@@ -89,7 +97,7 @@ export default function PayoutsPage() {
             <tbody className="divide-y divide-slate-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={isAdmin ? 6 : 5} className="px-6 py-6 text-center text-slate-500">
+                  <td colSpan={isAdmin ? 7 : 6} className="px-6 py-6 text-center text-slate-500">
                     Loading payouts…
                   </td>
                 </tr>
@@ -100,6 +108,7 @@ export default function PayoutsPage() {
                     <td className="px-6 py-4 text-slate-600">{payout.status}</td>
                     <td className="px-6 py-4 text-slate-700">{payout.description}</td>
                     <td className="px-6 py-4 text-slate-600">{payout.account}</td>
+                    <td className="px-6 py-4 text-slate-600">{payout.venue?.name ?? "—"}</td>
                     <td className="px-6 py-4 text-right font-semibold text-slate-900">
                       {formatCurrency(Math.abs(payout.amount), payout.currency)}
                     </td>
@@ -125,7 +134,7 @@ export default function PayoutsPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={isAdmin ? 6 : 5} className="px-6 py-6 text-center text-slate-500">
+                  <td colSpan={isAdmin ? 7 : 6} className="px-6 py-6 text-center text-slate-500">
                     No payouts recorded yet.
                   </td>
                 </tr>
@@ -140,7 +149,7 @@ export default function PayoutsPage() {
       ) : null}
 
       {isAdmin ? (
-        <PayoutDialog open={isDialogOpen} payout={editingPayout} onClose={closeDialog} onSaved={mutate} />
+        <PayoutDialog open={isDialogOpen} payout={editingPayout} onClose={closeDialog} onSaved={mutate} venues={venues} />
       ) : null}
     </div>
   );
@@ -178,39 +187,62 @@ type PayoutDialogProps = {
   payout: PayoutDto | null;
   onClose: () => void;
   onSaved: () => void;
+  venues: Array<{ id: number; name: string; slug: string }>;
 };
 
-function PayoutDialog({ open, payout, onClose, onSaved }: PayoutDialogProps) {
+function PayoutDialog({ open, payout, onClose, onSaved, venues }: PayoutDialogProps) {
   const [submitting, setSubmitting] = useState(false);
-  const [formState, setFormState] = useState(() =>
-    payout
-      ? {
-          amount: payout.amount,
-          currency: payout.currency,
-          status: payout.status,
-          description: payout.description,
-          account: payout.account,
-          processedAt: payout.processedAt.slice(0, 10),
-          notes: payout.notes ?? ""
-        }
-      : {
-          amount: 0,
-          currency: "USD",
-          status: "Posted",
-          description: "Payout",
-          account: "Payouts",
-          processedAt: new Date().toISOString().slice(0, 10),
-          notes: ""
-        }
-  );
-	
+  const [formState, setFormState] = useState({
+    amount: 0,
+    currency: "USD",
+    status: "Posted",
+    description: "Payout",
+    account: "Payouts",
+    processedAt: new Date().toISOString().slice(0, 10),
+    notes: "",
+    venueId: venues[0]?.id ?? 0
+  });
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    if (payout) {
+      setFormState({
+        amount: payout.amount,
+        currency: payout.currency,
+        status: payout.status,
+        description: payout.description,
+        account: payout.account,
+        processedAt: payout.processedAt.slice(0, 10),
+        notes: payout.notes ?? "",
+        venueId: payout.venueId
+      });
+    } else {
+      setFormState({
+        amount: 0,
+        currency: "USD",
+        status: "Posted",
+        description: "Payout",
+        account: "Payouts",
+        processedAt: new Date().toISOString().slice(0, 10),
+        notes: "",
+        venueId: venues[0]?.id ?? 0
+      });
+    }
+  }, [open, payout, venues]);
+
   if (!open) {
     return null;
   }
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = event.target;
-    setFormState((state) => ({ ...state, [name]: name === "amount" ? Number(value) : value }));
+    setFormState((state) => ({
+      ...state,
+      [name]: name === "amount" ? Number(value) : name === "venueId" ? Number(value) : value
+    }));
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -290,6 +322,22 @@ function PayoutDialog({ open, payout, onClose, onSaved }: PayoutDialogProps) {
                 onChange={handleChange}
                 className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
               />
+            </label>
+            <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+              Venue
+              <select
+                name="venueId"
+                value={formState.venueId}
+                onChange={handleChange}
+                required
+                className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
+              >
+                {venues.map((venue) => (
+                  <option key={venue.id} value={venue.id}>
+                    {venue.name}
+                  </option>
+                ))}
+              </select>
             </label>
             <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
               Processed on
