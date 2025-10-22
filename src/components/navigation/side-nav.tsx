@@ -82,13 +82,6 @@ export function SideNav({ session }: SideNavProps) {
             })}
           </div>
         ))}
-
-        <div className="mt-auto rounded-xl bg-slate-50 p-4">
-          <p className="text-sm font-semibold text-slate-900">Workflow tips</p>
-          <p className="mt-1 text-xs text-slate-500">
-            Organize Synvora orders by tagging them with fulfillment priority to streamline pick and pack.
-          </p>
-        </div>
       </nav>
     </aside>
   );
