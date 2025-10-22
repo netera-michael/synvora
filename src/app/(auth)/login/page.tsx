@@ -73,7 +73,7 @@ function LoginForm() {
               value={formState.email}
               onChange={(event) => setFormState((state) => ({ ...state, email: event.target.value }))}
               className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
-              placeholder="admin@synvora.com"
+              placeholder="email@domain.com"
               required
             />
           </label>
@@ -85,7 +85,7 @@ function LoginForm() {
               value={formState.password}
               onChange={(event) => setFormState((state) => ({ ...state, password: event.target.value }))}
               className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
-              placeholder="••••••••"
+              placeholder="••••••••••••••"
               required
             />
           </label>
