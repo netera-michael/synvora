@@ -3,8 +3,8 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { Dialog, Transition, Tab } from "@headlessui/react";
 import { Trash2, Edit3, X, Save, ArrowLeft } from "lucide-react";
-import { useForm, useFieldArray } from "react-hook-form";
-import type { OrderDto, OrderLineItemDto } from "@/types/orders";
+import { useForm } from "react-hook-form";
+import type { OrderDto } from "@/types/orders";
 import { formatCurrency, formatDateTime, formatDateTimeForInput, cn } from "@/lib/utils";
 
 type OrderDrawerProps = {
@@ -30,7 +30,6 @@ type OrderFormValues = {
   notes: string;
   originalAmount: number | null;
   exchangeRate: number;
-  lineItems: Array<Omit<OrderLineItemDto, "id"> & { id?: number }>;
 };
 
 const STATUS_OPTIONS = ["Open", "Closed", "Archived"];
@@ -50,25 +49,7 @@ const mapOrderToForm = (value: OrderDto): OrderFormValues => ({
   tags: value.tags?.join(", ") ?? "",
   notes: value.notes ?? "",
   originalAmount: typeof value.originalAmount === "number" ? value.originalAmount : null,
-  exchangeRate: typeof value.exchangeRate === "number" ? value.exchangeRate : 48.5,
-  lineItems: value.lineItems.length
-    ? value.lineItems.map((item) => ({
-        id: item.id,
-        productName: item.productName,
-        quantity: item.quantity,
-        sku: item.sku ?? "",
-        price: item.price,
-        total: item.total
-      }))
-    : [
-        {
-          productName: "New item",
-          quantity: 1,
-          sku: "",
-          price: 0,
-          total: 0
-        }
-      ]
+  exchangeRate: typeof value.exchangeRate === "number" ? value.exchangeRate : 48.5
 });
 
 export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDeleted, canManage = true }: OrderDrawerProps) {
@@ -76,7 +57,6 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
   const {
     register,
     handleSubmit,
-    control,
     reset,
     watch,
     setValue,
@@ -95,14 +75,8 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
       tags: "",
       notes: "",
       originalAmount: null,
-      exchangeRate: 48.5,
-      lineItems: []
+      exchangeRate: 48.5
     }
-  });
-
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: "lineItems"
   });
 
   const originalAmount = watch("originalAmount");
@@ -177,14 +151,7 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
       financialStatus: values.financialStatus?.length ? values.financialStatus : "Paid",
       exchangeRate:
         typeof values.exchangeRate === "number" && values.exchangeRate > 0 ? values.exchangeRate : 48.5,
-      lineItems: values.lineItems
-        .filter((item) => item.productName.trim().length > 0)
-        .map((item) => ({
-          ...item,
-          quantity: Number(item.quantity),
-          price: Number(item.price),
-          total: Number(item.total)
-        }))
+      lineItems: []
     };
 
     const response = await fetch(`/api/orders/${order.id}`, {
@@ -373,27 +340,6 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
                           </div>
                         </div>
                         <div className="lg:col-span-3 rounded-2xl border border-slate-200 p-6">
-                          <h3 className="text-sm font-semibold text-slate-900">Line items</h3>
-                          <div className="mt-4 space-y-4">
-                            {order.lineItems.map((item) => (
-                              <div key={item.id} className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
-                                <div>
-                                  <p className="text-sm font-semibold text-slate-900">
-                                    {item.productName}
-                                  </p>
-                                  <p className="text-xs text-slate-500">
-                                    Qty {item.quantity}
-                                    {item.sku ? ` • ${item.sku}` : ""}
-                                  </p>
-                                </div>
-                                <p className="text-sm font-semibold text-slate-900">
-                                  {formatCurrency(item.total, order.currency)}
-                                </p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="lg:col-span-3 rounded-2xl border border-slate-200 p-6">
                           <h3 className="text-sm font-semibold text-slate-900">Notes</h3>
                           <p className="mt-2 text-sm text-slate-500">{order.notes ?? "No notes yet."}</p>
                         </div>
@@ -542,77 +488,6 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
                           <p className="text-xs text-slate-500">
                             Calculated as 0.9825 × (EGP ÷ rate).
                           </p>
-                        </div>
-
-                        <div className="rounded-2xl border border-dashed border-slate-300 p-4">
-                          <div className="flex items-center justify-between">
-                            <p className="text-sm font-semibold text-slate-900">Line items</p>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                append({
-                                  productName: "New item",
-                                  quantity: 1,
-                                  sku: "",
-                                  price: 0,
-                                  total: 0
-                                })
-                              }
-                              className="text-sm font-semibold text-synvora-primary"
-                            >
-                              + Add line
-                            </button>
-                          </div>
-                          <div className="mt-4 space-y-4">
-                            {fields.map((field, index) => (
-                              <div key={field.id} className="rounded-xl border border-slate-200 p-4">
-                                <div className="flex items-center justify-between">
-                                  <p className="text-sm font-semibold text-slate-700">
-                                    Item {index + 1}
-                                  </p>
-                                  <button
-                                    type="button"
-                                    onClick={() => remove(index)}
-                                    className="text-xs font-semibold text-rose-500"
-                                  >
-                                    Remove
-                                  </button>
-                                </div>
-                                <div className="mt-3 grid gap-3 md:grid-cols-4">
-                                  <input
-                                    placeholder="Product name"
-                                    {...register(`lineItems.${index}.productName` as const)}
-                                    className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30 md:col-span-2"
-                                  />
-                                  <input
-                                    type="number"
-                                    placeholder="Qty"
-                                    {...register(`lineItems.${index}.quantity` as const, { valueAsNumber: true })}
-                                    className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
-                                  />
-                                  <input
-                                    placeholder="SKU"
-                                    {...register(`lineItems.${index}.sku` as const)}
-                                    className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
-                                  />
-                                  <input
-                                    type="number"
-                                    step="0.01"
-                                    placeholder="Unit price"
-                                    {...register(`lineItems.${index}.price` as const, { valueAsNumber: true })}
-                                    className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
-                                  />
-                                  <input
-                                    type="number"
-                                    step="0.01"
-                                    placeholder="Total"
-                                    {...register(`lineItems.${index}.total` as const, { valueAsNumber: true })}
-                                    className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
-                                  />
-                                </div>
-                              </div>
-                            ))}
-                          </div>
                         </div>
 
                         <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-4">

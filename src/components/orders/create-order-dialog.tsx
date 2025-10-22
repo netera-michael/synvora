@@ -2,7 +2,7 @@
 
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { Dialog, Transition } from "@headlessui/react";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { Save, X } from "lucide-react";
 import type { OrderDto } from "@/types/orders";
 import { formatCurrency, formatDateTimeForInput } from "@/lib/utils";
@@ -26,13 +26,6 @@ type CreateOrderValues = {
   tags: string;
   notes: string;
   originalAmount: number | null;
-  lineItems: Array<{
-    productName: string;
-    quantity: number;
-    sku: string;
-    price: number;
-    total: number;
-  }>;
 };
 
 const mapOrderToForm = (order: OrderDto): CreateOrderValues => {
@@ -56,25 +49,7 @@ const mapOrderToForm = (order: OrderDto): CreateOrderValues => {
     exchangeRate,
     tags: order.tags?.join(", ") ?? "",
     notes: order.notes ?? "",
-    originalAmount,
-    lineItems:
-      order.lineItems && order.lineItems.length
-        ? order.lineItems.map((item) => ({
-            productName: item.productName,
-            quantity: item.quantity,
-            sku: item.sku ?? "",
-            price: item.price,
-            total: item.total
-          }))
-        : [
-            {
-              productName: "",
-              quantity: 1,
-              sku: "",
-              price: 0,
-              total: 0
-            }
-          ]
+    originalAmount
   };
 };
 
@@ -93,33 +68,18 @@ export function CreateOrderDialog({ open, initialOrder, onClose, onOrderCreated 
     exchangeRate: currentExchangeRate,
     tags: "",
     notes: "",
-    originalAmount: null,
-    lineItems: [
-      {
-        productName: "",
-        quantity: 1,
-        sku: "",
-        price: 0,
-        total: 0
-      }
-    ]
+    originalAmount: null
   };
 
   const {
     register,
     handleSubmit,
-    control,
     reset,
     watch,
     setValue,
     formState: { isSubmitting }
   } = useForm<CreateOrderValues>({
     defaultValues
-  });
-
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: "lineItems"
   });
 
   const originalAmount = watch("originalAmount");
@@ -220,14 +180,7 @@ export function CreateOrderDialog({ open, initialOrder, onClose, onOrderCreated 
         .split(",")
         .map((tag) => tag.trim())
         .filter(Boolean),
-      lineItems: values.lineItems
-        .filter((item) => item.productName.trim().length > 0)
-        .map((item) => ({
-          ...item,
-          quantity: Number(item.quantity),
-          price: Number(item.price),
-          total: Number(item.total)
-        })),
+      lineItems: [],
       financialStatus: values.financialStatus?.length ? values.financialStatus : "Paid",
       exchangeRate:
         typeof values.exchangeRate === "number" && values.exchangeRate > 0 ? values.exchangeRate : 48.5
@@ -418,69 +371,6 @@ export function CreateOrderDialog({ open, initialOrder, onClose, onOrderCreated 
                     className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
                   />
                 </label>
-
-                <div className="mt-6 rounded-2xl border border-dashed border-slate-300 p-4">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-semibold text-slate-900">Line items</p>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        append({ productName: "", quantity: 1, sku: "", price: 0, total: 0 })
-                      }
-                      className="text-sm font-semibold text-synvora-primary"
-                    >
-                      + Add line
-                    </button>
-                  </div>
-                  <div className="mt-4 space-y-4">
-                    {fields.map((field, index) => (
-                      <div key={field.id} className="rounded-xl border border-slate-200 p-4">
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-semibold text-slate-700">Item {index + 1}</p>
-                          <button
-                            type="button"
-                            onClick={() => remove(index)}
-                            className="text-xs font-semibold text-rose-500"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                        <div className="mt-3 grid gap-3 md:grid-cols-4">
-                          <input
-                            placeholder="Product name"
-                            {...register(`lineItems.${index}.productName` as const)}
-                            className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30 md:col-span-2"
-                          />
-                          <input
-                            type="number"
-                            placeholder="Qty"
-                            {...register(`lineItems.${index}.quantity` as const, { valueAsNumber: true })}
-                            className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
-                          />
-                          <input
-                            placeholder="SKU"
-                            {...register(`lineItems.${index}.sku` as const)}
-                            className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
-                          />
-                          <input
-                            type="number"
-                            step="0.01"
-                            placeholder="Unit price"
-                            {...register(`lineItems.${index}.price` as const, { valueAsNumber: true })}
-                            className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
-                          />
-                          <input
-                            type="number"
-                            step="0.01"
-                            placeholder="Total"
-                            {...register(`lineItems.${index}.total` as const, { valueAsNumber: true })}
-                            className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
 
                 <div className="mt-6 flex items-center justify-end gap-3 border-t border-slate-200 pt-4">
                   <button
