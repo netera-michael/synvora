@@ -56,6 +56,8 @@ export function TopBar({ session, onToggleSidebar }: TopBarProps) {
     }
   };
 
+  const [notificationCount, setNotificationCount] = useState(0); // Initially no notifications
+
   return (
     <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 lg:px-8 print:hidden">
       <div className="flex items-center gap-3">
@@ -94,9 +96,14 @@ export function TopBar({ session, onToggleSidebar }: TopBarProps) {
         <button
           type="button"
           className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-synvora-primary hover:text-synvora-primary"
+          onClick={() => {
+            // TODO: Implement notification panel functionality when needed
+          }}
         >
           <Bell className="h-4 w-4" />
-          <span className="absolute -right-1 -top-1 inline-flex h-2.5 w-2.5 rounded-full bg-rose-500"></span>
+          {notificationCount > 0 && (
+            <span className="absolute -right-1 -top-1 inline-flex h-2.5 w-2.5 rounded-full bg-rose-500"></span>
+          )}
         </button>
         <button
           type="button"
