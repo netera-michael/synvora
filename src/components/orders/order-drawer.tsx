@@ -339,27 +339,7 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
                             )}
                           </div>
                         </div>
-                        <div className="lg:col-span-3 rounded-2xl border border-slate-200 p-6">
-                          <h3 className="text-sm font-semibold text-slate-900">Line items</h3>
-                          <div className="mt-4 space-y-4">
-                            {order.lineItems.map((item) => (
-                              <div key={item.id} className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
-                                <div>
-                                  <p className="text-sm font-semibold text-slate-900">
-                                    {item.productName}
-                                  </p>
-                                  <p className="text-xs text-slate-500">
-                                    Qty {item.quantity}
-                                    {item.sku ? ` • ${item.sku}` : ""}
-                                  </p>
-                                </div>
-                                <p className="text-sm font-semibold text-slate-900">
-                                  {formatCurrency(item.total, order.currency)}
-                                </p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
+
                         <div className="lg:col-span-3 rounded-2xl border border-slate-200 p-6">
                           <h3 className="text-sm font-semibold text-slate-900">Notes</h3>
                           <p className="mt-2 text-sm text-slate-500">{order.notes ?? "No notes yet."}</p>

@@ -33,7 +33,6 @@ const orderSchema = z.object({
   shippingCountry: z.string().optional().nullable(),
   tags: z.array(z.string()).optional(),
   notes: z.string().optional().nullable(),
-  lineItems: z.array(lineItemSchema).default([]),
   originalAmount: z.number().nonnegative().optional().nullable(),
   exchangeRate: z.number().positive().optional().nullable()
 });
@@ -110,14 +109,6 @@ const serializeOrder = (order: any) => ({
   source: order.source,
   exchangeRate: order.exchangeRate,
   originalAmount: order.originalAmount,
-  lineItems: order.lineItems.map((item: any) => ({
-    id: item.id,
-    productName: item.productName,
-    quantity: item.quantity,
-    sku: item.sku,
-    price: item.price,
-    total: item.total
-  })),
   shopifyStoreId: order.shopifyStoreId
 });
 
@@ -394,16 +385,6 @@ export async function POST(request: Request) {
     typeof data.originalAmount === "number" && data.originalAmount >= 0 ? data.originalAmount : null;
   const { totalAmount: computedTotal } = calculateFromOriginalAmount(originalAmount, exchangeRate);
   const totalAmount = computedTotal > 0 ? computedTotal : data.totalAmount ?? 0;
-  const lineItemsData = data.lineItems
-    .filter((item) => item.productName.trim().length > 0)
-    .map((item) => ({
-      productName: item.productName,
-      quantity: item.quantity,
-      sku: item.sku ?? undefined,
-      price: item.price,
-      total: item.total
-    }));
-
   const created = await prisma.order.create({
     data: {
       orderNumber,
@@ -421,13 +402,9 @@ export async function POST(request: Request) {
       notes: data.notes,
       originalAmount: typeof data.originalAmount === "number" ? data.originalAmount : null,
       exchangeRate,
-      createdById: Number(session.user.id),
-      lineItems: {
-        create: lineItemsData
-      }
+      createdById: Number(session.user.id)
     },
     include: {
-      lineItems: true,
       venue: true
     }
   });
