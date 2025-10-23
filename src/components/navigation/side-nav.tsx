@@ -28,8 +28,9 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/products", label: "Products", icon: Package },
       { href: "/analytics", label: "Analytics", icon: BarChart3 },
       { href: "/customers", label: "Customers", icon: Users },
-      { href: "/settings", label: "Settings", icon: Settings },
-      { href: "/settings/import", label: "Import CSV", icon: Upload }
+      { href: "/settings", label: "Admin Settings", icon: Settings },
+      { href: "/settings/import", label: "Import CSV", icon: Upload },
+      { href: "/settings/user", label: "My Account", icon: Settings }
     ]
   },
   {
@@ -49,7 +50,15 @@ export function SideNav({ session }: SideNavProps) {
   const isAdmin = session.user.role === "ADMIN";
 
   const groups = NAV_GROUPS.map((group) => {
-    const items = group.items.filter((item) => isAdmin || !ADMIN_ONLY_PATHS.has(item.href));
+    const items = group.items.filter((item) => {
+      // Only hide items that are specifically for admins
+      // Show the user settings page to all users
+      if (item.href === "/settings/user") {
+        return true; // Always show user settings
+      }
+      // Otherwise, only show admin-only paths to admins
+      return isAdmin || !ADMIN_ONLY_PATHS.has(item.href);
+    });
     return { ...group, items };
   });
 
