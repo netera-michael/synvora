@@ -19,7 +19,19 @@ type ShopifyStore = {
   };
 };
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+const fetcher = async (url: string) => {
+  const response = await fetch(url);
+  const data = await response.json();
+
+  if (!response.ok) {
+    const error: any = new Error(data.message || "Failed to fetch");
+    error.status = response.status;
+    error.info = data;
+    throw error;
+  }
+
+  return data;
+};
 
 export default function ShopifyStoresPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -101,8 +113,25 @@ export default function ShopifyStoresPage() {
 
       {/* Error state */}
       {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 p-4">
-          <p className="text-sm text-red-600">Failed to load stores. Please try again.</p>
+        <div className="rounded-lg bg-red-50 border border-red-200 p-6">
+          <h3 className="text-sm font-semibold text-red-800">
+            {(error as any)?.info?.message || "Failed to load stores"}
+          </h3>
+          {(error as any)?.status === 503 && (error as any)?.info?.details && (
+            <div className="mt-3 space-y-2">
+              <p className="text-sm text-red-700">{(error as any).info.error}</p>
+              <div className="mt-3 rounded-md bg-red-100 p-3">
+                <p className="text-xs font-mono text-red-900">{(error as any).info.details}</p>
+              </div>
+              <p className="mt-2 text-xs text-red-600">
+                This migration needs to be run in your production database environment. Contact your
+                system administrator or run this command where your database is accessible.
+              </p>
+            </div>
+          )}
+          {(error as any)?.status !== 503 && (
+            <p className="mt-2 text-sm text-red-600">Please try again or contact support.</p>
+          )}
         </div>
       )}
 

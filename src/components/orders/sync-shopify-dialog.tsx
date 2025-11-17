@@ -63,7 +63,7 @@ export function SyncShopifyDialog({ open, onClose, onSyncComplete }: SyncShopify
   const [selectedStore, setSelectedStore] = useState<ShopifyStore | null>(null);
   const [showReview, setShowReview] = useState(false);
 
-  const { data: storesData } = useSWR<{ stores: ShopifyStore[] }>(
+  const { data: storesData, error: storesError } = useSWR<{ stores: ShopifyStore[] }>(
     open ? "/api/shopify-stores" : null,
     fetcher
   );
@@ -210,7 +210,15 @@ export function SyncShopifyDialog({ open, onClose, onSyncComplete }: SyncShopify
                 </div>
 
                 <form onSubmit={onSubmit} className="px-6 py-6">
-                  {storesData?.stores.length === 0 ? (
+                  {storesError ? (
+                    <div className="rounded-lg bg-red-50 border border-red-200 p-4">
+                      <p className="text-sm font-semibold text-red-800">Failed to load stores</p>
+                      <p className="mt-1 text-xs text-red-600">
+                        Please ensure the database migration has been run. Close this dialog and check
+                        the Shopify Stores page for details.
+                      </p>
+                    </div>
+                  ) : storesData?.stores.length === 0 ? (
                     <div className="rounded-lg bg-yellow-50 border border-yellow-200 p-4">
                       <p className="text-sm text-yellow-800">
                         No Shopify stores connected.{" "}

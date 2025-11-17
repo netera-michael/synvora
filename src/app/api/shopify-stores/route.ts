@@ -44,10 +44,24 @@ export async function GET() {
     });
 
     return NextResponse.json({ stores });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Failed to fetch Shopify stores:", error);
+
+    // Check if this is a database schema error (migration not run)
+    const errorMessage = error?.message || "";
+    if (errorMessage.includes("column") || errorMessage.includes("venueId") || errorMessage.includes("relation")) {
+      return NextResponse.json(
+        {
+          message: "Database migration required",
+          details: "Please run: npx prisma migrate deploy",
+          error: "The ShopifyStore table is missing required columns. The database schema needs to be updated."
+        },
+        { status: 503 }
+      );
+    }
+
     return NextResponse.json(
-      { message: "Failed to fetch stores" },
+      { message: "Failed to fetch stores", error: errorMessage },
       { status: 500 }
     );
   }
