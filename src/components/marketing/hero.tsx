@@ -32,7 +32,7 @@ export function Hero() {
             </h1>
 
             <p className="mt-6 text-xl text-slate-600 leading-relaxed">
-              Access Shopify's powerful commerce platform in regions without native payment support.
+              Access Shopify&apos;s powerful commerce platform in regions without native payment support.
               Manage your store, track orders, and grow your business—all under your brand.
             </p>
 

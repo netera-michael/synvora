@@ -81,7 +81,7 @@ export function Testimonials() {
               >
                 {/* Quote mark */}
                 <div className="absolute -top-4 -right-4 text-8xl text-synvora-primary/5 font-serif">
-                  "
+                  &ldquo;
                 </div>
 
                 <div className="relative">
@@ -94,7 +94,7 @@ export function Testimonials() {
 
                   {/* Content */}
                   <p className="text-base text-slate-700 leading-relaxed">
-                    "{testimonial.content}"
+                    &ldquo;{testimonial.content}&rdquo;
                   </p>
 
                   {/* Author */}

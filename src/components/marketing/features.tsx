@@ -12,7 +12,7 @@ const features = [
   {
     icon: CreditCard,
     title: "Payment Processing",
-    description: "Accept payments in regions where Shopify Payments isn't available—all under your brand.",
+    description: "Accept payments in regions where Shopify Payments isn&apos;t available—all under your brand.",
     color: "from-purple-500 to-pink-500"
   },
   {
@@ -52,7 +52,7 @@ export function Features() {
             Built for modern commerce
           </p>
           <p className="mt-6 text-lg text-slate-600">
-            All the tools you need to run and grow your online business, powered by Shopify's infrastructure.
+            All the tools you need to run and grow your online business, powered by Shopify&apos;s infrastructure.
           </p>
         </div>
 
