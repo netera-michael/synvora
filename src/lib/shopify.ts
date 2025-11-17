@@ -1,3 +1,5 @@
+import { calculateOrderAmounts } from "./product-pricing";
+
 type ShopifyOrder = {
   id: number;
   name: string;
@@ -35,14 +37,28 @@ type FetchOrdersOptions = {
   storeDomain: string;
   accessToken: string;
   sinceId?: string;
+  createdAtMin?: string; // ISO date string
+  createdAtMax?: string; // ISO date string
 };
 
-export async function fetchShopifyOrders({ storeDomain, accessToken, sinceId }: FetchOrdersOptions) {
+export async function fetchShopifyOrders({
+  storeDomain,
+  accessToken,
+  sinceId,
+  createdAtMin,
+  createdAtMax
+}: FetchOrdersOptions) {
   const url = new URL(`https://${storeDomain}/admin/api/2023-10/orders.json`);
   url.searchParams.set("status", "any");
   url.searchParams.set("limit", "250");
   if (sinceId) {
     url.searchParams.set("since_id", sinceId);
+  }
+  if (createdAtMin) {
+    url.searchParams.set("created_at_min", createdAtMin);
+  }
+  if (createdAtMax) {
+    url.searchParams.set("created_at_max", createdAtMax);
   }
 
   const response = await fetch(url, {
@@ -62,7 +78,7 @@ export async function fetchShopifyOrders({ storeDomain, accessToken, sinceId }: 
   return data.orders;
 }
 
-export function transformShopifyOrders(orders: ShopifyOrder[]) {
+export function transformShopifyOrders(orders: ShopifyOrder[], exchangeRate: number) {
   return orders.map((order) => {
     const customerName = order.customer
       ? [order.customer.first_name, order.customer.last_name].filter(Boolean).join(" ") || "Shopify Customer"
@@ -80,6 +96,17 @@ export function transformShopifyOrders(orders: ShopifyOrder[]) {
     const shippingCountry =
       order.shipping_address?.country ?? order.billing_address?.country ?? null;
 
+    const lineItems = order.line_items.map((item) => ({
+      productName: item.name,
+      quantity: item.quantity,
+      sku: item.sku ?? undefined,
+      price: Number(item.price ?? 0),
+      total: Number(item.price ?? 0) * item.quantity
+    }));
+
+    // Calculate EGP amounts based on product prices
+    const amounts = calculateOrderAmounts(lineItems, exchangeRate);
+
     return {
       externalId: String(order.id),
       orderNumber: order.name ?? `#${order.order_number}`,
@@ -87,20 +114,16 @@ export function transformShopifyOrders(orders: ShopifyOrder[]) {
       status: order.financial_status === "refunded" ? "Closed" : "Open",
       financialStatus: order.financial_status ? titleCase(order.financial_status) : null,
       fulfillmentStatus: order.fulfillment_status ? titleCase(order.fulfillment_status) : null,
-      totalAmount: Number(order.current_total_price ?? 0),
+      totalAmount: amounts.totalAmount,
+      originalAmount: amounts.originalAmount,
+      exchangeRate: exchangeRate,
       currency: order.currency ?? "USD",
       processedAt: new Date(order.processed_at ?? Date.now()),
       shippingCity,
       shippingCountry,
       tags,
       notes: order.note ?? null,
-      lineItems: order.line_items.map((item) => ({
-        productName: item.name,
-        quantity: item.quantity,
-        sku: item.sku ?? undefined,
-        price: Number(item.price ?? 0),
-        total: Number(item.price ?? 0) * item.quantity
-      }))
+      lineItems
     };
   });
 }

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType } from "react";
 import { cn } from "@/lib/utils";
-import { ClipboardList, Package, BarChart3, Users, Settings, Upload } from "lucide-react";
+import { ClipboardList, Package, BarChart3, Users, Settings, Upload, Store } from "lucide-react";
 import type { Route } from "next";
 import type { Session } from "next-auth";
 
@@ -29,6 +29,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
       { href: "/admin/customers", label: "Customers", icon: Users },
       { href: "/admin/settings", label: "Admin Settings", icon: Settings },
+      { href: "/admin/settings/shopify-stores", label: "Shopify Stores", icon: Store },
       { href: "/admin/settings/import", label: "Import CSV", icon: Upload },
       { href: "/admin/settings/user", label: "My Account", icon: Settings }
     ]
@@ -39,7 +40,7 @@ const NAV_GROUPS: NavGroup[] = [
   }
 ];
 
-const ADMIN_ONLY_PATHS = new Set<Route>(["/admin/settings", "/admin/settings/import"]);
+const ADMIN_ONLY_PATHS = new Set<Route>(["/admin/settings", "/admin/settings/import", "/admin/settings/shopify-stores"]);
 
 type SideNavProps = {
   session: Session;
