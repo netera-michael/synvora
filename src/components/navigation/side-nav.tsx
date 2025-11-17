@@ -53,7 +53,7 @@ export function SideNav({ session }: SideNavProps) {
     const items = group.items.filter((item) => {
       // Only hide items that are specifically for admins
       // Show the user settings page to all users
-      if (item.href === "/settings/user") {
+      if (item.href === "/admin/settings/user") {
         return true; // Always show user settings
       }
       // Otherwise, only show admin-only paths to admins
