@@ -21,7 +21,7 @@ export function Hero() {
           <div className="animate-fade-in-up">
             <div className="inline-flex items-center rounded-full bg-synvora-primary/10 px-4 py-1.5 text-sm font-medium text-synvora-primary mb-6">
               <span className="mr-2 h-2 w-2 rounded-full bg-synvora-primary animate-pulse" />
-              White-label Shopify Platform
+              E-Commerce Platform for Global Markets
             </div>
 
             <h1 className="text-5xl font-bold tracking-tight text-slate-900 sm:text-6xl lg:text-7xl">
@@ -32,7 +32,7 @@ export function Hero() {
             </h1>
 
             <p className="mt-6 text-xl text-slate-600 leading-relaxed">
-              Access Shopify&apos;s powerful commerce platform in regions without native payment support.
+              A powerful e-commerce platform designed for regions without traditional payment support.
               Manage your store, track orders, and grow your business—all under your brand.
             </p>
 

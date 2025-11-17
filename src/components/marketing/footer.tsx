@@ -44,7 +44,7 @@ export function Footer() {
               <span className="text-xl font-bold text-white">Synvora</span>
             </div>
             <p className="text-base text-slate-400 max-w-xs">
-              White-label Shopify platform enabling global commerce in regions without native payment support.
+              E-commerce platform enabling global commerce in regions without traditional payment support.
             </p>
             <div className="flex gap-4">
               {navigation.social.map((item) => {

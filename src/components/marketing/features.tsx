@@ -12,13 +12,13 @@ const features = [
   {
     icon: CreditCard,
     title: "Payment Processing",
-    description: "Accept payments in regions where Shopify Payments isn&apos;t available—all under your brand.",
+    description: "Accept payments globally with our integrated payment solutions—all under your brand.",
     color: "from-purple-500 to-pink-500"
   },
   {
     icon: Globe2,
-    title: "Shopify Synchronization",
-    description: "Real-time sync with Shopify stores. Import orders, products, and customer data automatically.",
+    title: "Real-Time Synchronization",
+    description: "Seamlessly sync your orders, products, and customer data in real-time across all channels.",
     color: "from-green-500 to-emerald-500"
   },
   {
@@ -52,7 +52,7 @@ export function Features() {
             Built for modern commerce
           </p>
           <p className="mt-6 text-lg text-slate-600">
-            All the tools you need to run and grow your online business, powered by Shopify&apos;s infrastructure.
+            All the tools you need to run and grow your online business, powered by enterprise-grade infrastructure.
           </p>
         </div>
 

@@ -4,14 +4,14 @@ import { Star } from "lucide-react";
 
 const testimonials = [
   {
-    content: "Synvora transformed how we manage our e-commerce business. The Shopify integration is seamless, and we can finally accept payments in our region without limitations.",
+    content: "Synvora transformed how we manage our e-commerce business. The platform is seamless, and we can finally accept payments in our region without limitations.",
     author: "Sarah Johnson",
     role: "CEO, Fashion Forward",
     avatar: "gradient-1",
     rating: 5
   },
   {
-    content: "The white-label solution was exactly what we needed. Our customers think it's our own platform, while we leverage Shopify's powerful infrastructure behind the scenes.",
+    content: "The white-label solution was exactly what we needed. Our customers think it's our own platform, while we leverage enterprise-grade infrastructure behind the scenes.",
     author: "Michael Chen",
     role: "Founder, Tech Gadgets Hub",
     avatar: "gradient-2",
@@ -123,7 +123,7 @@ export function Testimonials() {
 
         {/* Trust badges */}
         <div className="mt-16 flex flex-wrap items-center justify-center gap-8 opacity-60 animate-fade-in-up">
-          {["Stripe", "Shopify", "AWS", "Cloudflare"].map((brand) => (
+          {["Stripe", "PayPal", "AWS", "Cloudflare"].map((brand) => (
             <div
               key={brand}
               className="text-xl font-bold text-slate-400"
