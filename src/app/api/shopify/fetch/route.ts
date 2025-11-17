@@ -60,7 +60,7 @@ export async function POST(request: Request) {
     });
 
     // Transform orders with EGP calculations
-    const transformed = transformShopifyOrders(shopifyOrders, exchangeRate);
+    const transformed = await transformShopifyOrders(shopifyOrders, exchangeRate, store.venueId);
 
     return NextResponse.json({
       orders: transformed,
