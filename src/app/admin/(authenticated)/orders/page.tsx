@@ -4,12 +4,13 @@ import useSWR from "swr";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Route } from "next";
-import { Plus, Printer } from "lucide-react";
+import { Plus, Printer, CloudDownload } from "lucide-react";
 import { useSession } from "next-auth/react";
 import type { OrderDto } from "@/types/orders";
 import { OrderTable } from "@/components/orders/order-table";
 import { OrderDrawer } from "@/components/orders/order-drawer";
 import { CreateOrderDialog } from "@/components/orders/create-order-dialog";
+import { SyncShopifyDialog } from "@/components/orders/sync-shopify-dialog";
 
 type OrdersResponse = {
   orders: OrderDto[];
@@ -87,6 +88,7 @@ export default function OrdersPage() {
   const pagination = printMode ? undefined : data?.pagination;
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isSyncOpen, setIsSyncOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderDto | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [duplicateOrder, setDuplicateOrder] = useState<OrderDto | null>(null);
@@ -336,14 +338,24 @@ export default function OrdersPage() {
             {isPrinting ? "Preparing…" : "Print"}
           </button>
           {isAdmin ? (
-            <button
-              type="button"
-              onClick={() => setIsCreateOpen(true)}
-              className="inline-flex items-center gap-2 rounded-xl bg-synvora-primary px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-synvora-primary/90"
-            >
-              <Plus className="h-4 w-4" />
-              Create order
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => setIsSyncOpen(true)}
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-synvora-primary hover:text-synvora-primary"
+              >
+                <CloudDownload className="h-4 w-4" />
+                Sync Shopify
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsCreateOpen(true)}
+                className="inline-flex items-center gap-2 rounded-xl bg-synvora-primary px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-synvora-primary/90"
+              >
+                <Plus className="h-4 w-4" />
+                Create order
+              </button>
+            </>
           ) : null}
         </div>
       </div>
@@ -398,15 +410,25 @@ export default function OrdersPage() {
       />
 
       {isAdmin ? (
-        <CreateOrderDialog
-          open={isCreateOpen}
-          initialOrder={duplicateOrder}
-          onClose={() => {
-            setIsCreateOpen(false);
-            setDuplicateOrder(null);
-          }}
-          onOrderCreated={handleOrderCreated}
-        />
+        <>
+          <CreateOrderDialog
+            open={isCreateOpen}
+            initialOrder={duplicateOrder}
+            onClose={() => {
+              setIsCreateOpen(false);
+              setDuplicateOrder(null);
+            }}
+            onOrderCreated={handleOrderCreated}
+          />
+          <SyncShopifyDialog
+            open={isSyncOpen}
+            onClose={() => setIsSyncOpen(false)}
+            onSyncComplete={() => {
+              mutate();
+              setIsSyncOpen(false);
+            }}
+          />
+        </>
       ) : null}
 
       <PaginationControls
