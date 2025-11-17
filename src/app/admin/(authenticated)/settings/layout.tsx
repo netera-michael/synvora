@@ -10,7 +10,7 @@ export default async function SettingsLayout({
   const session = await getServerSession(authOptions);
 
   if (!session) {
-    redirect("/login");
+    redirect("/admin/login");
   }
 
   return <>{children}</>;
