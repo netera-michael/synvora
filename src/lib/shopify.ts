@@ -25,6 +25,7 @@ type ShopifyOrder = {
   } | null;
   line_items: Array<{
     id: number;
+    product_id?: number | null;
     name: string;
     quantity: number;
     sku?: string | null;
@@ -100,6 +101,7 @@ export function transformShopifyOrders(orders: ShopifyOrder[], exchangeRate: num
       productName: item.name,
       quantity: item.quantity,
       sku: item.sku ?? undefined,
+      shopifyProductId: item.product_id ? String(item.product_id) : undefined,
       price: Number(item.price ?? 0),
       total: Number(item.price ?? 0) * item.quantity
     }));

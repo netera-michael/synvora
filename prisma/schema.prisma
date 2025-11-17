@@ -90,6 +90,24 @@ model Venue {
   users         User[]          @relation("UserVenues")
   payouts       Payout[]
   shopifyStores ShopifyStore[]
+  products      Product[]
+}
+
+model Product {
+  id                Int      @id @default(autoincrement())
+  name              String
+  sku               String?
+  shopifyProductId  String?
+  egpPrice          Float
+  venueId           Int
+  active            Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  venue Venue @relation(fields: [venueId], references: [id])
+
+  @@unique([sku, venueId])
+  @@index([shopifyProductId])
 }
 
 enum Role {
