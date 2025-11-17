@@ -24,22 +24,22 @@ const NAV_GROUPS: NavGroup[] = [
   {
     title: "Manage",
     items: [
-      { href: "/orders", label: "Orders", icon: ClipboardList },
-      { href: "/products", label: "Products", icon: Package },
-      { href: "/analytics", label: "Analytics", icon: BarChart3 },
-      { href: "/customers", label: "Customers", icon: Users },
-      { href: "/settings", label: "Admin Settings", icon: Settings },
-      { href: "/settings/import", label: "Import CSV", icon: Upload },
-      { href: "/settings/user", label: "My Account", icon: Settings }
+      { href: "/admin/orders", label: "Orders", icon: ClipboardList },
+      { href: "/admin/products", label: "Products", icon: Package },
+      { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
+      { href: "/admin/customers", label: "Customers", icon: Users },
+      { href: "/admin/settings", label: "Admin Settings", icon: Settings },
+      { href: "/admin/settings/import", label: "Import CSV", icon: Upload },
+      { href: "/admin/settings/user", label: "My Account", icon: Settings }
     ]
   },
   {
     title: "Finance",
-    items: [{ href: "/finance/payouts", label: "Payouts", icon: BarChart3 }]
+    items: [{ href: "/admin/finance/payouts", label: "Payouts", icon: BarChart3 }]
   }
 ];
 
-const ADMIN_ONLY_PATHS = new Set<Route>(["/settings", "/settings/import"]);
+const ADMIN_ONLY_PATHS = new Set<Route>(["/admin/settings", "/admin/settings/import"]);
 
 type SideNavProps = {
   session: Session;

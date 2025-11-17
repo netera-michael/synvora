@@ -6,8 +6,8 @@ import { SynvoraSessionProvider } from "@/components/providers/session-provider"
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Synvora Admin",
-  description: "Synvora admin dashboard for order management."
+  title: "Synvora - White-label Shopify Platform",
+  description: "Access Shopify's powerful commerce platform in regions without native payment support. Manage your store, track orders, and grow your business under your brand."
 };
 
 export default function RootLayout({
