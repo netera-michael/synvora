@@ -53,13 +53,14 @@ model Order {
 }
 
 model OrderLineItem {
-  id         Int     @id @default(autoincrement())
-  orderId    Int
-  productName String
-  quantity   Int      @default(1)
-  sku        String?
-  price      Float    @default(0)
-  total      Float    @default(0)
+  id                Int     @id @default(autoincrement())
+  orderId           Int
+  productName       String
+  quantity          Int      @default(1)
+  sku               String?
+  shopifyProductId  String?
+  price             Float    @default(0)
+  total             Float    @default(0)
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }

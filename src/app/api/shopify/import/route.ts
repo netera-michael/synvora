@@ -8,6 +8,7 @@ const lineItemSchema = z.object({
   productName: z.string(),
   quantity: z.number(),
   sku: z.string().optional(),
+  shopifyProductId: z.string().optional(),
   price: z.number(),
   total: z.number()
 });
@@ -120,6 +121,7 @@ export async function POST(request: Request) {
                   productName: item.productName,
                   quantity: item.quantity,
                   sku: item.sku,
+                  shopifyProductId: item.shopifyProductId,
                   price: item.price,
                   total: item.total
                 }))
@@ -155,6 +157,7 @@ export async function POST(request: Request) {
                   productName: item.productName,
                   quantity: item.quantity,
                   sku: item.sku,
+                  shopifyProductId: item.shopifyProductId,
                   price: item.price,
                   total: item.total
                 }))
