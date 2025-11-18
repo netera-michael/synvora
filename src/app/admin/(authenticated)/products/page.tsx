@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import useSWR from "swr";
-import { Plus, Package, Trash2, Edit2 } from "lucide-react";
+import { Plus, Package, Trash2, Edit2, RefreshCw } from "lucide-react";
 import { ProductDialog } from "@/components/products/product-dialog";
+import { ShopifySyncDialog } from "@/components/products/shopify-sync-dialog";
 
 type Product = {
   id: number;
@@ -35,6 +36,7 @@ const fetcher = async (url: string) => {
 
 export default function ProductsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [syncDialogOpen, setSyncDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   const { data, error, isLoading, mutate } = useSWR<{ products: Product[] }>(
@@ -75,6 +77,11 @@ export default function ProductsPage() {
     mutate();
   };
 
+  const handleSyncDialogClose = () => {
+    setSyncDialogOpen(false);
+    mutate();
+  };
+
   const formatEGP = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
       minimumFractionDigits: 2,
@@ -92,16 +99,25 @@ export default function ProductsPage() {
             Manage product catalog with SKU mapping and EGP pricing for order synchronization
           </p>
         </div>
-        <button
-          onClick={() => {
-            setEditingProduct(null);
-            setDialogOpen(true);
-          }}
-          className="inline-flex items-center gap-2 rounded-lg bg-synvora-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-synvora-primary/90"
-        >
-          <Plus className="h-4 w-4" />
-          Add Product
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setSyncDialogOpen(true)}
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Sync from Shopify
+          </button>
+          <button
+            onClick={() => {
+              setEditingProduct(null);
+              setDialogOpen(true);
+            }}
+            className="inline-flex items-center gap-2 rounded-lg bg-synvora-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-synvora-primary/90"
+          >
+            <Plus className="h-4 w-4" />
+            Add Product
+          </button>
+        </div>
       </div>
 
       {/* Loading state */}
@@ -230,12 +246,13 @@ export default function ProductsPage() {
         </div>
       )}
 
-      {/* Dialog */}
+      {/* Dialogs */}
       <ProductDialog
         open={dialogOpen}
         onClose={handleDialogClose}
         product={editingProduct}
       />
+      <ShopifySyncDialog open={syncDialogOpen} onClose={handleSyncDialogClose} />
     </div>
   );
 }
