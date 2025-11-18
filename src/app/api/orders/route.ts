@@ -87,15 +87,15 @@ const serializeOrder = (order: any) => ({
   venueId: order.venueId,
   venue: order.venue
     ? {
-        id: order.venue.id,
-        name: order.venue.name,
-        slug: order.venue.slug
-      }
+      id: order.venue.id,
+      name: order.venue.name,
+      slug: order.venue.slug
+    }
     : {
-        id: 0,
-        name: "CICCIO",
-        slug: "ciccio"
-      },
+      id: 0,
+      name: "CICCIO",
+      slug: "ciccio"
+    },
   status: order.status,
   financialStatus: order.financialStatus,
   fulfillmentStatus: order.fulfillmentStatus,
@@ -176,8 +176,8 @@ export async function GET(request: Request) {
     const start = startPayload ?? endPayload!;
     const end = endPayload ?? startPayload!;
 
-    let startDate = new Date(Date.UTC(start.year, start.month - 1, start.day, 0, 0, 0, 0) + tzOffsetMs);
-    let endDate = new Date(Date.UTC(end.year, end.month - 1, end.day, 23, 59, 59, 999) + tzOffsetMs);
+    let startDate = new Date(Date.UTC(start.year, start.month - 1, start.day, 0, 0, 0, 0) - tzOffsetMs);
+    let endDate = new Date(Date.UTC(end.year, end.month - 1, end.day, 23, 59, 59, 999) - tzOffsetMs);
 
     if (startDate > endDate) {
       const temp = startDate;
@@ -189,8 +189,8 @@ export async function GET(request: Request) {
     rangeEnd = endDate;
   } else if (parseResult.data.month) {
     const [year, month] = parseResult.data.month.split('-').map((value) => Number(value));
-    const startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0) + tzOffsetMs);
-    const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999) + tzOffsetMs);
+    const startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0) - tzOffsetMs);
+    const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999) - tzOffsetMs);
     rangeStart = startDate;
     rangeEnd = endDate;
   }
@@ -199,14 +199,6 @@ export async function GET(request: Request) {
     where.processedAt = {
       gte: rangeStart,
       lte: rangeEnd
-    };
-  } else if (parseResult.data.month) {
-    const [year, month] = parseResult.data.month.split("-").map((value) => Number(value));
-    const start = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0) + tzOffsetMs);
-    const end = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999) + tzOffsetMs);
-    where.processedAt = {
-      gte: start,
-      lte: end
     };
   }
 
@@ -308,9 +300,9 @@ export async function GET(request: Request) {
     ...(allPagesRequested || totalPages === 0
       ? {}
       : {
-          skip,
-          take: pageSize
-        })
+        skip,
+        take: pageSize
+      })
   });
 
   const serialized = orders.map(serializeOrder);
