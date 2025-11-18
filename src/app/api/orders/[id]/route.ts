@@ -29,6 +29,7 @@ const serializeOrder = (order: any) => ({
   id: order.id,
   externalId: order.externalId,
   orderNumber: order.orderNumber,
+  shopifyOrderNumber: order.shopifyOrderNumber,
   customerName: order.customerName,
   venueId: order.venueId,
   venue: order.venue

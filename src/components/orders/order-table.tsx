@@ -7,6 +7,7 @@ type OrderTableProps = {
   onSelect: (order: OrderDto) => void;
   onDuplicate?: (order: OrderDto) => void;
   canManage?: boolean;
+  isAdmin?: boolean;
 };
 
 const BADGES: Record<string, string> = {
@@ -19,7 +20,7 @@ const BADGES: Record<string, string> = {
   Closed: "bg-slate-200 text-slate-600"
 };
 
-export function OrderTable({ orders, onSelect, onDuplicate, canManage = true }: OrderTableProps) {
+export function OrderTable({ orders, onSelect, onDuplicate, canManage = true, isAdmin = false }: OrderTableProps) {
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <table className="min-w-full divide-y divide-slate-200 text-sm">
@@ -28,6 +29,11 @@ export function OrderTable({ orders, onSelect, onDuplicate, canManage = true }: 
             <th scope="col" className="px-6 py-4">
               Order
             </th>
+            {isAdmin && (
+              <th scope="col" className="px-6 py-4">
+                Shopify Order
+              </th>
+            )}
             <th scope="col" className="px-6 py-4">
               Customer
             </th>
@@ -71,6 +77,11 @@ export function OrderTable({ orders, onSelect, onDuplicate, canManage = true }: 
                   </span>
                 </div>
               </td>
+              {isAdmin && (
+                <td className="whitespace-nowrap px-6 py-4 text-slate-600">
+                  {order.shopifyOrderNumber || "—"}
+                </td>
+              )}
               <td className="whitespace-nowrap px-6 py-4 text-slate-700">
                 <div className="flex flex-col">
                   <span>{order.customerName}</span>

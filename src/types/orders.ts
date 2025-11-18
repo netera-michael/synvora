@@ -17,6 +17,7 @@ export type OrderDto = {
   id: number;
   externalId?: string | null;
   orderNumber: string;
+  shopifyOrderNumber?: string | null;
   customerName: string;
   venue: VenueDto;
   venueId: number;

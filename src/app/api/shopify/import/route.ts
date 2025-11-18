@@ -89,7 +89,8 @@ export async function POST(request: Request) {
             await tx.order.update({
               where: { id: existing.id },
               data: {
-                orderNumber: order.orderNumber,
+                // Keep existing Synvora orderNumber, update Shopify reference
+                shopifyOrderNumber: order.orderNumber,
                 customerName: order.customerName,
                 status: order.status,
                 financialStatus: order.financialStatus,
@@ -131,10 +132,11 @@ export async function POST(request: Request) {
           updated += 1;
         } else {
           // Create new order
-          await prisma.order.create({
+          const createdOrder = await prisma.order.create({
             data: {
               externalId: order.externalId,
-              orderNumber: order.orderNumber,
+              orderNumber: "TMP", // Temporary, will be updated
+              shopifyOrderNumber: order.orderNumber, // Store Shopify order number
               customerName: order.customerName,
               status: order.status,
               financialStatus: order.financialStatus,
@@ -164,6 +166,13 @@ export async function POST(request: Request) {
               }
             }
           });
+
+          // Update orderNumber with Synvora sequential ID
+          await prisma.order.update({
+            where: { id: createdOrder.id },
+            data: { orderNumber: `#${createdOrder.id}` }
+          });
+
           imported += 1;
         }
       } catch (error) {

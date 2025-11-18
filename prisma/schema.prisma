@@ -25,6 +25,7 @@ model Order {
   id                Int             @id @default(autoincrement())
   externalId        String?         @unique
   orderNumber       String
+  shopifyOrderNumber String?
   customerName      String
   status            String
   financialStatus   String?

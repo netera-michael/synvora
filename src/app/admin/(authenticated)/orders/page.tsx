@@ -397,6 +397,7 @@ export default function OrdersPage() {
           onSelect={openDrawer}
           onDuplicate={isAdmin ? handleDuplicate : undefined}
           canManage={isAdmin}
+          isAdmin={isAdmin}
         />
       </div>
 
@@ -407,6 +408,7 @@ export default function OrdersPage() {
         onOrderUpdated={handleOrderUpdated}
         onOrderDeleted={handleOrderDeleted}
         canManage={isAdmin}
+        isAdmin={isAdmin}
       />
 
       {isAdmin ? (
