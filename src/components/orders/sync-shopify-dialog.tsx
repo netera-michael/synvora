@@ -108,6 +108,12 @@ export function SyncShopifyDialog({ open, onClose, onSyncComplete }: SyncShopify
     event.preventDefault();
     setFormState((current) => ({ ...current, status: "loading", message: "" }));
 
+    const [startYear, startMonth, startDay] = formState.startDate.split("-").map(Number);
+    const startDate = new Date(startYear, startMonth - 1, startDay, 0, 0, 0, 0);
+
+    const [endYear, endMonth, endDay] = formState.endDate.split("-").map(Number);
+    const endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59, 999);
+
     const response = await fetch("/api/shopify/fetch", {
       method: "POST",
       headers: {
@@ -115,8 +121,8 @@ export function SyncShopifyDialog({ open, onClose, onSyncComplete }: SyncShopify
       },
       body: JSON.stringify({
         storeId: parseInt(formState.storeId, 10),
-        startDate: new Date(formState.startDate).toISOString(),
-        endDate: new Date(formState.endDate + "T23:59:59").toISOString()
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString()
       })
     });
 
