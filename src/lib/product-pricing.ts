@@ -34,6 +34,15 @@ export async function calculateEGPFromLineItems(
     }
   });
 
+  console.log(`[Product Matching] Venue ${venueId}: Found ${products.length} active products in database`);
+  console.log(`[Product Matching] Database products:`, products.map(p => ({
+    name: p.name,
+    sku: p.sku,
+    shopifyProductId: p.shopifyProductId,
+    egpPrice: p.egpPrice
+  })));
+  console.log(`[Product Matching] Order line items:`, lineItems);
+
   if (!products.length) {
     console.warn(`No active products found for venue ${venueId}`);
     return null;
@@ -48,11 +57,17 @@ export async function calculateEGPFromLineItems(
     // Try to match by Shopify Product ID first (most precise)
     if (item.shopifyProductId) {
       matchedProduct = products.find((p) => p.shopifyProductId === item.shopifyProductId);
+      if (matchedProduct) {
+        console.log(`[Product Matching] ✓ Matched by Shopify ID: ${item.productName} → ${matchedProduct.name}`);
+      }
     }
 
     // Try to match by SKU if not matched yet
     if (!matchedProduct && item.sku) {
       matchedProduct = products.find((p) => p.sku === item.sku);
+      if (matchedProduct) {
+        console.log(`[Product Matching] ✓ Matched by SKU: ${item.productName} → ${matchedProduct.name}`);
+      }
     }
 
     // Try to match by product name (case-insensitive, trimmed)
@@ -61,11 +76,15 @@ export async function calculateEGPFromLineItems(
       matchedProduct = products.find(
         (p) => p.name.toLowerCase().trim() === normalizedName
       );
+      if (matchedProduct) {
+        console.log(`[Product Matching] ✓ Matched by name: ${item.productName} → ${matchedProduct.name}`);
+      }
     }
 
     if (matchedProduct) {
       totalEGP += matchedProduct.egpPrice * item.quantity;
     } else {
+      console.error(`[Product Matching] ✗ NO MATCH for: ${item.productName} (SKU: ${item.sku || "N/A"}, Shopify ID: ${item.shopifyProductId || "N/A"})`);
       unmatchedItems.push(
         `${item.productName} (SKU: ${item.sku || "N/A"}, ID: ${item.shopifyProductId || "N/A"})`
       );
@@ -74,13 +93,14 @@ export async function calculateEGPFromLineItems(
 
   // If any items couldn't be matched, return null to indicate incomplete calculation
   if (unmatchedItems.length > 0) {
-    console.warn(
-      `Could not match ${unmatchedItems.length} product(s) for venue ${venueId}:`,
+    console.error(
+      `[Product Matching] FAILED: Could not match ${unmatchedItems.length} product(s) for venue ${venueId}:`,
       unmatchedItems
     );
     return null;
   }
 
+  console.log(`[Product Matching] SUCCESS: Total EGP = ${totalEGP}`);
   return totalEGP;
 }
 
