@@ -6,8 +6,8 @@ import { authOptions } from "@/lib/auth";
 
 const createSchema = z.object({
   name: z.string().min(1),
-  sku: z.string().optional(),
-  shopifyProductId: z.string().optional(),
+  sku: z.string().nullable().optional(),
+  shopifyProductId: z.string().nullable().optional(),
   egpPrice: z.number().min(0),
   venueId: z.number(),
   active: z.boolean().default(true)

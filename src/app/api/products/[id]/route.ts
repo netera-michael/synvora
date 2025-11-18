@@ -6,8 +6,8 @@ import { authOptions } from "@/lib/auth";
 
 const updateSchema = z.object({
   name: z.string().min(1).optional(),
-  sku: z.string().optional(),
-  shopifyProductId: z.string().optional(),
+  sku: z.string().nullable().optional(),
+  shopifyProductId: z.string().nullable().optional(),
   egpPrice: z.number().min(0).optional(),
   active: z.boolean().optional()
 });
