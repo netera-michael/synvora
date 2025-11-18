@@ -25,6 +25,7 @@ model Order {
   id                Int             @id @default(autoincrement())
   externalId        String?         @unique
   orderNumber       String
+  shopifyOrderNumber String?
   customerName      String
   status            String
   financialStatus   String?
@@ -53,13 +54,14 @@ model Order {
 }
 
 model OrderLineItem {
-  id         Int     @id @default(autoincrement())
-  orderId    Int
-  productName String
-  quantity   Int      @default(1)
-  sku        String?
-  price      Float    @default(0)
-  total      Float    @default(0)
+  id                Int     @id @default(autoincrement())
+  orderId           Int
+  productName       String
+  quantity          Int      @default(1)
+  sku               String?
+  shopifyProductId  String?
+  price             Float    @default(0)
+  total             Float    @default(0)
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
@@ -69,11 +71,13 @@ model ShopifyStore {
   storeDomain String   @unique
   accessToken String
   nickname    String?
+  venueId     Int
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   ownerId     Int?
 
-  owner User? @relation(fields: [ownerId], references: [id])
+  owner  User?  @relation(fields: [ownerId], references: [id])
+  venue  Venue  @relation(fields: [venueId], references: [id])
   orders Order[]
 }
 
@@ -84,9 +88,28 @@ model Venue {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  orders Order[]
-  users  User[] @relation("UserVenues")
-  payouts Payout[]
+  orders        Order[]
+  users         User[]          @relation("UserVenues")
+  payouts       Payout[]
+  shopifyStores ShopifyStore[]
+  products      Product[]
+}
+
+model Product {
+  id                Int      @id @default(autoincrement())
+  name              String
+  sku               String?
+  shopifyProductId  String?
+  egpPrice          Float
+  venueId           Int
+  active            Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  venue Venue @relation(fields: [venueId], references: [id])
+
+  @@unique([sku, venueId])
+  @@index([shopifyProductId])
 }
 
 enum Role {
@@ -110,4 +133,15 @@ model Payout {
 
   venue      Venue  @relation(fields: [venueId], references: [id])
   createdBy  User?  @relation("UserPayouts", fields: [createdById], references: [id])
+}
+
+model ExchangeRate {
+  id           Int      @id @default(autoincrement())
+  fromCurrency String
+  toCurrency   String
+  rate         Float
+  fetchedAt    DateTime @default(now())
+  expiresAt    DateTime
+
+  @@unique([fromCurrency, toCurrency])
 }

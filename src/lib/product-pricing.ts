@@ -1,0 +1,146 @@
+import { prisma } from "@/lib/prisma";
+
+export const formatEGP = (amount: number): string => {
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(amount);
+};
+
+/**
+ * Calculate EGP amount from line items using database product prices
+ * @param lineItems - Array of order line items with SKU or product ID
+ * @param venueId - The venue ID to fetch products for
+ * @returns Total EGP amount or null if any product is not found
+ */
+export async function calculateEGPFromLineItems(
+  lineItems: Array<{
+    productName: string;
+    quantity: number;
+    sku?: string | null;
+    shopifyProductId?: string | null;
+  }>,
+  venueId: number
+): Promise<number | null> {
+  if (!lineItems.length) {
+    return 0;
+  }
+
+  // Fetch all products for this venue
+  const products = await prisma.product.findMany({
+    where: {
+      venueId,
+      active: true
+    }
+  });
+
+  console.log(`[Product Matching] Venue ${venueId}: Found ${products.length} active products in database`);
+  console.log(`[Product Matching] Database products:`, products.map(p => ({
+    name: p.name,
+    sku: p.sku,
+    shopifyProductId: p.shopifyProductId,
+    egpPrice: p.egpPrice
+  })));
+  console.log(`[Product Matching] Order line items:`, lineItems);
+
+  if (!products.length) {
+    console.warn(`No active products found for venue ${venueId}`);
+    return null;
+  }
+
+  let totalEGP = 0;
+  const unmatchedItems: string[] = [];
+
+  for (const item of lineItems) {
+    let matchedProduct = null;
+
+    // Try to match by Shopify Product ID first (most precise)
+    if (item.shopifyProductId) {
+      matchedProduct = products.find((p) => p.shopifyProductId === item.shopifyProductId);
+      if (matchedProduct) {
+        console.log(`[Product Matching] ✓ Matched by Shopify ID: ${item.productName} → ${matchedProduct.name}`);
+      }
+    }
+
+    // Try to match by SKU if not matched yet
+    if (!matchedProduct && item.sku) {
+      matchedProduct = products.find((p) => p.sku === item.sku);
+      if (matchedProduct) {
+        console.log(`[Product Matching] ✓ Matched by SKU: ${item.productName} → ${matchedProduct.name}`);
+      }
+    }
+
+    // Try to match by product name (case-insensitive, trimmed)
+    if (!matchedProduct) {
+      const normalizedName = item.productName.toLowerCase().trim();
+      matchedProduct = products.find(
+        (p) => p.name.toLowerCase().trim() === normalizedName
+      );
+      if (matchedProduct) {
+        console.log(`[Product Matching] ✓ Matched by name: ${item.productName} → ${matchedProduct.name}`);
+      }
+    }
+
+    if (matchedProduct) {
+      totalEGP += matchedProduct.egpPrice * item.quantity;
+    } else {
+      console.error(`[Product Matching] ✗ NO MATCH for: ${item.productName} (SKU: ${item.sku || "N/A"}, Shopify ID: ${item.shopifyProductId || "N/A"})`);
+      unmatchedItems.push(
+        `${item.productName} (SKU: ${item.sku || "N/A"}, ID: ${item.shopifyProductId || "N/A"})`
+      );
+    }
+  }
+
+  // If any items couldn't be matched, return null to indicate incomplete calculation
+  if (unmatchedItems.length > 0) {
+    console.error(
+      `[Product Matching] FAILED: Could not match ${unmatchedItems.length} product(s) for venue ${venueId}:`,
+      unmatchedItems
+    );
+    return null;
+  }
+
+  console.log(`[Product Matching] SUCCESS: Total EGP = ${totalEGP}`);
+  return totalEGP;
+}
+
+/**
+ * Calculate order amounts from line items
+ * @param lineItems - Array of order line items
+ * @param exchangeRate - Current USD/EGP exchange rate
+ * @param venueId - The venue ID to fetch products for
+ * @returns Object with originalAmount (EGP), baseAmount (USD), and totalAmount (USD with fee)
+ */
+export async function calculateOrderAmounts(
+  lineItems: Array<{
+    productName: string;
+    quantity: number;
+    sku?: string | null;
+    shopifyProductId?: string | null;
+  }>,
+  exchangeRate: number,
+  venueId: number
+): Promise<{
+  originalAmount: number | null;
+  baseAmount: number | null;
+  totalAmount: number;
+}> {
+  const egpAmount = await calculateEGPFromLineItems(lineItems, venueId);
+
+  if (egpAmount === null || exchangeRate <= 0) {
+    return {
+      originalAmount: null,
+      baseAmount: null,
+      totalAmount: 0
+    };
+  }
+
+  const baseAmount = egpAmount / exchangeRate;
+  const totalAmount = Number((baseAmount * 1.035).toFixed(2)); // 3.5% fee
+
+  return {
+    originalAmount: egpAmount,
+    baseAmount,
+    totalAmount
+  };
+}

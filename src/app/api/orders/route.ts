@@ -10,6 +10,7 @@ import {
   ensureVenue,
   generateNextOrderNumber
 } from "@/lib/order-utils";
+import { getCurrentExchangeRate } from "@/lib/exchange-rate";
 
 const lineItemSchema = z.object({
   productName: z.string().min(1),
@@ -83,6 +84,7 @@ const serializeOrder = (order: any) => ({
   id: order.id,
   externalId: order.externalId,
   orderNumber: order.orderNumber,
+  shopifyOrderNumber: order.shopifyOrderNumber,
   customerName: order.customerName,
   venueId: order.venueId,
   venue: order.venue
@@ -371,8 +373,16 @@ export async function POST(request: Request) {
     : await generateNextOrderNumber();
   const financialStatus =
     data.financialStatus && data.financialStatus.trim().length > 0 ? data.financialStatus.trim() : "Paid";
-  const exchangeRate =
-    typeof data.exchangeRate === "number" && data.exchangeRate > 0 ? data.exchangeRate : DEFAULT_EXCHANGE_RATE;
+
+  // Fetch current exchange rate if not provided
+  let exchangeRate: number;
+  if (typeof data.exchangeRate === "number" && data.exchangeRate > 0) {
+    exchangeRate = data.exchangeRate;
+  } else {
+    // Auto-fetch current exchange rate with smart caching
+    exchangeRate = await getCurrentExchangeRate("USD", "EGP");
+  }
+
   const originalAmount =
     typeof data.originalAmount === "number" && data.originalAmount >= 0 ? data.originalAmount : null;
   const { totalAmount: computedTotal } = calculateFromOriginalAmount(originalAmount, exchangeRate);

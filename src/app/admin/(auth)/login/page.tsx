@@ -34,7 +34,7 @@ function LoginForm() {
     });
 
     if (result?.ok) {
-      router.push("/orders");
+      router.push("/admin/orders");
       router.refresh();
       return;
     }

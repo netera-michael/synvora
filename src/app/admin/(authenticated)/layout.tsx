@@ -7,7 +7,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
   const session = await getServerSession(authOptions);
 
   if (!session) {
-    redirect("/login");
+    redirect("/admin/login");
   }
 
   return <DashboardShell session={session}>{children}</DashboardShell>;

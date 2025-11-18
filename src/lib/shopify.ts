@@ -1,3 +1,5 @@
+import { calculateOrderAmounts } from "./product-pricing";
+
 type ShopifyOrder = {
   id: number;
   name: string;
@@ -23,6 +25,7 @@ type ShopifyOrder = {
   } | null;
   line_items: Array<{
     id: number;
+    product_id?: number | null;
     name: string;
     quantity: number;
     sku?: string | null;
@@ -35,14 +38,28 @@ type FetchOrdersOptions = {
   storeDomain: string;
   accessToken: string;
   sinceId?: string;
+  createdAtMin?: string; // ISO date string
+  createdAtMax?: string; // ISO date string
 };
 
-export async function fetchShopifyOrders({ storeDomain, accessToken, sinceId }: FetchOrdersOptions) {
+export async function fetchShopifyOrders({
+  storeDomain,
+  accessToken,
+  sinceId,
+  createdAtMin,
+  createdAtMax
+}: FetchOrdersOptions) {
   const url = new URL(`https://${storeDomain}/admin/api/2023-10/orders.json`);
   url.searchParams.set("status", "any");
   url.searchParams.set("limit", "250");
   if (sinceId) {
     url.searchParams.set("since_id", sinceId);
+  }
+  if (createdAtMin) {
+    url.searchParams.set("created_at_min", createdAtMin);
+  }
+  if (createdAtMax) {
+    url.searchParams.set("created_at_max", createdAtMax);
   }
 
   const response = await fetch(url, {
@@ -62,47 +79,57 @@ export async function fetchShopifyOrders({ storeDomain, accessToken, sinceId }: 
   return data.orders;
 }
 
-export function transformShopifyOrders(orders: ShopifyOrder[]) {
-  return orders.map((order) => {
-    const customerName = order.customer
-      ? [order.customer.first_name, order.customer.last_name].filter(Boolean).join(" ") || "Shopify Customer"
-      : "Shopify Customer";
+export async function transformShopifyOrders(orders: ShopifyOrder[], exchangeRate: number, venueId: number) {
+  return Promise.all(
+    orders.map(async (order) => {
+      const customerName = order.customer
+        ? [order.customer.first_name, order.customer.last_name].filter(Boolean).join(" ") || "Shopify Customer"
+        : "Shopify Customer";
 
-    const tags = order.tags
-      ? order.tags
-          .split(",")
-          .map((tag) => tag.trim())
-          .filter(Boolean)
-      : [];
+      const tags = order.tags
+        ? order.tags
+            .split(",")
+            .map((tag) => tag.trim())
+            .filter(Boolean)
+        : [];
 
-    const shippingCity =
-      order.shipping_address?.city ?? order.billing_address?.city ?? order.customer?.last_name ?? null;
-    const shippingCountry =
-      order.shipping_address?.country ?? order.billing_address?.country ?? null;
+      const shippingCity =
+        order.shipping_address?.city ?? order.billing_address?.city ?? order.customer?.last_name ?? null;
+      const shippingCountry =
+        order.shipping_address?.country ?? order.billing_address?.country ?? null;
 
-    return {
-      externalId: String(order.id),
-      orderNumber: order.name ?? `#${order.order_number}`,
-      customerName,
-      status: order.financial_status === "refunded" ? "Closed" : "Open",
-      financialStatus: order.financial_status ? titleCase(order.financial_status) : null,
-      fulfillmentStatus: order.fulfillment_status ? titleCase(order.fulfillment_status) : null,
-      totalAmount: Number(order.current_total_price ?? 0),
-      currency: order.currency ?? "USD",
-      processedAt: new Date(order.processed_at ?? Date.now()),
-      shippingCity,
-      shippingCountry,
-      tags,
-      notes: order.note ?? null,
-      lineItems: order.line_items.map((item) => ({
+      const lineItems = order.line_items.map((item) => ({
         productName: item.name,
         quantity: item.quantity,
         sku: item.sku ?? undefined,
+        shopifyProductId: item.product_id ? String(item.product_id) : undefined,
         price: Number(item.price ?? 0),
         total: Number(item.price ?? 0) * item.quantity
-      }))
-    };
-  });
+      }));
+
+      // Calculate EGP amounts based on product prices
+      const amounts = await calculateOrderAmounts(lineItems, exchangeRate, venueId);
+
+      return {
+        externalId: String(order.id),
+        orderNumber: order.name ?? `#${order.order_number}`,
+        customerName,
+        status: order.financial_status === "refunded" ? "Closed" : "Open",
+        financialStatus: order.financial_status ? titleCase(order.financial_status) : null,
+        fulfillmentStatus: order.fulfillment_status ? titleCase(order.fulfillment_status) : null,
+        totalAmount: amounts.totalAmount,
+        originalAmount: amounts.originalAmount,
+        exchangeRate: exchangeRate,
+        currency: order.currency ?? "USD",
+        processedAt: new Date(order.processed_at ?? Date.now()),
+        shippingCity,
+        shippingCountry,
+        tags,
+        notes: order.note ?? null,
+        lineItems
+      };
+    })
+  );
 }
 
 function titleCase(value: string) {

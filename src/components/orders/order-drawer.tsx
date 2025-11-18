@@ -14,6 +14,7 @@ type OrderDrawerProps = {
   onOrderUpdated: (order: OrderDto) => void;
   onOrderDeleted: (orderId: number) => void;
   canManage?: boolean;
+  isAdmin?: boolean;
 };
 
 type OrderFormValues = {
@@ -52,7 +53,7 @@ const mapOrderToForm = (value: OrderDto): OrderFormValues => ({
   exchangeRate: typeof value.exchangeRate === "number" ? value.exchangeRate : 48.5
 });
 
-export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDeleted, canManage = true }: OrderDrawerProps) {
+export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDeleted, canManage = true, isAdmin = false }: OrderDrawerProps) {
   const [mode, setMode] = useState<"view" | "edit">("view");
   const {
     register,
@@ -234,6 +235,11 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
                     </Dialog.Title>
                     <p className="text-sm text-slate-500">
                       {formatDateTime(order.processedAt)} • {order.customerName || "No Customer"}
+                      {isAdmin && order.shopifyOrderNumber && (
+                        <span className="ml-2 text-xs font-medium text-slate-400">
+                          Shopify: {order.shopifyOrderNumber}
+                        </span>
+                      )}
                     </p>
                   </div>
                 </div>

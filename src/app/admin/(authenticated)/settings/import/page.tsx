@@ -156,7 +156,7 @@ export default function ImportOrdersPage() {
       setMessage(`Imported ${payload.imported} orders successfully.`);
       setRows([]);
       setTimeout(() => {
-        router.push("/orders");
+        router.push("/admin/orders");
         router.refresh();
       }, 1500);
     } catch (error) {

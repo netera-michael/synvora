@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType } from "react";
 import { cn } from "@/lib/utils";
-import { ClipboardList, Package, BarChart3, Users, Settings, Upload } from "lucide-react";
+import { ClipboardList, Package, BarChart3, Users, Settings, Upload, Store } from "lucide-react";
 import type { Route } from "next";
 import type { Session } from "next-auth";
 
@@ -24,22 +24,23 @@ const NAV_GROUPS: NavGroup[] = [
   {
     title: "Manage",
     items: [
-      { href: "/orders", label: "Orders", icon: ClipboardList },
-      { href: "/products", label: "Products", icon: Package },
-      { href: "/analytics", label: "Analytics", icon: BarChart3 },
-      { href: "/customers", label: "Customers", icon: Users },
-      { href: "/settings", label: "Admin Settings", icon: Settings },
-      { href: "/settings/import", label: "Import CSV", icon: Upload },
-      { href: "/settings/user", label: "My Account", icon: Settings }
+      { href: "/admin/orders", label: "Orders", icon: ClipboardList },
+      { href: "/admin/products", label: "Products", icon: Package },
+      { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
+      { href: "/admin/customers", label: "Customers", icon: Users },
+      { href: "/admin/settings", label: "Admin Settings", icon: Settings },
+      { href: "/admin/settings/shopify-stores", label: "Shopify Stores", icon: Store },
+      { href: "/admin/settings/import", label: "Import CSV", icon: Upload },
+      { href: "/admin/settings/user", label: "My Account", icon: Settings }
     ]
   },
   {
     title: "Finance",
-    items: [{ href: "/finance/payouts", label: "Payouts", icon: BarChart3 }]
+    items: [{ href: "/admin/finance/payouts", label: "Payouts", icon: BarChart3 }]
   }
 ];
 
-const ADMIN_ONLY_PATHS = new Set<Route>(["/settings", "/settings/import"]);
+const ADMIN_ONLY_PATHS = new Set<Route>(["/admin/settings", "/admin/settings/import", "/admin/settings/shopify-stores"]);
 
 type SideNavProps = {
   session: Session;
@@ -53,7 +54,7 @@ export function SideNav({ session }: SideNavProps) {
     const items = group.items.filter((item) => {
       // Only hide items that are specifically for admins
       // Show the user settings page to all users
-      if (item.href === "/settings/user") {
+      if (item.href === "/admin/settings/user") {
         return true; // Always show user settings
       }
       // Otherwise, only show admin-only paths to admins
