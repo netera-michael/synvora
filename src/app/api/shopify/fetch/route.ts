@@ -62,8 +62,27 @@ export async function POST(request: Request) {
     // Transform orders with EGP calculations
     const transformed = await transformShopifyOrders(shopifyOrders, exchangeRate, store.venueId);
 
+    // Check which orders already exist in the database
+    const externalIds = transformed.map(order => order.externalId);
+    const existingOrders = await prisma.order.findMany({
+      where: {
+        externalId: {
+          in: externalIds
+        }
+      },
+      select: {
+        externalId: true
+      }
+    });
+
+    const existingExternalIds = new Set(existingOrders.map(order => order.externalId));
+    
+    // Filter out orders that are already imported
+    const newOrders = transformed.filter(order => !existingExternalIds.has(order.externalId));
+    const existingCount = transformed.length - newOrders.length;
+
     return NextResponse.json({
-      orders: transformed,
+      orders: newOrders, // Only return orders that haven't been imported yet
       exchangeRate,
       store: {
         id: store.id,
@@ -74,7 +93,9 @@ export async function POST(request: Request) {
           name: store.venue.name
         }
       },
-      count: transformed.length
+      count: newOrders.length,
+      totalFetched: transformed.length,
+      alreadyImported: existingCount
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to fetch orders from Shopify";

@@ -138,7 +138,18 @@ export function SyncShopifyDialog({ open, onClose, onSyncComplete }: SyncShopify
 
     const payload = await response.json();
 
-    if (payload.count === 0) {
+    // Check if all orders are already imported
+    if (payload.totalFetched > 0 && payload.count === 0) {
+      setFormState((current) => ({
+        ...current,
+        status: "error",
+        message: `All ${payload.totalFetched} order(s) from the selected date range have already been imported`
+      }));
+      return;
+    }
+
+    // Check if no orders found at all
+    if (payload.totalFetched === 0) {
       setFormState((current) => ({
         ...current,
         status: "error",
@@ -153,9 +164,15 @@ export function SyncShopifyDialog({ open, onClose, onSyncComplete }: SyncShopify
     setSelectedStore(payload.store);
     setShowReview(true);
 
+    // Show success message with info about filtered orders
+    const message = payload.alreadyImported > 0
+      ? `Found ${payload.count} new order(s) to import${payload.alreadyImported > 0 ? ` (${payload.alreadyImported} already imported)` : ""}`
+      : `Found ${payload.count} order(s) to import`;
+
     setFormState((current) => ({
       ...current,
-      status: "success"
+      status: "success",
+      message
     }));
   };
 
