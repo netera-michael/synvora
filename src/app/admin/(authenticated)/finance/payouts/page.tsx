@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useSession } from "next-auth/react";
-import { Plus, RefreshCw, CloudDownload } from "lucide-react";
+import { Plus, CloudDownload } from "lucide-react";
 import type { PayoutDto } from "@/types/payouts";
 import { SyncMercuryDialog } from "@/components/mercury/sync-mercury-dialog";
 
@@ -32,8 +32,6 @@ export default function PayoutsPage() {
   const venues = venuesData?.venues ?? [];
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [editingPayout, setEditingPayout] = useState<PayoutDto | null>(null);
-  const [syncing, setSyncing] = useState(false);
-  const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [isSyncMercuryOpen, setIsSyncMercuryOpen] = useState(false);
 
   const openCreate = () => {
@@ -60,36 +58,6 @@ export default function PayoutsPage() {
     mutate();
   };
 
-  const handleSyncMercury = async () => {
-    if (!confirm("Sync all unsynced payouts to Mercury.com?")) {
-      return;
-    }
-
-    setSyncing(true);
-    setSyncMessage(null);
-
-    try {
-      const response = await fetch("/api/mercury/sync", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ syncAll: true })
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        setSyncMessage(`Success: ${data.message}`);
-        mutate();
-      } else {
-        setSyncMessage(`Error: ${data.message}`);
-      }
-    } catch (error) {
-      setSyncMessage("Failed to sync payouts");
-    } finally {
-      setSyncing(false);
-      setTimeout(() => setSyncMessage(null), 5000);
-    }
-  };
-
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -109,15 +77,6 @@ export default function PayoutsPage() {
             </button>
             <button
               type="button"
-              onClick={handleSyncMercury}
-              disabled={syncing}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-synvora-primary hover:text-synvora-primary disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
-              {syncing ? "Syncing…" : "Sync to Mercury"}
-            </button>
-            <button
-              type="button"
               onClick={openCreate}
               disabled={venuesLoading || venues.length === 0}
               className="inline-flex items-center gap-2 rounded-xl bg-synvora-primary px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-synvora-primary/90"
@@ -128,16 +87,6 @@ export default function PayoutsPage() {
           </div>
         ) : null}
       </header>
-
-      {syncMessage && (
-        <div className={`rounded-xl border px-4 py-3 text-sm ${
-          syncMessage.startsWith("Success")
-            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-            : "border-rose-200 bg-rose-50 text-rose-700"
-        }`}>
-          {syncMessage}
-        </div>
-      )}
 
       {error ? (
         <div className="rounded-2xl border border-rose-100 bg-rose-50 px-6 py-10 text-center text-rose-600">

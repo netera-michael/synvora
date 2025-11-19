@@ -38,7 +38,7 @@ type MercuryAccount = {
 
 export class MercuryClient {
   private apiKey: string;
-  private baseUrl = "https://api.mercury.com/api/v1";
+  private baseUrl = "https://api.mercury.com/api";
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
@@ -101,15 +101,15 @@ export class MercuryClient {
 
   /**
    * Get transactions for an account
-   * Mercury API: GET /accounts/{accountId}/transactions
+   * Mercury API: GET /v1/accounts/{accountId}/transactions
    */
   async getTransactions(params: {
     accountId: string;
     startDate?: string;
     endDate?: string;
   }): Promise<MercuryTransaction[]> {
-    // Mercury API uses /accounts/{accountId}/transactions endpoint
-    const endpoint = `/accounts/${params.accountId}/transactions`;
+    // Mercury API uses /v1/accounts/{accountId}/transactions endpoint
+    const endpoint = `/v1/accounts/${params.accountId}/transactions`;
     const queryParams = new URLSearchParams();
     
     // Mercury API expects dates in YYYY-MM-DD format
@@ -132,8 +132,25 @@ export class MercuryClient {
       ? `${endpoint}?${queryParams.toString()}`
       : endpoint;
 
-    const response = await this.request<{ transactions: MercuryTransaction[] }>(url);
-    return response.transactions || [];
+    try {
+      const response = await this.request<{ transactions: MercuryTransaction[] }>(url);
+      return response.transactions || [];
+    } catch (error: any) {
+      // If 404, try without /v1 prefix (some API versions might not need it)
+      if (error.message?.includes('404') || error.message?.includes('notFound')) {
+        const altEndpoint = `/accounts/${params.accountId}/transactions`;
+        const altUrl = queryParams.toString() 
+          ? `${altEndpoint}?${queryParams.toString()}`
+          : altEndpoint;
+        try {
+          const response = await this.request<{ transactions: MercuryTransaction[] }>(altUrl);
+          return response.transactions || [];
+        } catch (altError) {
+          throw error; // Throw original error
+        }
+      }
+      throw error;
+    }
   }
 
   /**
