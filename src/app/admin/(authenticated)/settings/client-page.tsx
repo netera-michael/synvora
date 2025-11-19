@@ -60,6 +60,7 @@ export default function ClientSettingsPage() {
         isLoading={usersSWR.isLoading}
         mutate={usersSWR.mutate}
       />
+      <MercurySection />
     </div>
   );
 }

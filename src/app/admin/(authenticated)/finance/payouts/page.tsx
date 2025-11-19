@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useSession } from "next-auth/react";
-import { Plus } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
 import type { PayoutDto } from "@/types/payouts";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -31,6 +31,8 @@ export default function PayoutsPage() {
   const venues = venuesData?.venues ?? [];
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [editingPayout, setEditingPayout] = useState<PayoutDto | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
 
   const openCreate = () => {
     setEditingPayout(null);
@@ -56,6 +58,36 @@ export default function PayoutsPage() {
     mutate();
   };
 
+  const handleSyncMercury = async () => {
+    if (!confirm("Sync all unsynced payouts to Mercury.com?")) {
+      return;
+    }
+
+    setSyncing(true);
+    setSyncMessage(null);
+
+    try {
+      const response = await fetch("/api/mercury/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ syncAll: true })
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setSyncMessage(`Success: ${data.message}`);
+        mutate();
+      } else {
+        setSyncMessage(`Error: ${data.message}`);
+      }
+    } catch (error) {
+      setSyncMessage("Failed to sync payouts");
+    } finally {
+      setSyncing(false);
+      setTimeout(() => setSyncMessage(null), 5000);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -64,17 +96,38 @@ export default function PayoutsPage() {
           <p className="text-sm text-slate-500">Track USD payouts processed across your venues.</p>
         </div>
         {isAdmin ? (
-          <button
-            type="button"
-            onClick={openCreate}
-            disabled={venuesLoading || venues.length === 0}
-            className="inline-flex items-center gap-2 rounded-xl bg-synvora-primary px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-synvora-primary/90"
-          >
-            <Plus className="h-4 w-4" />
-            New payout
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleSyncMercury}
+              disabled={syncing}
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-synvora-primary hover:text-synvora-primary disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+              {syncing ? "Syncing…" : "Sync to Mercury"}
+            </button>
+            <button
+              type="button"
+              onClick={openCreate}
+              disabled={venuesLoading || venues.length === 0}
+              className="inline-flex items-center gap-2 rounded-xl bg-synvora-primary px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-synvora-primary/90"
+            >
+              <Plus className="h-4 w-4" />
+              New payout
+            </button>
+          </div>
         ) : null}
       </header>
+
+      {syncMessage && (
+        <div className={`rounded-xl border px-4 py-3 text-sm ${
+          syncMessage.startsWith("Success")
+            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+            : "border-rose-200 bg-rose-50 text-rose-700"
+        }`}>
+          {syncMessage}
+        </div>
+      )}
 
       {error ? (
         <div className="rounded-2xl border border-rose-100 bg-rose-50 px-6 py-10 text-center text-rose-600">
@@ -97,7 +150,7 @@ export default function PayoutsPage() {
             <tbody className="divide-y divide-slate-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={isAdmin ? 7 : 6} className="px-6 py-6 text-center text-slate-500">
+                  <td colSpan={isAdmin ? 8 : 6} className="px-6 py-6 text-center text-slate-500">
                     Loading payouts…
                   </td>
                 </tr>
@@ -113,7 +166,19 @@ export default function PayoutsPage() {
                       {formatCurrency(Math.abs(payout.amount), payout.currency)}
                     </td>
                     {isAdmin ? (
-                      <td className="px-6 py-4 text-right text-sm">
+                      <>
+                        <td className="px-6 py-4 text-sm">
+                          {payout.syncedToMercury ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">
+                              Synced
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600">
+                              Not synced
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-right text-sm">
                         <button
                           type="button"
                           onClick={() => openEdit(payout)}
@@ -129,12 +194,13 @@ export default function PayoutsPage() {
                           Delete
                         </button>
                       </td>
+                      </>
                     ) : null}
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={isAdmin ? 7 : 6} className="px-6 py-6 text-center text-slate-500">
+                  <td colSpan={isAdmin ? 8 : 6} className="px-6 py-6 text-center text-slate-500">
                     No payouts recorded yet.
                   </td>
                 </tr>

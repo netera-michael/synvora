@@ -19,4 +19,7 @@ export type PayoutDto = {
     name: string | null;
     email: string | null;
   } | null;
+  mercuryTransactionId?: string | null;
+  syncedToMercury?: boolean;
+  syncedAt?: string | null;
 };

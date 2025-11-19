@@ -45,7 +45,10 @@ const serialize = (payout: any) => ({
         name: payout.createdBy.name,
         email: payout.createdBy.email
       }
-    : null
+    : null,
+  mercuryTransactionId: payout.mercuryTransactionId,
+  syncedToMercury: payout.syncedToMercury,
+  syncedAt: payout.syncedAt?.toISOString() ?? null
 });
 
 export async function GET(request: Request) {

@@ -118,21 +118,35 @@ enum Role {
 }
 
 model Payout {
-  id           Int       @id @default(autoincrement())
-  amount       Float
-  currency     String    @default("USD")
-  status       String    @default("Posted")
-  description  String    @default("Payout")
-  account      String    @default("Payouts")
-  processedAt  DateTime
-  notes        String?
-  venueId      Int
-  createdById  Int?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id                Int       @id @default(autoincrement())
+  amount            Float
+  currency          String    @default("USD")
+  status            String    @default("Posted")
+  description       String    @default("Payout")
+  account           String    @default("Payouts")
+  processedAt       DateTime
+  notes             String?
+  venueId           Int
+  createdById       Int?
+  mercuryTransactionId String?
+  syncedToMercury   Boolean   @default(false)
+  syncedAt          DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   venue      Venue  @relation(fields: [venueId], references: [id])
   createdBy  User?  @relation("UserPayouts", fields: [createdById], references: [id])
+}
+
+model MercurySettings {
+  id          Int      @id @default(autoincrement())
+  apiKey      String
+  accountId   String?
+  enabled     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([id])
 }
 
 model ExchangeRate {
