@@ -95,14 +95,17 @@ export default function OrdersPage() {
   const [editMode, setEditMode] = useState(false);
   const [selectedOrders, setSelectedOrders] = useState<Set<number>>(new Set());
 
+  // Update timezone offset in URL if it changed, but avoid infinite loops
   useEffect(() => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (params.get("tzOffset") !== String(tzOffset)) {
+    const currentTzOffset = searchParams.get("tzOffset");
+    if (currentTzOffset !== String(tzOffset)) {
+      const params = new URLSearchParams(searchParams.toString());
       params.set("tzOffset", String(tzOffset));
       const qs = params.toString();
       router.replace(qs ? (`/orders?${qs}` as Route) : ("/orders" as Route));
     }
-  }, [searchParams, tzOffset, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tzOffset]); // Only depend on tzOffset to avoid re-triggering on every searchParams change
 
   const months = useMemo(() => {
     const now = new Date();
