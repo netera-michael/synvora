@@ -38,14 +38,64 @@ type MercuryAccount = {
 
 export class MercuryClient {
   private apiKey: string;
+  // Try different base URL formats - Mercury API might use different structure
   private baseUrl = "https://api.mercury.com/v1";
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
   }
 
+  // Try multiple base URL formats
+  private async tryRequest<T>(endpoints: string[], options: RequestInit = {}): Promise<T> {
+    const baseUrls = [
+      "https://api.mercury.com/v1",
+      "https://api.mercury.com/api/v1", 
+      "https://api.mercury.com/api"
+    ];
+
+    let lastError: Error | null = null;
+
+    for (const baseUrl of baseUrls) {
+      for (const endpoint of endpoints) {
+        const url = `${baseUrl}${endpoint}`;
+        try {
+          console.log(`Trying Mercury API: ${options.method || 'GET'} ${url}`);
+          const response = await fetch(url, {
+            ...options,
+            headers: {
+              "Authorization": `Bearer ${this.apiKey}`,
+              "Content-Type": "application/json",
+              ...options.headers,
+            },
+          });
+
+          if (response.ok) {
+            console.log(`Success with ${url}`);
+            return await response.json();
+          }
+          
+          if (response.status !== 404) {
+            // If it's not 404, this might be the right endpoint but wrong auth/permissions
+            const errorText = await response.text();
+            throw new Error(`Mercury API error: ${response.status} ${errorText}`);
+          }
+        } catch (error: any) {
+          if (!error.message?.includes('404') && !error.message?.includes('notFound')) {
+            throw error; // Re-throw non-404 errors immediately
+          }
+          lastError = error;
+        }
+      }
+    }
+
+    throw lastError || new Error("All Mercury API endpoint attempts failed");
+  }
+
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+    const url = `${this.baseUrl}${endpoint}`;
+    console.log(`Mercury API request: ${options.method || 'GET'} ${url}`);
+    
+    const response = await fetch(url, {
       ...options,
       headers: {
         "Authorization": `Bearer ${this.apiKey}`,
@@ -56,6 +106,7 @@ export class MercuryClient {
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error(`Mercury API error for ${url}: ${response.status} ${errorText}`);
       throw new Error(`Mercury API error: ${response.status} ${errorText}`);
     }
 
@@ -121,59 +172,42 @@ export class MercuryClient {
 
   /**
    * Get transactions for an account
-   * Mercury API: GET /v1/accounts/{accountId}/transactions
+   * Mercury API: Try multiple endpoint formats
    */
   async getTransactions(params: {
     accountId: string;
     startDate?: string;
     endDate?: string;
   }): Promise<MercuryTransaction[]> {
-    // Base URL already includes /v1, so use /accounts/{accountId}/transactions
-    const endpoint = `/accounts/${params.accountId}/transactions`;
     const queryParams = new URLSearchParams();
     
     // Mercury API expects dates in YYYY-MM-DD format
     if (params.startDate) {
-      // Convert ISO string to YYYY-MM-DD if needed
       const startDate = params.startDate.includes('T') 
         ? params.startDate.split('T')[0]
         : params.startDate;
       queryParams.append("start", startDate);
     }
     if (params.endDate) {
-      // Convert ISO string to YYYY-MM-DD if needed
       const endDate = params.endDate.includes('T')
         ? params.endDate.split('T')[0]
         : params.endDate;
       queryParams.append("end", endDate);
     }
 
-    const url = queryParams.toString() 
-      ? `${endpoint}?${queryParams.toString()}`
-      : endpoint;
+    const queryString = queryParams.toString();
+    const baseEndpoint = `/accounts/${params.accountId}/transactions`;
+    const endpointWithQuery = queryString ? `${baseEndpoint}?${queryString}` : baseEndpoint;
+    
+    // Try multiple endpoint formats
+    const endpoints = [
+      endpointWithQuery,
+      `/v1/accounts/${params.accountId}/transactions${queryString ? `?${queryString}` : ''}`,
+      `/accounts/${params.accountId}/transactions${queryString ? `?${queryString}` : ''}`
+    ];
 
-    try {
-      const response = await this.request<{ transactions: MercuryTransaction[] }>(url);
-      return response.transactions || [];
-    } catch (error: any) {
-      // If 404, try with /api prefix in base URL
-      if (error.message?.includes('404') || error.message?.includes('notFound')) {
-        const originalBaseUrl = this.baseUrl;
-        this.baseUrl = "https://api.mercury.com/api/v1";
-        try {
-          const altUrl = queryParams.toString() 
-            ? `${endpoint}?${queryParams.toString()}`
-            : endpoint;
-          const response = await this.request<{ transactions: MercuryTransaction[] }>(altUrl);
-          this.baseUrl = originalBaseUrl; // Restore original
-          return response.transactions || [];
-        } catch (altError) {
-          this.baseUrl = originalBaseUrl; // Restore original
-          throw error; // Throw original error
-        }
-      }
-      throw error;
-    }
+    const response = await this.tryRequest<{ transactions: MercuryTransaction[] }>(endpoints);
+    return response.transactions || [];
   }
 
   /**
