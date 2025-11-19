@@ -44,7 +44,8 @@ export function TransactionReviewDialog({
 
   // Update selected transactions when transactions prop changes
   useEffect(() => {
-    setSelectedTransactions(new Set(safeTransactions.map((t) => t.id)));
+    const safe = Array.isArray(transactions) ? transactions : [];
+    setSelectedTransactions(new Set(safe.map((t) => t.id)));
   }, [transactions]);
   const [venueId, setVenueId] = useState<number>(venues[0]?.id || 0);
   const [importing, setImporting] = useState(false);
