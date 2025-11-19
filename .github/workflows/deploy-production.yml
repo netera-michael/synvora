@@ -1,15 +1,23 @@
 name: Deploy to Production
 
-on:
-  push:
-    branches:
-      - main
-      - 'claude/**'  # Auto-deploy any claude/* branch
+# This workflow is disabled because Vercel automatically deploys from the main branch
+# If you want to use GitHub Actions for deployment, uncomment below and add VERCEL_DEPLOY_HOOK_URL secret
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger Vercel Production Deployment
-        run: |
-          curl -X POST "${{ secrets.VERCEL_DEPLOY_HOOK_URL }}"
+# on:
+#   push:
+#     branches:
+#       - main
+#       - 'claude/**'  # Auto-deploy any claude/* branch
+
+# jobs:
+#   deploy:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Trigger Vercel Production Deployment
+#         run: |
+#           if [ -z "${{ secrets.VERCEL_DEPLOY_HOOK_URL }}" ]; then
+#             echo "Warning: VERCEL_DEPLOY_HOOK_URL secret not set. Skipping deployment hook."
+#             echo "Vercel will auto-deploy from main branch anyway."
+#             exit 0
+#           fi
+#           curl -X POST "${{ secrets.VERCEL_DEPLOY_HOOK_URL }}"
