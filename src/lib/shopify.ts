@@ -83,8 +83,8 @@ export async function transformShopifyOrders(orders: ShopifyOrder[], exchangeRat
   return Promise.all(
     orders.map(async (order) => {
       const customerName = order.customer
-        ? [order.customer.first_name, order.customer.last_name].filter(Boolean).join(" ") || "Shopify Customer"
-        : "Shopify Customer";
+        ? [order.customer.first_name, order.customer.last_name].filter(Boolean).join(" ") || "No Customer"
+        : "No Customer";
 
       const tags = order.tags
         ? order.tags
