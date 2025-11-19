@@ -45,7 +45,8 @@ const mapOrderToForm = (order: OrderDto): CreateOrderValues => {
     financialStatus: order.financialStatus ?? "Paid",
     totalAmount,
     currency: order.currency ?? "USD",
-    processedAt: formatDateTimeForInput(order.processedAt),
+    // Use current timestamp for duplicates so they appear at the top as newest orders
+    processedAt: formatDateTimeForInput(new Date()),
     exchangeRate,
     tags: order.tags?.join(", ") ?? "",
     notes: order.notes ?? "",
