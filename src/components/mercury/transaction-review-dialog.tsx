@@ -25,6 +25,7 @@ type TransactionReviewDialogProps = {
   onClose: () => void;
   transactions: MercuryTransaction[];
   accountName: string;
+  venues: Array<{ id: number; name: string }>;
   onImportComplete: () => void;
 };
 
