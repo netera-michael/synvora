@@ -50,7 +50,8 @@ export class MercuryClient {
     const baseUrls = [
       "https://api.mercury.com/v1",
       "https://api.mercury.com/api/v1", 
-      "https://api.mercury.com/api"
+      "https://api.mercury.com/api",
+      "https://api.mercury.com" // Try without any version prefix
     ];
 
     let lastError: Error | null = null;
@@ -136,7 +137,15 @@ export class MercuryClient {
    * Mercury API: Try multiple endpoint formats
    */
   async getAccounts(): Promise<MercuryAccount[]> {
-    const endpoints = ["/accounts", "/v1/accounts"];
+    // Try various endpoint formats
+    const endpoints = [
+      "/accounts",
+      "/v1/accounts",
+      "/api/accounts",
+      "/api/v1/accounts",
+      "/account", // Singular
+      "/v1/account"
+    ];
     const response = await this.tryRequest<{ accounts: MercuryAccount[] }>(endpoints);
     return response.accounts || [];
   }
