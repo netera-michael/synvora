@@ -64,8 +64,8 @@ module.exports = withSentryConfig(
 
     // Suppresses source map uploading logs during build
     silent: true,
-    org: process.env.SENTRY_ORG,
-    project: process.env.SENTRY_PROJECT,
+    org: process.env.SENTRY_ORG || "synvora",
+    project: process.env.SENTRY_PROJECT || "javascript-nextjs",
   },
   {
     // For all available options, see:
