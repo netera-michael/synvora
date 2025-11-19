@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
-import { generateNextOrderNumber } from "@/lib/order-utils";
+import { generateNextOrderNumber, extractOrderNumber } from "@/lib/order-utils";
 
 const lineItemSchema = z.object({
   productName: z.string(),
@@ -78,15 +78,81 @@ export async function POST(request: Request) {
     let updated = 0;
     let skipped = 0;
 
-    // Sort orders by processedAt ASC to ensure newest orders get highest order numbers
-    // Process oldest orders first, so newest orders get assigned last (highest numbers)
-    const sortedOrders = [...orders].sort((a, b) => {
-      const dateA = new Date(a.processedAt).getTime();
-      const dateB = new Date(b.processedAt).getTime();
-      return dateA - dateB; // Ascending order (oldest first)
+    // Get all existing orders to determine chronological positions
+    const existingOrders = await prisma.order.findMany({
+      select: {
+        orderNumber: true,
+        processedAt: true
+      },
+      orderBy: {
+        processedAt: "desc"
+      }
     });
 
-    for (const order of sortedOrders) {
+    // Filter out orders that will be updated (keep existing order numbers)
+    const ordersToImport = orders.filter(order => {
+      return !existingOrders.some(existing => {
+        // Check if this order already exists by externalId
+        return false; // We'll check this in the loop
+      });
+    });
+
+    // Sort new orders by processedAt DESC (newest first) for number assignment
+    // This ensures newest orders get highest numbers
+    const sortedNewOrders = ordersToImport
+      .filter(order => {
+        // We'll check existence in the loop, but pre-sort for number assignment
+        return true;
+      })
+      .sort((a, b) => {
+        const dateA = new Date(a.processedAt).getTime();
+        const dateB = new Date(b.processedAt).getTime();
+        return dateB - dateA; // Descending (newest first)
+      });
+
+    // Create a map of processedAt -> order number for quick lookup
+    const orderNumberMap = new Map<string, string>();
+    
+    // Pre-assign order numbers based on chronological position
+    // We need to merge existing orders with new orders, sort by processedAt DESC,
+    // and assign numbers sequentially
+    const allOrdersForNumbering = [
+      ...existingOrders.map(o => ({ processedAt: o.processedAt.toISOString(), orderNumber: o.orderNumber, isNew: false })),
+      ...sortedNewOrders.map(o => ({ processedAt: o.processedAt, orderNumber: null, isNew: true, order: o }))
+    ].sort((a, b) => {
+      const dateA = new Date(a.processedAt).getTime();
+      const dateB = new Date(b.processedAt).getTime();
+      return dateB - dateA; // Descending (newest first)
+    });
+
+    // Find the highest existing order number
+    let maxOrderNum = 1000;
+    for (const item of allOrdersForNumbering) {
+      if (!item.isNew && item.orderNumber) {
+        const num = extractOrderNumber(item.orderNumber);
+        if (num && num > maxOrderNum) {
+          maxOrderNum = num;
+        }
+      }
+    }
+
+    // Count new orders to assign
+    const newOrdersCount = allOrdersForNumbering.filter(item => item.isNew).length;
+    
+    // Assign order numbers to new orders in reverse order
+    // Newest order gets highest number (maxOrderNum + newOrdersCount)
+    // Oldest new order gets lowest number (maxOrderNum + 1)
+    let position = 0;
+    for (const item of allOrdersForNumbering) {
+      if (item.isNew && item.order) {
+        const assignedNum = maxOrderNum + (newOrdersCount - position);
+        orderNumberMap.set(item.order.externalId, `#${assignedNum}`);
+        position++;
+      }
+    }
+
+    // Now process orders (sorted by processedAt DESC to process newest first)
+    for (const order of sortedNewOrders) {
       try {
         const existing = await prisma.order.findUnique({
           where: { externalId: order.externalId }
@@ -140,14 +206,19 @@ export async function POST(request: Request) {
           });
           updated += 1;
         } else {
-          // Generate next sequential order number atomically
-          const nextOrderNumber = await generateNextOrderNumber();
+          // Use pre-assigned order number from map
+          const assignedOrderNumber = orderNumberMap.get(order.externalId);
+          if (!assignedOrderNumber) {
+            // Fallback to generating if not in map (shouldn't happen)
+            const nextOrderNumber = await generateNextOrderNumber();
+            orderNumberMap.set(order.externalId, nextOrderNumber);
+          }
           
           // Create new order
           const createdOrder = await prisma.order.create({
             data: {
               externalId: order.externalId,
-              orderNumber: nextOrderNumber, // Use generated sequential number
+              orderNumber: orderNumberMap.get(order.externalId)!,
               shopifyOrderNumber: order.orderNumber, // Store Shopify order number
               customerName: order.customerName,
               status: order.status,
