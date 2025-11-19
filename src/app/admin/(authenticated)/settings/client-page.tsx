@@ -585,3 +585,187 @@ function UsersSection({ venues, users, isLoading, mutate }: UsersSectionProps) {
     </section>
   );
 }
+
+function MercurySection() {
+  const { data: settings, mutate } = useSWR<{
+    apiKey: string;
+    accountId: string | null;
+    enabled: boolean;
+  }>("/api/mercury/settings", fetcher);
+  
+  const { data: accountsData } = useSWR<{ accounts: Array<{ id: string; name: string }> }>(
+    settings?.enabled ? "/api/mercury/accounts" : null,
+    fetcher
+  );
+
+  const [formState, setFormState] = useState({
+    apiKey: "",
+    accountId: "",
+    enabled: false
+  });
+  const [testing, setTesting] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (settings) {
+      setFormState({
+        apiKey: settings.apiKey,
+        accountId: settings.accountId || "",
+        enabled: settings.enabled
+      });
+    }
+  }, [settings]);
+
+  const handleTestConnection = async () => {
+    if (!formState.apiKey || formState.apiKey.startsWith("***")) {
+      setError("Please enter a valid API key to test");
+      return;
+    }
+
+    setTesting(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const response = await fetch("/api/mercury/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey: formState.apiKey })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setSuccess(`Connection successful! Found ${data.accountsCount} account(s).`);
+      } else {
+        setError(data.message || "Connection failed");
+      }
+    } catch (err) {
+      setError("Failed to test connection");
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const handleSave = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSaving(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const response = await fetch("/api/mercury/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          apiKey: formState.apiKey,
+          accountId: formState.accountId || null,
+          enabled: formState.enabled
+        })
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        setError(data.message || "Failed to save settings");
+        setSaving(false);
+        return;
+      }
+
+      setSuccess("Settings saved successfully");
+      mutate();
+    } catch (err) {
+      setError("Failed to save settings");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <header className="mb-6 flex flex-col gap-2">
+        <h2 className="text-xl font-semibold text-slate-900">Mercury.com Integration</h2>
+        <p className="text-sm text-slate-500">
+          Connect your Mercury.com account to automatically sync payouts. Get your API key from{" "}
+          <a
+            href="https://mercury.com/api"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-synvora-primary hover:underline"
+          >
+            Mercury API settings
+          </a>
+          .
+        </p>
+      </header>
+
+      <form onSubmit={handleSave} className="space-y-4">
+        <div className="space-y-3">
+          <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+            API Key
+            <input
+              type="password"
+              value={formState.apiKey}
+              onChange={(e) => setFormState({ ...formState, apiKey: e.target.value })}
+              placeholder="Enter your Mercury API key"
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
+            />
+            <span className="text-xs text-slate-400">
+              Your API key is encrypted and stored securely. Only the last 4 characters are shown after saving.
+            </span>
+          </label>
+
+          {formState.apiKey && !formState.apiKey.startsWith("***") && (
+            <button
+              type="button"
+              onClick={handleTestConnection}
+              disabled={testing}
+              className="inline-flex items-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-synvora-primary hover:text-synvora-primary disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {testing ? "Testing…" : "Test Connection"}
+            </button>
+          )}
+
+          {accountsData?.accounts && accountsData.accounts.length > 0 && (
+            <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+              Account
+              <select
+                value={formState.accountId}
+                onChange={(e) => setFormState({ ...formState, accountId: e.target.value })}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
+              >
+                <option value="">Select an account</option>
+                {accountsData.accounts.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+
+          <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+            <input
+              type="checkbox"
+              checked={formState.enabled}
+              onChange={(e) => setFormState({ ...formState, enabled: e.target.checked })}
+              className="h-4 w-4 rounded border-slate-300 text-synvora-primary focus:ring-synvora-primary/40"
+            />
+            Enable Mercury sync
+          </label>
+        </div>
+
+        {error && <p className="text-sm text-rose-600">{error}</p>}
+        {success && <p className="text-sm text-emerald-600">{success}</p>}
+
+        <button
+          type="submit"
+          disabled={saving}
+          className="inline-flex items-center justify-center rounded-lg bg-synvora-primary px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-synvora-primary/90 disabled:cursor-not-allowed disabled:bg-slate-300"
+        >
+          {saving ? "Saving…" : "Save Settings"}
+        </button>
+      </form>
+    </section>
+  );
+}
