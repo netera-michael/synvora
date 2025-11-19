@@ -38,8 +38,8 @@ type MercuryAccount = {
 
 export class MercuryClient {
   private apiKey: string;
-  // Try different base URL formats - Mercury API might use different structure
-  private baseUrl = "https://api.mercury.com/v1";
+  // Mercury API base URL: https://api.mercury.com/api/v1
+  private baseUrl = "https://api.mercury.com/api/v1";
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
@@ -134,19 +134,12 @@ export class MercuryClient {
 
   /**
    * Get all accounts
-   * Mercury API: Try multiple endpoint formats
+   * Mercury API: GET /api/v1/accounts
+   * Documentation: https://docs.mercury.com/reference/getallaccounts
    */
   async getAccounts(): Promise<MercuryAccount[]> {
-    // Try various endpoint formats
-    const endpoints = [
-      "/accounts",
-      "/v1/accounts",
-      "/api/accounts",
-      "/api/v1/accounts",
-      "/account", // Singular
-      "/v1/account"
-    ];
-    const response = await this.tryRequest<{ accounts: MercuryAccount[] }>(endpoints);
+    // Base URL already includes /api/v1, so use /accounts
+    const response = await this.request<{ accounts: MercuryAccount[] }>("/accounts");
     return response.accounts || [];
   }
 
