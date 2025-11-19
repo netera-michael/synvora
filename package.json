@@ -12,7 +12,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "db:seed": "ts-node prisma/seed.ts",
-    "restore:orders": "ts-node scripts/restore-orders.ts"
+    "restore:orders": "ts-node scripts/restore-orders.ts",
+    "find:deleted": "ts-node scripts/find-deleted-orders.ts"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.18",
