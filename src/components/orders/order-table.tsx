@@ -8,6 +8,10 @@ type OrderTableProps = {
   onDuplicate?: (order: OrderDto) => void;
   canManage?: boolean;
   isAdmin?: boolean;
+  editMode?: boolean;
+  selectedOrders?: Set<number>;
+  onToggleSelect?: (orderId: number) => void;
+  onToggleSelectAll?: () => void;
 };
 
 const BADGES: Record<string, string> = {
@@ -20,12 +24,38 @@ const BADGES: Record<string, string> = {
   Closed: "bg-slate-200 text-slate-600"
 };
 
-export function OrderTable({ orders, onSelect, onDuplicate, canManage = true, isAdmin = false }: OrderTableProps) {
+export function OrderTable({ 
+  orders, 
+  onSelect, 
+  onDuplicate, 
+  canManage = true, 
+  isAdmin = false,
+  editMode = false,
+  selectedOrders = new Set(),
+  onToggleSelect,
+  onToggleSelectAll
+}: OrderTableProps) {
+  const allSelected = editMode && orders.length > 0 && orders.every(order => selectedOrders.has(order.id));
+  const someSelected = editMode && orders.some(order => selectedOrders.has(order.id));
+
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <table className="min-w-full divide-y divide-slate-200 text-sm">
         <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
           <tr>
+            {editMode && (
+              <th scope="col" className="px-6 py-4 w-12">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  ref={(input) => {
+                    if (input) input.indeterminate = someSelected && !allSelected;
+                  }}
+                  onChange={onToggleSelectAll}
+                  className="rounded border-slate-300 text-synvora-primary focus:ring-synvora-primary"
+                />
+              </th>
+            )}
             <th scope="col" className="px-6 py-4">
               Order
             </th>
@@ -67,8 +97,26 @@ export function OrderTable({ orders, onSelect, onDuplicate, canManage = true, is
               ? Number((payoutBase * 0.9825).toFixed(2))
               : 0;
 
+            const isSelected = editMode && selectedOrders.has(order.id);
+
             return (
-              <tr key={order.id} className="hover:bg-slate-50/80">
+              <tr 
+                key={order.id} 
+                className={`hover:bg-slate-50/80 ${isSelected ? "bg-synvora-primary/5" : ""}`}
+                onClick={editMode ? () => onToggleSelect?.(order.id) : () => onSelect(order)}
+                style={{ cursor: "pointer" }}
+              >
+              {editMode && (
+                <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => onToggleSelect?.(order.id)}
+                    className="rounded border-slate-300 text-synvora-primary focus:ring-synvora-primary"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </td>
+              )}
               <td className="whitespace-nowrap px-6 py-4 font-medium text-slate-900">
                 <div className="flex flex-col">
                   <span>{order.orderNumber}</span>
@@ -122,23 +170,27 @@ export function OrderTable({ orders, onSelect, onDuplicate, canManage = true, is
                 </span>
               </td>
               <td className="whitespace-nowrap px-6 py-4 text-right print:hidden">
-                <button
-                  type="button"
-                  onClick={() => onSelect(order)}
-                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-synvora-primary hover:text-synvora-primary"
-                >
-                  View
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-                {canManage && onDuplicate ? (
-                  <button
-                    type="button"
-                    onClick={() => onDuplicate(order)}
-                    className="ml-2 inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-synvora-primary hover:text-synvora-primary"
-                  >
-                    Duplicate
-                  </button>
-                ) : null}
+                {!editMode && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => onSelect(order)}
+                      className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-synvora-primary hover:text-synvora-primary"
+                    >
+                      View
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                    {canManage && onDuplicate ? (
+                      <button
+                        type="button"
+                        onClick={() => onDuplicate(order)}
+                        className="ml-2 inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-synvora-primary hover:text-synvora-primary"
+                      >
+                        Duplicate
+                      </button>
+                    ) : null}
+                  </>
+                )}
               </td>
               </tr>
             );
