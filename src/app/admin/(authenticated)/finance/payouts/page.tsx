@@ -144,7 +144,12 @@ export default function PayoutsPage() {
                 <th className="px-6 py-3">Account</th>
                 <th className="px-6 py-3">Venue</th>
                 <th className="px-6 py-3 text-right">Amount</th>
-                {isAdmin ? <th className="px-6 py-3 text-right">Actions</th> : null}
+                {isAdmin ? (
+                  <>
+                    <th className="px-6 py-3">Mercury</th>
+                    <th className="px-6 py-3 text-right">Actions</th>
+                  </>
+                ) : null}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">

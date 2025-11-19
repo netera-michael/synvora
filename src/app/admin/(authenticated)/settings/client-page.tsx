@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import useSWR, { type KeyedMutator } from "swr";
 import { useSession } from "next-auth/react";
 
