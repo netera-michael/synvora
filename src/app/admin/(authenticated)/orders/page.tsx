@@ -4,7 +4,9 @@ import useSWR from "swr";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Route } from "next";
-import { Plus, Printer, CloudDownload, Edit, X, Trash2, Copy, Download } from "lucide-react";
+import { Plus, Printer, CloudDownload, Edit, X, Trash2, Copy, Download, MoreVertical } from "lucide-react";
+import { Menu, Transition } from "@headlessui/react";
+import { Fragment } from "react";
 import { useSession } from "next-auth/react";
 import type { OrderDto } from "@/types/orders";
 import { OrderTable } from "@/components/orders/order-table";
@@ -485,84 +487,135 @@ export default function OrdersPage() {
               </button>
             )}
           </div>
-          <button
-            type="button"
-            onClick={handlePrint}
-            disabled={isPrinting}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-synvora-primary hover:text-synvora-primary disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <Printer className="h-4 w-4" />
-            {isPrinting ? "Preparing…" : "Print"}
-          </button>
-          <button
-            type="button"
-            onClick={handleExportCSV}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-synvora-primary hover:text-synvora-primary"
-          >
-            <Download className="h-4 w-4" />
-            Export CSV
-          </button>
-          {isAdmin ? (
+          {editMode ? (
             <>
-              {editMode ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={handleMassDuplicate}
-                    disabled={selectedOrders.size === 0}
-                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-synvora-primary hover:text-synvora-primary disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <Copy className="h-4 w-4" />
-                    Duplicate ({selectedOrders.size})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleMassDelete}
-                    disabled={selectedOrders.size === 0}
-                    className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-white px-4 py-2 text-sm font-semibold text-rose-600 shadow-sm transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    Delete ({selectedOrders.size})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={toggleEditMode}
-                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-slate-300"
-                  >
-                    <X className="h-4 w-4" />
-                    Cancel
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    onClick={toggleEditMode}
-                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-synvora-primary hover:text-synvora-primary"
-                  >
-                    <Edit className="h-4 w-4" />
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsSyncOpen(true)}
-                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-synvora-primary hover:text-synvora-primary"
-                  >
-                    <CloudDownload className="h-4 w-4" />
-                    Sync Shopify
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsCreateOpen(true)}
-                    className="inline-flex items-center gap-2 rounded-xl bg-synvora-primary px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-synvora-primary/90"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Create order
-                  </button>
-                </>
-              )}
+              <button
+                type="button"
+                onClick={handleMassDuplicate}
+                disabled={selectedOrders.size === 0}
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-synvora-primary hover:text-synvora-primary disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Copy className="h-4 w-4" />
+                Duplicate ({selectedOrders.size})
+              </button>
+              <button
+                type="button"
+                onClick={handleMassDelete}
+                disabled={selectedOrders.size === 0}
+                className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-white px-4 py-2 text-sm font-semibold text-rose-600 shadow-sm transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete ({selectedOrders.size})
+              </button>
+              <button
+                type="button"
+                onClick={toggleEditMode}
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-slate-300"
+              >
+                <X className="h-4 w-4" />
+                Cancel
+              </button>
             </>
-          ) : null}
+          ) : (
+            <Menu as="div" className="relative inline-block text-left">
+              <div>
+                <Menu.Button className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-synvora-primary hover:text-synvora-primary">
+                  <MoreVertical className="h-4 w-4" />
+                  Actions
+                </Menu.Button>
+              </div>
+              <Transition
+                as={Fragment}
+                enter="transition ease-out duration-100"
+                enterFrom="transform opacity-0 scale-95"
+                enterTo="transform opacity-100 scale-100"
+                leave="transition ease-in duration-75"
+                leaveFrom="transform opacity-100 scale-100"
+                leaveTo="transform opacity-0 scale-95"
+              >
+                <Menu.Items className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-xl border border-slate-200 bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                  <div className="py-1">
+                    <Menu.Item>
+                      {({ active }) => (
+                        <button
+                          type="button"
+                          onClick={handlePrint}
+                          disabled={isPrinting}
+                          className={`${
+                            active ? "bg-slate-50 text-slate-900" : "text-slate-700"
+                          } flex w-full items-center gap-2 px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50`}
+                        >
+                          <Printer className="h-4 w-4" />
+                          {isPrinting ? "Preparing…" : "Print"}
+                        </button>
+                      )}
+                    </Menu.Item>
+                    <Menu.Item>
+                      {({ active }) => (
+                        <button
+                          type="button"
+                          onClick={handleExportCSV}
+                          className={`${
+                            active ? "bg-slate-50 text-slate-900" : "text-slate-700"
+                          } flex w-full items-center gap-2 px-4 py-2 text-sm font-semibold`}
+                        >
+                          <Download className="h-4 w-4" />
+                          Export CSV
+                        </button>
+                      )}
+                    </Menu.Item>
+                    {isAdmin && (
+                      <>
+                        <div className="my-1 border-t border-slate-200" />
+                        <Menu.Item>
+                          {({ active }) => (
+                            <button
+                              type="button"
+                              onClick={toggleEditMode}
+                              className={`${
+                                active ? "bg-slate-50 text-slate-900" : "text-slate-700"
+                              } flex w-full items-center gap-2 px-4 py-2 text-sm font-semibold`}
+                            >
+                              <Edit className="h-4 w-4" />
+                              Edit
+                            </button>
+                          )}
+                        </Menu.Item>
+                        <Menu.Item>
+                          {({ active }) => (
+                            <button
+                              type="button"
+                              onClick={() => setIsSyncOpen(true)}
+                              className={`${
+                                active ? "bg-slate-50 text-slate-900" : "text-slate-700"
+                              } flex w-full items-center gap-2 px-4 py-2 text-sm font-semibold`}
+                            >
+                              <CloudDownload className="h-4 w-4" />
+                              Sync Shopify
+                            </button>
+                          )}
+                        </Menu.Item>
+                        <Menu.Item>
+                          {({ active }) => (
+                            <button
+                              type="button"
+                              onClick={() => setIsCreateOpen(true)}
+                              className={`${
+                                active ? "bg-synvora-primary/10 text-synvora-primary" : "text-synvora-primary"
+                              } flex w-full items-center gap-2 px-4 py-2 text-sm font-semibold`}
+                            >
+                              <Plus className="h-4 w-4" />
+                              Create order
+                            </button>
+                          )}
+                        </Menu.Item>
+                      </>
+                    )}
+                  </div>
+                </Menu.Items>
+              </Transition>
+            </Menu>
+          )}
         </div>
       </div>
 
