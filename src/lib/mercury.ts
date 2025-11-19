@@ -114,10 +114,20 @@ export class MercuryClient {
     const url = `${this.baseUrl}${endpoint}`;
     console.log(`Mercury API request: ${options.method || 'GET'} ${url}`);
     
+    // Mercury API uses "secret-token:" prefix, not "Bearer"
+    // Handle both formats: if apiKey already has "secret-token:", use it as-is
+    // Otherwise, prepend "secret-token:"
+    let authHeader: string;
+    if (this.apiKey.startsWith("secret-token:")) {
+      authHeader = this.apiKey;
+    } else {
+      authHeader = `secret-token:${this.apiKey}`;
+    }
+    
     const response = await fetch(url, {
       ...options,
       headers: {
-        "Authorization": `Bearer ${this.apiKey}`,
+        "Authorization": authHeader,
         "Content-Type": "application/json",
         ...options.headers,
       },
