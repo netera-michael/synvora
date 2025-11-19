@@ -196,9 +196,14 @@ export async function DELETE(
     return NextResponse.json({ message: "Invalid order id" }, { status: 400 });
   }
 
-  await prisma.order.delete({
-    where: { id: orderId }
-  });
+  try {
+    await prisma.order.delete({
+      where: { id: orderId }
+    });
 
-  return NextResponse.json(null, { status: 204 });
+    return NextResponse.json({ success: true, message: "Order deleted successfully" }, { status: 200 });
+  } catch (error) {
+    console.error("Delete order error:", error);
+    return NextResponse.json({ message: "Failed to delete order" }, { status: 500 });
+  }
 }

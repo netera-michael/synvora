@@ -123,6 +123,7 @@ export default function OrdersPage() {
   const [isSyncOpen, setIsSyncOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderDto | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerMode, setDrawerMode] = useState<"view" | "edit">("view");
   const [duplicateOrder, setDuplicateOrder] = useState<OrderDto | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [selectedOrders, setSelectedOrders] = useState<Set<number>>(new Set());
@@ -234,6 +235,7 @@ export default function OrdersPage() {
 
   const openDrawer = (order: OrderDto) => {
     setSelectedOrder(order);
+    setDrawerMode("view");
     setDrawerOpen(true);
   };
 
@@ -333,6 +335,7 @@ export default function OrdersPage() {
 
   const handleEdit = (order: OrderDto) => {
     setSelectedOrder(order);
+    setDrawerMode("edit");
     setDrawerOpen(true);
   };
 
@@ -699,6 +702,7 @@ export default function OrdersPage() {
         onOrderDeleted={handleOrderDeleted}
         canManage={isAdmin}
         isAdmin={isAdmin}
+        initialMode={drawerMode}
       />
 
       {isAdmin ? (

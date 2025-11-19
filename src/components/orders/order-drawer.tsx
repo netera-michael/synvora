@@ -15,6 +15,7 @@ type OrderDrawerProps = {
   onOrderDeleted: (orderId: number) => void;
   canManage?: boolean;
   isAdmin?: boolean;
+  initialMode?: "view" | "edit";
 };
 
 type OrderFormValues = {
@@ -53,8 +54,8 @@ const mapOrderToForm = (value: OrderDto): OrderFormValues => ({
   exchangeRate: typeof value.exchangeRate === "number" ? value.exchangeRate : 48.5
 });
 
-export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDeleted, canManage = true, isAdmin = false }: OrderDrawerProps) {
-  const [mode, setMode] = useState<"view" | "edit">("view");
+export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDeleted, canManage = true, isAdmin = false, initialMode = "view" }: OrderDrawerProps) {
+  const [mode, setMode] = useState<"view" | "edit">(initialMode);
   const {
     register,
     handleSubmit,
@@ -111,8 +112,10 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
   useEffect(() => {
     if (!open) {
       setMode("view");
+    } else {
+      setMode(initialMode);
     }
-  }, [open]);
+  }, [open, initialMode]);
 
   useEffect(() => {
     if (!canManage) {
