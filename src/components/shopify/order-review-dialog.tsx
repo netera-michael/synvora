@@ -156,6 +156,19 @@ export function OrderReviewDialog({
     }).format(amount);
   };
 
+  // Calculate totals for selected orders
+  const selectedOrdersData = orders.filter((order) =>
+    selectedOrders.has(order.externalId)
+  );
+  
+  const totalEGP = selectedOrdersData.reduce((sum, order) => {
+    return sum + (order.originalAmount || 0);
+  }, 0);
+  
+  const totalUSD = selectedOrdersData.reduce((sum, order) => {
+    return sum + order.totalAmount;
+  }, 0);
+
   return (
     <Transition show={open} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
@@ -406,9 +419,25 @@ export function OrderReviewDialog({
 
               {/* Footer */}
               <div className="flex items-center justify-between border-t border-slate-200 px-6 py-4 bg-slate-50">
-                <div className="text-sm text-slate-600">
-                  <span className="font-semibold text-slate-900">{selectedOrders.size}</span> of{" "}
-                  <span className="font-semibold text-slate-900">{orders.length}</span> orders selected
+                <div className="flex items-center gap-6 text-sm text-slate-600">
+                  <div>
+                    <span className="font-semibold text-slate-900">{selectedOrders.size}</span> of{" "}
+                    <span className="font-semibold text-slate-900">{orders.length}</span> orders selected
+                  </div>
+                  {selectedOrders.size > 0 && (
+                    <>
+                      <div className="h-4 w-px bg-slate-300" />
+                      <div>
+                        <span className="text-xs uppercase tracking-wide text-slate-500">Total EGP:</span>{" "}
+                        <span className="font-semibold text-slate-900">{formatEGP(totalEGP)} EGP</span>
+                      </div>
+                      <div className="h-4 w-px bg-slate-300" />
+                      <div>
+                        <span className="text-xs uppercase tracking-wide text-slate-500">Total USD:</span>{" "}
+                        <span className="font-semibold text-slate-900">{formatCurrency(totalUSD, "USD")}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
                 <div className="flex items-center gap-3">
                   <button

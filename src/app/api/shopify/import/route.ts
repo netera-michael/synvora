@@ -133,13 +133,13 @@ export async function POST(request: Request) {
           updated += 1;
         } else {
           // Generate next sequential order number atomically
-          const orderNumber = await generateNextOrderNumber();
-
-          // Create new order with sequential order number
-          await prisma.order.create({
+          const nextOrderNumber = await generateNextOrderNumber();
+          
+          // Create new order
+          const createdOrder = await prisma.order.create({
             data: {
               externalId: order.externalId,
-              orderNumber,
+              orderNumber: nextOrderNumber, // Use generated sequential number
               shopifyOrderNumber: order.orderNumber, // Store Shopify order number
               customerName: order.customerName,
               status: order.status,
