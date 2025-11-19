@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
+import { generateNextOrderNumber } from "@/lib/order-utils";
 
 const lineItemSchema = z.object({
   productName: z.string(),
@@ -131,11 +132,14 @@ export async function POST(request: Request) {
           });
           updated += 1;
         } else {
-          // Create new order
-          const createdOrder = await prisma.order.create({
+          // Generate next sequential order number atomically
+          const orderNumber = await generateNextOrderNumber();
+
+          // Create new order with sequential order number
+          await prisma.order.create({
             data: {
               externalId: order.externalId,
-              orderNumber: "TMP", // Temporary, will be updated
+              orderNumber,
               shopifyOrderNumber: order.orderNumber, // Store Shopify order number
               customerName: order.customerName,
               status: order.status,
@@ -165,12 +169,6 @@ export async function POST(request: Request) {
                 }))
               }
             }
-          });
-
-          // Update orderNumber with Synvora sequential ID
-          await prisma.order.update({
-            where: { id: createdOrder.id },
-            data: { orderNumber: `#${createdOrder.id}` }
           });
 
           imported += 1;

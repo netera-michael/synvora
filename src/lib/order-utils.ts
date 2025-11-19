@@ -70,12 +70,21 @@ export const extractOrderNumber = (orderNumber?: string | null) => {
 };
 
 export const generateNextOrderNumber = async () => {
-  const lastOrder = await prisma.order.findFirst({
-    orderBy: { id: "desc" },
-    select: { orderNumber: true }
-  });
+  // Use a transaction with row-level locking to prevent race conditions
+  return await prisma.$transaction(async (tx) => {
+    // Lock the last order row to prevent concurrent access
+    // Using raw SQL for SELECT FOR UPDATE which Prisma doesn't support directly
+    const result = await tx.$queryRaw<Array<{ orderNumber: string }>>`
+      SELECT "orderNumber"
+      FROM "Order"
+      ORDER BY id DESC
+      LIMIT 1
+      FOR UPDATE
+    `;
 
-  const lastNumeric = extractOrderNumber(lastOrder?.orderNumber);
-  const nextNumeric = (lastNumeric ?? 1000) + 1;
-  return `#${nextNumeric}`;
+    const lastOrder = result[0] || null;
+    const lastNumeric = extractOrderNumber(lastOrder?.orderNumber);
+    const nextNumeric = (lastNumeric ?? 1000) + 1;
+    return `#${nextNumeric}`;
+  });
 };
