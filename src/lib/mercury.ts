@@ -38,7 +38,7 @@ type MercuryAccount = {
 
 export class MercuryClient {
   private apiKey: string;
-  private baseUrl = "https://api.mercury.com/api";
+  private baseUrl = "https://api.mercury.com/v1";
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
@@ -64,18 +64,25 @@ export class MercuryClient {
 
   /**
    * Get all accounts
+   * Mercury API: GET /v1/accounts
    */
   async getAccounts(): Promise<MercuryAccount[]> {
     try {
-      const response = await this.request<{ accounts: MercuryAccount[] }>("/v1/accounts");
+      // Base URL already includes /v1, so use /accounts
+      const response = await this.request<{ accounts: MercuryAccount[] }>("/accounts");
       return response.accounts || [];
     } catch (error: any) {
-      // Fallback: try without /v1 prefix
+      // If base URL is wrong, try with /api prefix
       if (error.message?.includes('404') || error.message?.includes('notFound')) {
+        // Temporarily change base URL to try /api/v1 format
+        const originalBaseUrl = this.baseUrl;
+        this.baseUrl = "https://api.mercury.com/api/v1";
         try {
           const response = await this.request<{ accounts: MercuryAccount[] }>("/accounts");
+          this.baseUrl = originalBaseUrl; // Restore original
           return response.accounts || [];
         } catch (altError) {
+          this.baseUrl = originalBaseUrl; // Restore original
           throw error; // Throw original error
         }
       }
@@ -114,14 +121,14 @@ export class MercuryClient {
 
   /**
    * Get transactions for an account
-   * Mercury API: GET /accounts/{accountId}/transactions
+   * Mercury API: GET /v1/accounts/{accountId}/transactions
    */
   async getTransactions(params: {
     accountId: string;
     startDate?: string;
     endDate?: string;
   }): Promise<MercuryTransaction[]> {
-    // Try /accounts/{accountId}/transactions first (matching the accounts endpoint format)
+    // Base URL already includes /v1, so use /accounts/{accountId}/transactions
     const endpoint = `/accounts/${params.accountId}/transactions`;
     const queryParams = new URLSearchParams();
     
@@ -149,17 +156,20 @@ export class MercuryClient {
       const response = await this.request<{ transactions: MercuryTransaction[] }>(url);
       return response.transactions || [];
     } catch (error: any) {
-      // If 404, try with /v1 prefix as fallback
+      // If 404, try with /api prefix in base URL
       if (error.message?.includes('404') || error.message?.includes('notFound')) {
-        const altEndpoint = `/v1/accounts/${params.accountId}/transactions`;
-        const altUrl = queryParams.toString() 
-          ? `${altEndpoint}?${queryParams.toString()}`
-          : altEndpoint;
+        const originalBaseUrl = this.baseUrl;
+        this.baseUrl = "https://api.mercury.com/api/v1";
         try {
+          const altUrl = queryParams.toString() 
+            ? `${endpoint}?${queryParams.toString()}`
+            : endpoint;
           const response = await this.request<{ transactions: MercuryTransaction[] }>(altUrl);
+          this.baseUrl = originalBaseUrl; // Restore original
           return response.transactions || [];
         } catch (altError) {
-          throw error; // Throw original error with more context
+          this.baseUrl = originalBaseUrl; // Restore original
+          throw error; // Throw original error
         }
       }
       throw error;
