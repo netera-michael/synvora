@@ -126,19 +126,26 @@ export class MercuryClient {
     // Handle both formats: if apiKey already has "secret-token:", use it as-is
     // Otherwise, prepend "secret-token:"
     let authHeader: string;
+    if (!this.apiKey || this.apiKey.trim() === "") {
+      throw new Error("Mercury API key is empty or not set");
+    }
+    
     if (this.apiKey.startsWith("secret-token:")) {
       authHeader = this.apiKey;
     } else {
       authHeader = `secret-token:${this.apiKey}`;
     }
     
+    // Ensure headers object exists
+    const headers = new Headers(options.headers);
+    headers.set("Authorization", authHeader);
+    headers.set("Content-Type", "application/json");
+    
+    console.log(`Authorization header: ${authHeader.substring(0, 20)}... (length: ${authHeader.length})`);
+    
     const response = await fetch(url, {
       ...options,
-      headers: {
-        "Authorization": authHeader,
-        "Content-Type": "application/json",
-        ...options.headers,
-      },
+      headers: headers,
     });
 
     if (!response.ok) {

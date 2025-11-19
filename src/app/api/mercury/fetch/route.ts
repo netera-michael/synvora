@@ -44,6 +44,9 @@ export async function POST(request: Request) {
       );
     }
 
+    // Log API key status for debugging (don't log the actual key)
+    console.log(`Mercury API key present: ${!!settings.apiKey}, length: ${settings.apiKey?.length || 0}, starts with secret-token: ${settings.apiKey?.startsWith('secret-token:') || false}`);
+
     const client = new MercuryClient(settings.apiKey);
 
     // Fetch transactions from Mercury
