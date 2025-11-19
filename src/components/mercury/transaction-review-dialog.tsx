@@ -37,10 +37,15 @@ export function TransactionReviewDialog({
   venues,
   onImportComplete
 }: TransactionReviewDialogProps) {
-  const safeTransactions = transactions || [];
+  const safeTransactions = Array.isArray(transactions) ? transactions : [];
   const [selectedTransactions, setSelectedTransactions] = useState<Set<string>>(
     new Set(safeTransactions.map((t) => t.id))
   );
+
+  // Update selected transactions when transactions prop changes
+  useEffect(() => {
+    setSelectedTransactions(new Set(safeTransactions.map((t) => t.id)));
+  }, [transactions]);
   const [venueId, setVenueId] = useState<number>(venues[0]?.id || 0);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{
@@ -223,7 +228,7 @@ export function TransactionReviewDialog({
                                 {formatDate(transaction.postedAt)}
                               </td>
                               <td className="py-3 pr-4 font-medium text-slate-900">
-                                {transaction.counterparty.name || transaction.merchant.name || "-"}
+                                {transaction.counterparty?.name || transaction.merchant?.name || "-"}
                               </td>
                               <td className="py-3 pr-4 text-slate-600">
                                 {transaction.category || "-"}
