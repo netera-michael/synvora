@@ -57,6 +57,14 @@ export class MercuryClient {
     let lastError: Error | null = null;
     const attemptedUrls: string[] = [];
 
+    // Mercury API uses "secret-token:" prefix, not "Bearer"
+    let authHeader: string;
+    if (this.apiKey.startsWith("secret-token:")) {
+      authHeader = this.apiKey;
+    } else {
+      authHeader = `secret-token:${this.apiKey}`;
+    }
+
     for (const baseUrl of baseUrls) {
       for (const endpoint of endpoints) {
         // Ensure endpoint doesn't start with /v1 if baseUrl already has it
@@ -78,7 +86,7 @@ export class MercuryClient {
           const response = await fetch(url, {
             ...options,
             headers: {
-              "Authorization": `Bearer ${this.apiKey}`,
+              "Authorization": authHeader,
               "Content-Type": "application/json",
               ...options.headers,
             },
