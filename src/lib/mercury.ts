@@ -187,28 +187,36 @@ export class MercuryClient {
       ? params.endDate.split('T')[0]
       : params.endDate;
 
-    // Try different query parameter names (start/end vs startDate/endDate)
-    const queryVariants: Array<{ start: string; end: string }> = [];
-    if (startDate && endDate) {
-      queryVariants.push(
-        { start: `start=${startDate}`, end: `end=${endDate}` },
-        { start: `startDate=${startDate}`, end: `endDate=${endDate}` },
-        { start: `from=${startDate}`, end: `to=${endDate}` }
-      );
-    }
-
-    // Build endpoint variations (without /v1 prefix since baseUrl handles it)
-    const endpoints: string[] = [];
-    const basePath = `/accounts/${params.accountId}/transactions`;
+    // Try different endpoint structures:
+    // 1. /accounts/{id}/transactions (RESTful path)
+    // 2. /transactions?accountId={id} (query param)
+    // 3. /v1/transactions?accountId={id}
     
-    if (queryVariants.length > 0) {
-      for (const variant of queryVariants) {
-        const queryString = `${variant.start}&${variant.end}`;
-        endpoints.push(`${basePath}?${queryString}`);
-      }
+    const endpoints: string[] = [];
+    
+    // Structure 1: RESTful path parameter
+    const restfulPath = `/accounts/${params.accountId}/transactions`;
+    if (startDate && endDate) {
+      endpoints.push(`${restfulPath}?start=${startDate}&end=${endDate}`);
+      endpoints.push(`${restfulPath}?startDate=${startDate}&endDate=${endDate}`);
+      endpoints.push(`${restfulPath}?from=${startDate}&to=${endDate}`);
     } else {
-      endpoints.push(basePath);
+      endpoints.push(restfulPath);
     }
+    
+    // Structure 2: Query parameter for accountId
+    const queryParamBase = `/transactions`;
+    const accountIdParam = `accountId=${params.accountId}`;
+    if (startDate && endDate) {
+      endpoints.push(`${queryParamBase}?${accountIdParam}&start=${startDate}&end=${endDate}`);
+      endpoints.push(`${queryParamBase}?${accountIdParam}&startDate=${startDate}&endDate=${endDate}`);
+      endpoints.push(`${queryParamBase}?${accountIdParam}&from=${startDate}&to=${endDate}`);
+    } else {
+      endpoints.push(`${queryParamBase}?${accountIdParam}`);
+    }
+    
+    // Structure 3: Try with /v1 prefix in endpoint (if baseUrl doesn't have it)
+    endpoints.push(`/v1/transactions?${accountIdParam}${startDate && endDate ? `&start=${startDate}&end=${endDate}` : ''}`);
 
     const response = await this.tryRequest<{ transactions: MercuryTransaction[] }>(endpoints);
     return response.transactions || [];
