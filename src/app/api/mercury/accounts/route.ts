@@ -22,11 +22,12 @@ export async function GET() {
     const client = new MercuryClient(settings.apiKey);
     const accounts = await client.getAccounts();
     
-    return NextResponse.json({ accounts });
+    return NextResponse.json({ accounts: accounts || [] });
   } catch (error) {
+    console.error("Mercury accounts API error:", error);
     const errorMessage = error instanceof Error ? error.message : "Failed to fetch accounts";
     return NextResponse.json(
-      { message: errorMessage },
+      { message: errorMessage, accounts: [] },
       { status: 500 }
     );
   }

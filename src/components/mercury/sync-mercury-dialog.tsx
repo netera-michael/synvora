@@ -51,8 +51,16 @@ export function SyncMercuryDialog({ open, onClose, onSyncComplete, venues }: Syn
 
   const { data: accountsData, error: accountsError } = useSWR<{ accounts: MercuryAccount[] }>(
     open ? "/api/mercury/accounts" : null,
-    fetcher
+    fetcher,
+    {
+      onErrorRetry: (error) => {
+        // Don't retry on 500 errors
+        if (error.status === 500) return;
+      }
+    }
   );
+
+  const accounts = accountsData?.accounts || [];
 
   // Set default dates (last 30 days)
   const getDefaultDates = () => {
@@ -149,7 +157,7 @@ export function SyncMercuryDialog({ open, onClose, onSyncComplete, venues }: Syn
     // Store the fetched transactions and show review dialog
     // Ensure transactions is always an array
     setFetchedTransactions(Array.isArray(payload.transactions) ? payload.transactions : []);
-    const account = accountsData?.accounts.find((a) => a.id === formState.accountId);
+    const account = accounts.find((a) => a.id === formState.accountId);
     setSelectedAccount(account || null);
     setShowReview(true);
 
@@ -227,7 +235,7 @@ export function SyncMercuryDialog({ open, onClose, onSyncComplete, venues }: Syn
                         className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
                       >
                         <option value="">Select an account</option>
-                        {accountsData?.accounts.map((account) => (
+                        {accounts.map((account) => (
                           <option key={account.id} value={account.id}>
                             {account.name}
                           </option>
@@ -236,6 +244,11 @@ export function SyncMercuryDialog({ open, onClose, onSyncComplete, venues }: Syn
                       {accountsError && (
                         <span className="text-xs text-rose-600">
                           Failed to load accounts. Please check your Mercury settings.
+                        </span>
+                      )}
+                      {accounts.length === 0 && !accountsError && (
+                        <span className="text-xs text-slate-500">
+                          No accounts found. Please configure your Mercury API key in settings.
                         </span>
                       )}
                     </label>

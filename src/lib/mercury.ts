@@ -66,8 +66,21 @@ export class MercuryClient {
    * Get all accounts
    */
   async getAccounts(): Promise<MercuryAccount[]> {
-    const response = await this.request<{ accounts: MercuryAccount[] }>("/accounts");
-    return response.accounts;
+    try {
+      const response = await this.request<{ accounts: MercuryAccount[] }>("/v1/accounts");
+      return response.accounts || [];
+    } catch (error: any) {
+      // Fallback: try without /v1 prefix
+      if (error.message?.includes('404') || error.message?.includes('notFound')) {
+        try {
+          const response = await this.request<{ accounts: MercuryAccount[] }>("/accounts");
+          return response.accounts || [];
+        } catch (altError) {
+          throw error; // Throw original error
+        }
+      }
+      throw error;
+    }
   }
 
   /**
