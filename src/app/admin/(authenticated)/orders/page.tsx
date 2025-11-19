@@ -4,7 +4,7 @@ import useSWR from "swr";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Route } from "next";
-import { Plus, Printer, CloudDownload, Edit, X, Trash2, Copy } from "lucide-react";
+import { Plus, Printer, CloudDownload, Edit, X, Trash2, Copy, Download } from "lucide-react";
 import { useSession } from "next-auth/react";
 import type { OrderDto } from "@/types/orders";
 import { OrderTable } from "@/components/orders/order-table";
@@ -328,6 +328,38 @@ export default function OrdersPage() {
     }
   };
 
+  const handleExportCSV = async () => {
+    try {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("tzOffset", String(tzOffset));
+      
+      const response = await fetch(`/api/orders/export?${params.toString()}`);
+      
+      if (!response.ok) {
+        throw new Error("Failed to export orders");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      
+      // Get filename from Content-Disposition header
+      const contentDisposition = response.headers.get("Content-Disposition");
+      const filenameMatch = contentDisposition?.match(/filename="(.+)"/);
+      const filename = filenameMatch ? filenameMatch[1] : `orders-export-${new Date().toISOString().split("T")[0]}.csv`;
+      
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error("Export error:", error);
+      alert("Failed to export orders. Please try again.");
+    }
+  };
+
   if (error) {
     return (
       <div className="rounded-2xl border border-rose-100 bg-rose-50 px-6 py-10 text-center text-rose-600">
@@ -399,6 +431,14 @@ export default function OrdersPage() {
           >
             <Printer className="h-4 w-4" />
             {isPrinting ? "Preparing…" : "Print"}
+          </button>
+          <button
+            type="button"
+            onClick={handleExportCSV}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-synvora-primary hover:text-synvora-primary"
+          >
+            <Download className="h-4 w-4" />
+            Export CSV
           </button>
           {isAdmin ? (
             <>
