@@ -296,14 +296,9 @@ export async function GET(request: Request) {
       lineItems: true,
       venue: true
     },
-    orderBy: [
-      {
-        processedAt: "desc"
-      },
-      {
-        id: "desc"
-      }
-    ],
+    orderBy: {
+      id: "desc"
+    },
     ...(allPagesRequested || totalPages === 0
       ? {}
       : {
