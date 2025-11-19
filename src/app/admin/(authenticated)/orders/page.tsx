@@ -107,8 +107,12 @@ export default function OrdersPage() {
   const months = useMemo(() => {
     const now = new Date();
     const options = Array.from({ length: 6 }).map((_, index) => {
+      // Use local date to avoid timezone shifts
       const date = new Date(now.getFullYear(), now.getMonth() - index, 1);
-      const value = date.toISOString().slice(0, 7);
+      // Format as YYYY-MM using local year/month to avoid UTC conversion issues
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const value = `${year}-${month}`;
       const label = date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
       return { value, label };
     });
