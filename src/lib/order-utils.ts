@@ -72,12 +72,12 @@ export const extractOrderNumber = (orderNumber?: string | null) => {
 export const generateNextOrderNumber = async () => {
   // Use a transaction with row-level locking to prevent race conditions
   return await prisma.$transaction(async (tx) => {
-    // Lock the last order row to prevent concurrent access
-    // Using raw SQL for SELECT FOR UPDATE which Prisma doesn't support directly
+    // Get the highest order number based on chronological order (processedAt)
+    // This ensures order numbers match the chronological sequence, not import order
     const result = await tx.$queryRaw<Array<{ orderNumber: string }>>`
       SELECT "orderNumber"
       FROM "Order"
-      ORDER BY id DESC
+      ORDER BY "processedAt" DESC, id DESC
       LIMIT 1
       FOR UPDATE
     `;
