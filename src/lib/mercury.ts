@@ -3,6 +3,8 @@
  * Documentation: https://mercury.com/api
  */
 
+import * as Sentry from "@sentry/nextjs";
+
 type MercuryTransaction = {
   id: string;
   amount: number;
@@ -128,9 +130,8 @@ export class MercuryClient {
     let authHeader: string;
     if (!this.apiKey || this.apiKey.trim() === "") {
       const error = new Error("Mercury API key is empty or not set");
-      // Capture error in Sentry
+      // Capture error in Sentry (server-side only)
       if (typeof window === 'undefined') {
-        const Sentry = await import("@sentry/nextjs");
         Sentry.captureException(error, {
           tags: { component: "MercuryClient" },
           extra: { endpoint, url }
@@ -162,9 +163,8 @@ export class MercuryClient {
         const errorText = await response.text();
         console.error(`Mercury API error for ${url}: ${response.status} ${errorText}`);
         
-        // Capture API errors in Sentry with context
+        // Capture API errors in Sentry with context (server-side only)
         if (typeof window === 'undefined') {
-          const Sentry = await import("@sentry/nextjs");
           Sentry.captureException(new Error(`Mercury API error: ${response.status}`), {
             tags: { 
               component: "MercuryClient",
@@ -186,9 +186,8 @@ export class MercuryClient {
 
       return response.json();
     } catch (error) {
-      // Capture network/fetch errors in Sentry
+      // Capture network/fetch errors in Sentry (server-side only)
       if (typeof window === 'undefined' && error instanceof Error) {
-        const Sentry = await import("@sentry/nextjs");
         Sentry.captureException(error, {
           tags: { component: "MercuryClient", error_type: "network" },
           extra: { url, endpoint, hasAuthHeader: !!authHeader }
