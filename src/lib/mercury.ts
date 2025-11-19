@@ -115,30 +115,12 @@ export class MercuryClient {
 
   /**
    * Get all accounts
-   * Mercury API: GET /v1/accounts
+   * Mercury API: Try multiple endpoint formats
    */
   async getAccounts(): Promise<MercuryAccount[]> {
-    try {
-      // Base URL already includes /v1, so use /accounts
-      const response = await this.request<{ accounts: MercuryAccount[] }>("/accounts");
-      return response.accounts || [];
-    } catch (error: any) {
-      // If base URL is wrong, try with /api prefix
-      if (error.message?.includes('404') || error.message?.includes('notFound')) {
-        // Temporarily change base URL to try /api/v1 format
-        const originalBaseUrl = this.baseUrl;
-        this.baseUrl = "https://api.mercury.com/api/v1";
-        try {
-          const response = await this.request<{ accounts: MercuryAccount[] }>("/accounts");
-          this.baseUrl = originalBaseUrl; // Restore original
-          return response.accounts || [];
-        } catch (altError) {
-          this.baseUrl = originalBaseUrl; // Restore original
-          throw error; // Throw original error
-        }
-      }
-      throw error;
-    }
+    const endpoints = ["/accounts", "/v1/accounts"];
+    const response = await this.tryRequest<{ accounts: MercuryAccount[] }>(endpoints);
+    return response.accounts || [];
   }
 
   /**
