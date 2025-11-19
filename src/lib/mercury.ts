@@ -54,10 +54,24 @@ export class MercuryClient {
     ];
 
     let lastError: Error | null = null;
+    const attemptedUrls: string[] = [];
 
     for (const baseUrl of baseUrls) {
       for (const endpoint of endpoints) {
-        const url = `${baseUrl}${endpoint}`;
+        // Ensure endpoint doesn't start with /v1 if baseUrl already has it
+        let cleanEndpoint = endpoint;
+        if (baseUrl.includes('/v1') && endpoint.startsWith('/v1/')) {
+          cleanEndpoint = endpoint.replace(/^\/v1/, '');
+        }
+        
+        const url = `${baseUrl}${cleanEndpoint}`;
+        
+        // Skip if we've already tried this exact URL
+        if (attemptedUrls.includes(url)) {
+          continue;
+        }
+        attemptedUrls.push(url);
+
         try {
           console.log(`Trying Mercury API: ${options.method || 'GET'} ${url}`);
           const response = await fetch(url, {
@@ -70,13 +84,16 @@ export class MercuryClient {
           });
 
           if (response.ok) {
-            console.log(`Success with ${url}`);
-            return await response.json();
+            console.log(`✅ Success with ${url}`);
+            const data = await response.json();
+            return data;
           }
+          
+          const errorText = await response.text();
+          console.log(`❌ Failed ${url}: ${response.status} ${errorText.substring(0, 200)}`);
           
           if (response.status !== 404) {
             // If it's not 404, this might be the right endpoint but wrong auth/permissions
-            const errorText = await response.text();
             throw new Error(`Mercury API error: ${response.status} ${errorText}`);
           }
         } catch (error: any) {
@@ -88,6 +105,7 @@ export class MercuryClient {
       }
     }
 
+    console.error(`All ${attemptedUrls.length} Mercury API endpoint attempts failed`);
     throw lastError || new Error("All Mercury API endpoint attempts failed");
   }
 
@@ -154,39 +172,43 @@ export class MercuryClient {
 
   /**
    * Get transactions for an account
-   * Mercury API: Try multiple endpoint formats
+   * Mercury API: Try multiple endpoint formats and query parameter names
    */
   async getTransactions(params: {
     accountId: string;
     startDate?: string;
     endDate?: string;
   }): Promise<MercuryTransaction[]> {
-    const queryParams = new URLSearchParams();
-    
-    // Mercury API expects dates in YYYY-MM-DD format
-    if (params.startDate) {
-      const startDate = params.startDate.includes('T') 
-        ? params.startDate.split('T')[0]
-        : params.startDate;
-      queryParams.append("start", startDate);
-    }
-    if (params.endDate) {
-      const endDate = params.endDate.includes('T')
-        ? params.endDate.split('T')[0]
-        : params.endDate;
-      queryParams.append("end", endDate);
+    // Format dates in YYYY-MM-DD
+    const startDate = params.startDate?.includes('T') 
+      ? params.startDate.split('T')[0]
+      : params.startDate;
+    const endDate = params.endDate?.includes('T')
+      ? params.endDate.split('T')[0]
+      : params.endDate;
+
+    // Try different query parameter names (start/end vs startDate/endDate)
+    const queryVariants: Array<{ start: string; end: string }> = [];
+    if (startDate && endDate) {
+      queryVariants.push(
+        { start: `start=${startDate}`, end: `end=${endDate}` },
+        { start: `startDate=${startDate}`, end: `endDate=${endDate}` },
+        { start: `from=${startDate}`, end: `to=${endDate}` }
+      );
     }
 
-    const queryString = queryParams.toString();
-    const baseEndpoint = `/accounts/${params.accountId}/transactions`;
-    const endpointWithQuery = queryString ? `${baseEndpoint}?${queryString}` : baseEndpoint;
+    // Build endpoint variations (without /v1 prefix since baseUrl handles it)
+    const endpoints: string[] = [];
+    const basePath = `/accounts/${params.accountId}/transactions`;
     
-    // Try multiple endpoint formats
-    const endpoints = [
-      endpointWithQuery,
-      `/v1/accounts/${params.accountId}/transactions${queryString ? `?${queryString}` : ''}`,
-      `/accounts/${params.accountId}/transactions${queryString ? `?${queryString}` : ''}`
-    ];
+    if (queryVariants.length > 0) {
+      for (const variant of queryVariants) {
+        const queryString = `${variant.start}&${variant.end}`;
+        endpoints.push(`${basePath}?${queryString}`);
+      }
+    } else {
+      endpoints.push(basePath);
+    }
 
     const response = await this.tryRequest<{ transactions: MercuryTransaction[] }>(endpoints);
     return response.transactions || [];
