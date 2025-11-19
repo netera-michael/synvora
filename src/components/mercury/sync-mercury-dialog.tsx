@@ -114,15 +114,17 @@ export function SyncMercuryDialog({ open, onClose, onSyncComplete, venues }: Syn
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: "Failed to fetch transactions" }));
+      console.error("Fetch error:", error);
       setFormState((current) => ({
         ...current,
         status: "error",
-        message: error.message ?? "Failed to fetch transactions from Mercury"
+        message: error.message ?? `Failed to fetch transactions from Mercury (${response.status})`
       }));
       return;
     }
 
     const payload = await response.json();
+    console.log("Fetch response:", payload);
 
     // Check if all transactions are already imported
     if (payload.totalFetched > 0 && payload.count === 0) {

@@ -101,25 +101,39 @@ export class MercuryClient {
 
   /**
    * Get transactions for an account
+   * Mercury API: GET /accounts/{accountId}/transactions
    */
   async getTransactions(params: {
     accountId: string;
     startDate?: string;
     endDate?: string;
   }): Promise<MercuryTransaction[]> {
+    // Mercury API uses /accounts/{accountId}/transactions endpoint
+    const endpoint = `/accounts/${params.accountId}/transactions`;
     const queryParams = new URLSearchParams();
-    queryParams.append("accountId", params.accountId);
+    
+    // Mercury API expects dates in YYYY-MM-DD format
     if (params.startDate) {
-      queryParams.append("startDate", params.startDate);
+      // Convert ISO string to YYYY-MM-DD if needed
+      const startDate = params.startDate.includes('T') 
+        ? params.startDate.split('T')[0]
+        : params.startDate;
+      queryParams.append("start", startDate);
     }
     if (params.endDate) {
-      queryParams.append("endDate", params.endDate);
+      // Convert ISO string to YYYY-MM-DD if needed
+      const endDate = params.endDate.includes('T')
+        ? params.endDate.split('T')[0]
+        : params.endDate;
+      queryParams.append("end", endDate);
     }
 
-    const response = await this.request<{ transactions: MercuryTransaction[] }>(
-      `/transactions?${queryParams.toString()}`
-    );
-    return response.transactions;
+    const url = queryParams.toString() 
+      ? `${endpoint}?${queryParams.toString()}`
+      : endpoint;
+
+    const response = await this.request<{ transactions: MercuryTransaction[] }>(url);
+    return response.transactions || [];
   }
 
   /**

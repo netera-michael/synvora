@@ -47,16 +47,38 @@ export async function POST(request: Request) {
     const client = new MercuryClient(settings.apiKey);
 
     // Fetch transactions from Mercury
-    const transactions = await client.getTransactions({
-      accountId,
-      startDate,
-      endDate
-    });
+    let transactions: any[] = [];
+    try {
+      transactions = await client.getTransactions({
+        accountId,
+        startDate,
+        endDate
+      });
+    } catch (apiError: any) {
+      console.error("Mercury API error:", apiError);
+      // Return more detailed error message
+      const errorMessage = apiError?.message || "Failed to fetch transactions from Mercury API";
+      return NextResponse.json(
+        { 
+          message: errorMessage,
+          transactions: [],
+          count: 0,
+          totalFetched: 0,
+          alreadyImported: 0
+        },
+        { status: 500 }
+      );
+    }
+
+    // Log for debugging
+    console.log(`Fetched ${transactions.length} transactions from Mercury`);
 
     // Filter to only credit transactions (incoming money)
     const creditTransactions = transactions.filter(
       (t) => t.direction === "credit"
     );
+
+    console.log(`Found ${creditTransactions.length} credit transactions`);
 
     // Check which transactions already exist as payouts
     const transactionIds = creditTransactions.map((t) => t.id);
