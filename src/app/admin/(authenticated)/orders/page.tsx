@@ -347,15 +347,18 @@ export default function OrdersPage() {
     try {
       const response = await fetch(`/api/orders/${order.id}`, { method: "DELETE" });
       if (!response.ok) {
-        throw new Error("Failed to delete order");
+        const errorData = await response.json().catch(() => ({ message: "Failed to delete order" }));
+        throw new Error(errorData.message || "Failed to delete order");
       }
+      // Parse response (now returns 200 with success message)
+      await response.json();
       mutate();
       if (selectedOrder?.id === order.id) {
         closeDrawer();
       }
     } catch (error) {
       console.error("Failed to delete order:", error);
-      alert("Failed to delete order. Please try again.");
+      alert(error instanceof Error ? error.message : "Failed to delete order. Please try again.");
     }
   };
 
