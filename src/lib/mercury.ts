@@ -127,7 +127,16 @@ export class MercuryClient {
     // Otherwise, prepend "secret-token:"
     let authHeader: string;
     if (!this.apiKey || this.apiKey.trim() === "") {
-      throw new Error("Mercury API key is empty or not set");
+      const error = new Error("Mercury API key is empty or not set");
+      // Capture error in Sentry
+      if (typeof window === 'undefined') {
+        const Sentry = await import("@sentry/nextjs");
+        Sentry.captureException(error, {
+          tags: { component: "MercuryClient" },
+          extra: { endpoint, url }
+        });
+      }
+      throw error;
     }
     
     if (this.apiKey.startsWith("secret-token:")) {
@@ -143,18 +152,50 @@ export class MercuryClient {
     
     console.log(`Authorization header: ${authHeader.substring(0, 20)}... (length: ${authHeader.length})`);
     
-    const response = await fetch(url, {
-      ...options,
-      headers: headers,
-    });
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers: headers,
+      });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Mercury API error for ${url}: ${response.status} ${errorText}`);
-      throw new Error(`Mercury API error: ${response.status} ${errorText}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Mercury API error for ${url}: ${response.status} ${errorText}`);
+        
+        // Capture API errors in Sentry with context
+        if (typeof window === 'undefined') {
+          const Sentry = await import("@sentry/nextjs");
+          Sentry.captureException(new Error(`Mercury API error: ${response.status}`), {
+            tags: { 
+              component: "MercuryClient",
+              status_code: response.status,
+              endpoint: endpoint
+            },
+            extra: { 
+              url,
+              status: response.status,
+              errorText: errorText.substring(0, 500), // Limit error text size
+              hasAuthHeader: !!authHeader,
+              authHeaderLength: authHeader.length
+            }
+          });
+        }
+        
+        throw new Error(`Mercury API error: ${response.status} ${errorText}`);
+      }
+
+      return response.json();
+    } catch (error) {
+      // Capture network/fetch errors in Sentry
+      if (typeof window === 'undefined' && error instanceof Error) {
+        const Sentry = await import("@sentry/nextjs");
+        Sentry.captureException(error, {
+          tags: { component: "MercuryClient", error_type: "network" },
+          extra: { url, endpoint, hasAuthHeader: !!authHeader }
+        });
+      }
+      throw error;
     }
-
-    return response.json();
   }
 
   /**
