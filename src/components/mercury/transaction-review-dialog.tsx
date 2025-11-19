@@ -37,8 +37,9 @@ export function TransactionReviewDialog({
   venues,
   onImportComplete
 }: TransactionReviewDialogProps) {
+  const safeTransactions = transactions || [];
   const [selectedTransactions, setSelectedTransactions] = useState<Set<string>>(
-    new Set(transactions.map((t) => t.id))
+    new Set(safeTransactions.map((t) => t.id))
   );
   const [venueId, setVenueId] = useState<number>(venues[0]?.id || 0);
   const [importing, setImporting] = useState(false);
@@ -58,10 +59,10 @@ export function TransactionReviewDialog({
   };
 
   const toggleAll = () => {
-    if (selectedTransactions.size === transactions.length) {
+    if (selectedTransactions.size === safeTransactions.length) {
       setSelectedTransactions(new Set());
     } else {
-      setSelectedTransactions(new Set(transactions.map((t) => t.id)));
+      setSelectedTransactions(new Set(safeTransactions.map((t) => t.id)));
     }
   };
 
@@ -102,7 +103,7 @@ export function TransactionReviewDialog({
   };
 
   // Calculate totals for selected transactions
-  const selectedTransactionsData = transactions.filter((t) =>
+  const selectedTransactionsData = safeTransactions.filter((t) =>
     selectedTransactions.has(t.id)
   );
 
@@ -174,7 +175,7 @@ export function TransactionReviewDialog({
 
                 {/* Transactions Table */}
                 <div className="overflow-auto flex-1 px-6 py-4">
-                  {transactions.length === 0 ? (
+                  {safeTransactions.length === 0 ? (
                     <div className="text-center py-12 text-slate-500">
                       No transactions found for the selected date range
                     </div>
@@ -185,7 +186,7 @@ export function TransactionReviewDialog({
                           <th className="pb-3 pr-4">
                             <input
                               type="checkbox"
-                              checked={selectedTransactions.size === transactions.length}
+                              checked={selectedTransactions.size === safeTransactions.length}
                               onChange={toggleAll}
                               className="rounded border-slate-300 text-synvora-primary focus:ring-synvora-primary"
                               disabled={importing}
@@ -199,7 +200,7 @@ export function TransactionReviewDialog({
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {transactions.map((transaction) => {
+                        {safeTransactions.map((transaction) => {
                           const isSelected = selectedTransactions.has(transaction.id);
 
                           return (
@@ -265,7 +266,7 @@ export function TransactionReviewDialog({
                       <div className="flex items-center gap-6 text-sm text-slate-600">
                         <div>
                           <span className="font-semibold text-slate-900">{selectedTransactions.size}</span> of{" "}
-                          <span className="font-semibold text-slate-900">{transactions.length}</span> transactions selected
+                          <span className="font-semibold text-slate-900">{safeTransactions.length}</span> transactions selected
                         </div>
                         {selectedTransactions.size > 0 && (
                           <>

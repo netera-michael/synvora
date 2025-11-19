@@ -147,7 +147,8 @@ export function SyncMercuryDialog({ open, onClose, onSyncComplete, venues }: Syn
     }
 
     // Store the fetched transactions and show review dialog
-    setFetchedTransactions(payload.transactions);
+    // Ensure transactions is always an array
+    setFetchedTransactions(Array.isArray(payload.transactions) ? payload.transactions : []);
     const account = accountsData?.accounts.find((a) => a.id === formState.accountId);
     setSelectedAccount(account || null);
     setShowReview(true);

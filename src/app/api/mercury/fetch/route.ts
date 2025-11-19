@@ -105,7 +105,7 @@ export async function POST(request: Request) {
     );
 
     return NextResponse.json({
-      transactions: newTransactions,
+      transactions: newTransactions || [],
       count: newTransactions.length,
       totalFetched: creditTransactions.length,
       alreadyImported: creditTransactions.length - newTransactions.length
