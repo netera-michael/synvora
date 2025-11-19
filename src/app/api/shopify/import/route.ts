@@ -78,12 +78,12 @@ export async function POST(request: Request) {
     let updated = 0;
     let skipped = 0;
 
-    // Sort orders by processedAt DESC to ensure newest orders get highest order numbers
-    // This ensures order numbers match chronological sequence
+    // Sort orders by processedAt ASC to ensure newest orders get highest order numbers
+    // Process oldest orders first, so newest orders get assigned last (highest numbers)
     const sortedOrders = [...orders].sort((a, b) => {
       const dateA = new Date(a.processedAt).getTime();
       const dateB = new Date(b.processedAt).getTime();
-      return dateB - dateA; // Descending order (newest first)
+      return dateA - dateB; // Ascending order (oldest first)
     });
 
     for (const order of sortedOrders) {
