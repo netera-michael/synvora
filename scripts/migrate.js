@@ -31,7 +31,7 @@ async function runMigration() {
     try {
       console.log(`Migration attempt ${attempt}/${MAX_RETRIES}...`);
       
-      execSync('prisma migrate deploy --skip-generate', {
+      execSync('prisma migrate deploy', {
         stdio: 'inherit',
         env
       });

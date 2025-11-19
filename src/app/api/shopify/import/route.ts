@@ -144,7 +144,7 @@ export async function POST(request: Request) {
     // Oldest new order gets lowest number (maxOrderNum + 1)
     let position = 0;
     for (const item of allOrdersForNumbering) {
-      if (item.isNew && item.order) {
+      if (item.isNew && 'order' in item && item.order) {
         const assignedNum = maxOrderNum + (newOrdersCount - position);
         orderNumberMap.set(item.order.externalId, `#${assignedNum}`);
         position++;
