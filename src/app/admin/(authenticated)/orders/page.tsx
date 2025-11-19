@@ -46,22 +46,50 @@ const toDateParam = (value: string) => {
   if (!value) {
     return "";
   }
+  // HTML5 date input format: YYYY-MM-DD
   const [year, month, day] = value.split("-");
   if (!year || !month || !day) {
     return "";
   }
-  return `${day}/${month}/${year}`;
+  // Validate date components are numbers
+  const yearNum = Number(year);
+  const monthNum = Number(month);
+  const dayNum = Number(day);
+  if (Number.isNaN(yearNum) || Number.isNaN(monthNum) || Number.isNaN(dayNum)) {
+    return "";
+  }
+  // Validate date is valid
+  const date = new Date(yearNum, monthNum - 1, dayNum);
+  if (date.getFullYear() !== yearNum || date.getMonth() !== monthNum - 1 || date.getDate() !== dayNum) {
+    return "";
+  }
+  // Return in DD/MM/YYYY format for URL params
+  return `${String(dayNum).padStart(2, '0')}/${String(monthNum).padStart(2, '0')}/${yearNum}`;
 };
 
 const toDateInputValue = (value: string) => {
   if (!value) {
     return "";
   }
+  // URL param format: DD/MM/YYYY
   const [day, month, year] = value.split("/");
   if (!day || !month || !year) {
     return "";
   }
-  return `${year}-${month}-${day}`;
+  // Validate date components are numbers
+  const yearNum = Number(year);
+  const monthNum = Number(month);
+  const dayNum = Number(day);
+  if (Number.isNaN(yearNum) || Number.isNaN(monthNum) || Number.isNaN(dayNum)) {
+    return "";
+  }
+  // Validate date is valid
+  const date = new Date(yearNum, monthNum - 1, dayNum);
+  if (date.getFullYear() !== yearNum || date.getMonth() !== monthNum - 1 || date.getDate() !== dayNum) {
+    return "";
+  }
+  // Return in YYYY-MM-DD format for HTML5 date input
+  return `${yearNum}-${String(monthNum).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
 };
 
 export default function OrdersPage() {
@@ -71,8 +99,10 @@ export default function OrdersPage() {
   const monthFilter = searchParams.get("month") ?? "all";
   const startDateFilter = searchParams.get("startDate") ?? "";
   const endDateFilter = searchParams.get("endDate") ?? "";
-  const startDateInputValue = toDateInputValue(startDateFilter);
-  const endDateInputValue = toDateInputValue(endDateFilter);
+  
+  // Memoize date input values to prevent unnecessary re-renders and flickering
+  const startDateInputValue = useMemo(() => toDateInputValue(startDateFilter), [startDateFilter]);
+  const endDateInputValue = useMemo(() => toDateInputValue(endDateFilter), [endDateFilter]);
   const paramsWithTz = new URLSearchParams(searchParams.toString());
   paramsWithTz.set("tzOffset", String(tzOffset));
   const queryString = paramsWithTz.toString();
