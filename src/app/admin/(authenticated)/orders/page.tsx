@@ -331,6 +331,31 @@ export default function OrdersPage() {
     setIsCreateOpen(true);
   };
 
+  const handleEdit = (order: OrderDto) => {
+    setSelectedOrder(order);
+    setDrawerOpen(true);
+  };
+
+  const handleDelete = async (order: OrderDto) => {
+    if (!confirm(`Are you sure you want to delete order ${order.orderNumber}?`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/orders/${order.id}`, { method: "DELETE" });
+      if (!response.ok) {
+        throw new Error("Failed to delete order");
+      }
+      mutate();
+      if (selectedOrder?.id === order.id) {
+        closeDrawer();
+      }
+    } catch (error) {
+      console.error("Failed to delete order:", error);
+      alert("Failed to delete order. Please try again.");
+    }
+  };
+
   const toggleEditMode = () => {
     setEditMode(!editMode);
     if (editMode) {
@@ -655,6 +680,8 @@ export default function OrdersPage() {
           orders={ordersList}
           onSelect={openDrawer}
           onDuplicate={isAdmin ? handleDuplicate : undefined}
+          onEdit={isAdmin ? handleEdit : undefined}
+          onDelete={isAdmin ? handleDelete : undefined}
           canManage={isAdmin}
           isAdmin={isAdmin}
           editMode={editMode}

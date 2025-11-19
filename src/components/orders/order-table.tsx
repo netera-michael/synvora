@@ -1,11 +1,15 @@
 import { formatCurrency, formatDateTime, cn } from "@/lib/utils";
 import type { OrderDto } from "@/types/orders";
-import { ChevronRight } from "lucide-react";
+import { Edit, Copy, Trash2, MoreVertical } from "lucide-react";
+import { Menu, Transition } from "@headlessui/react";
+import { Fragment } from "react";
 
 type OrderTableProps = {
   orders: OrderDto[];
   onSelect: (order: OrderDto) => void;
   onDuplicate?: (order: OrderDto) => void;
+  onEdit?: (order: OrderDto) => void;
+  onDelete?: (order: OrderDto) => void;
   canManage?: boolean;
   isAdmin?: boolean;
   editMode?: boolean;
@@ -27,7 +31,9 @@ const BADGES: Record<string, string> = {
 export function OrderTable({ 
   orders, 
   onSelect, 
-  onDuplicate, 
+  onDuplicate,
+  onEdit,
+  onDelete,
   canManage = true, 
   isAdmin = false,
   editMode = false,
@@ -169,27 +175,81 @@ export function OrderTable({
                     : "—"}
                 </span>
               </td>
-              <td className="whitespace-nowrap px-6 py-4 text-right print:hidden">
-                {!editMode && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => onSelect(order)}
-                      className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-synvora-primary hover:text-synvora-primary"
+              <td className="whitespace-nowrap px-6 py-4 text-right print:hidden" onClick={(e) => e.stopPropagation()}>
+                {!editMode && canManage && (
+                  <Menu as="div" className="relative inline-block text-left">
+                    <div>
+                      <Menu.Button className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-synvora-primary hover:text-synvora-primary">
+                        Actions
+                        <MoreVertical className="h-3 w-3" />
+                      </Menu.Button>
+                    </div>
+                    <Transition
+                      as={Fragment}
+                      enter="transition ease-out duration-100"
+                      enterFrom="transform opacity-0 scale-95"
+                      enterTo="transform opacity-100 scale-100"
+                      leave="transition ease-in duration-75"
+                      leaveFrom="transform opacity-100 scale-100"
+                      leaveTo="transform opacity-0 scale-95"
                     >
-                      View
-                      <ChevronRight className="h-4 w-4" />
-                    </button>
-                    {canManage && onDuplicate ? (
-                      <button
-                        type="button"
-                        onClick={() => onDuplicate(order)}
-                        className="ml-2 inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-synvora-primary hover:text-synvora-primary"
-                      >
-                        Duplicate
-                      </button>
-                    ) : null}
-                  </>
+                      <Menu.Items className="absolute right-0 z-10 mt-2 w-40 origin-top-right rounded-lg border border-slate-200 bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                        <div className="py-1">
+                          {onEdit && (
+                            <Menu.Item>
+                              {({ active }) => (
+                                <button
+                                  type="button"
+                                  onClick={() => onEdit(order)}
+                                  className={`${
+                                    active ? "bg-slate-50 text-slate-900" : "text-slate-700"
+                                  } flex w-full items-center gap-2 px-4 py-2 text-xs font-semibold`}
+                                >
+                                  <Edit className="h-3 w-3" />
+                                  Edit
+                                </button>
+                              )}
+                            </Menu.Item>
+                          )}
+                          {onDuplicate && (
+                            <Menu.Item>
+                              {({ active }) => (
+                                <button
+                                  type="button"
+                                  onClick={() => onDuplicate(order)}
+                                  className={`${
+                                    active ? "bg-slate-50 text-slate-900" : "text-slate-700"
+                                  } flex w-full items-center gap-2 px-4 py-2 text-xs font-semibold`}
+                                >
+                                  <Copy className="h-3 w-3" />
+                                  Duplicate
+                                </button>
+                              )}
+                            </Menu.Item>
+                          )}
+                          {onDelete && (
+                            <>
+                              <div className="my-1 border-t border-slate-200" />
+                              <Menu.Item>
+                                {({ active }) => (
+                                  <button
+                                    type="button"
+                                    onClick={() => onDelete(order)}
+                                    className={`${
+                                      active ? "bg-rose-50 text-rose-700" : "text-rose-600"
+                                    } flex w-full items-center gap-2 px-4 py-2 text-xs font-semibold`}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                    Delete
+                                  </button>
+                                )}
+                              </Menu.Item>
+                            </>
+                          )}
+                        </div>
+                      </Menu.Items>
+                    </Transition>
+                  </Menu>
                 )}
               </td>
               </tr>
