@@ -109,17 +109,42 @@ export default function OrdersPage() {
 
   const months = useMemo(() => {
     const now = new Date();
-    const options = Array.from({ length: 6 }).map((_, index) => {
-      // Use local date to avoid timezone shifts
-      const date = new Date(now.getFullYear(), now.getMonth() - index, 1);
-      // Format as YYYY-MM using local year/month to avoid UTC conversion issues
+    const options: Array<{ value: string; label: string; date: Date }> = [];
+    
+    // Add 4 months in the past (index 4, 3, 2, 1)
+    for (let i = 4; i >= 1; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const value = `${year}-${month}`;
       const label = date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-      return { value, label };
+      options.push({ value, label, date });
+    }
+    
+    // Add current month (index 0)
+    const currentDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
+    options.push({
+      value: `${currentYear}-${currentMonth}`,
+      label: currentDate.toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+      date: currentDate
     });
-    return [{ value: "all", label: "All orders" }, ...options];
+    
+    // Add 2 months in the future (index 1, 2)
+    for (let i = 1; i <= 2; i++) {
+      const date = new Date(now.getFullYear(), now.getMonth() + i, 1);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const value = `${year}-${month}`;
+      const label = date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+      options.push({ value, label, date });
+    }
+    
+    // Sort by date descending (newest first) for display
+    options.sort((a, b) => b.date.getTime() - a.date.getTime());
+    
+    return [{ value: "all", label: "All orders" }, ...options.map(({ value, label }) => ({ value, label }))];
   }, []);
 
   const handleMonthChange = (value: string) => {
