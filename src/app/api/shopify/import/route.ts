@@ -78,7 +78,15 @@ export async function POST(request: Request) {
     let updated = 0;
     let skipped = 0;
 
-    for (const order of orders) {
+    // Sort orders by processedAt DESC to ensure newest orders get highest order numbers
+    // This ensures order numbers match chronological sequence
+    const sortedOrders = [...orders].sort((a, b) => {
+      const dateA = new Date(a.processedAt).getTime();
+      const dateB = new Date(b.processedAt).getTime();
+      return dateB - dateA; // Descending order (newest first)
+    });
+
+    for (const order of sortedOrders) {
       try {
         const existing = await prisma.order.findUnique({
           where: { externalId: order.externalId }
