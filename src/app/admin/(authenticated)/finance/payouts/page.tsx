@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useSession } from "next-auth/react";
-import { Plus, RefreshCw } from "lucide-react";
+import { Plus, RefreshCw, CloudDownload } from "lucide-react";
 import type { PayoutDto } from "@/types/payouts";
+import { SyncMercuryDialog } from "@/components/mercury/sync-mercury-dialog";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -33,6 +34,7 @@ export default function PayoutsPage() {
   const [editingPayout, setEditingPayout] = useState<PayoutDto | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const [isSyncMercuryOpen, setIsSyncMercuryOpen] = useState(false);
 
   const openCreate = () => {
     setEditingPayout(null);
@@ -97,6 +99,14 @@ export default function PayoutsPage() {
         </div>
         {isAdmin ? (
           <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setIsSyncMercuryOpen(true)}
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-synvora-primary hover:text-synvora-primary"
+            >
+              <CloudDownload className="h-4 w-4" />
+              Sync from Mercury
+            </button>
             <button
               type="button"
               onClick={handleSyncMercury}
@@ -220,7 +230,15 @@ export default function PayoutsPage() {
       ) : null}
 
       {isAdmin ? (
-        <PayoutDialog open={isDialogOpen} payout={editingPayout} onClose={closeDialog} onSaved={mutate} venues={venues} />
+        <>
+          <PayoutDialog open={isDialogOpen} payout={editingPayout} onClose={closeDialog} onSaved={mutate} venues={venues} />
+          <SyncMercuryDialog
+            open={isSyncMercuryOpen}
+            onClose={() => setIsSyncMercuryOpen(false)}
+            onSyncComplete={mutate}
+            venues={venues}
+          />
+        </>
       ) : null}
     </div>
   );

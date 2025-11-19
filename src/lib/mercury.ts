@@ -100,6 +100,29 @@ export class MercuryClient {
   }
 
   /**
+   * Get transactions for an account
+   */
+  async getTransactions(params: {
+    accountId: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<MercuryTransaction[]> {
+    const queryParams = new URLSearchParams();
+    queryParams.append("accountId", params.accountId);
+    if (params.startDate) {
+      queryParams.append("startDate", params.startDate);
+    }
+    if (params.endDate) {
+      queryParams.append("endDate", params.endDate);
+    }
+
+    const response = await this.request<{ transactions: MercuryTransaction[] }>(
+      `/transactions?${queryParams.toString()}`
+    );
+    return response.transactions;
+  }
+
+  /**
    * Test API connection
    */
   async testConnection(): Promise<boolean> {
