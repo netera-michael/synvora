@@ -39,6 +39,9 @@ export async function GET() {
       }
     });
 
+    // Flush events to ensure they're sent before the response
+    await Sentry.flush(2000); // Wait up to 2 seconds for events to be sent
+
     return NextResponse.json({
       success: true,
       message: "Test error sent to Sentry! Check your Sentry dashboard.",
