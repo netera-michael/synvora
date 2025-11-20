@@ -31,8 +31,17 @@ if (dsn) {
         level: event.level,
         tags: event.tags,
         dsnConfigured: !!dsn,
+        eventId: event.event_id,
+        timestamp: event.timestamp,
       });
+      // Always return event (don't filter it out)
       return event;
+    },
+    
+    // Ensure transport is configured for serverless
+    transportOptions: {
+      // Increase timeout for serverless environments
+      timeout: 10000,
     },
 
     // Uncomment the line below to enable Spotlight (https://spotlightjs.com)

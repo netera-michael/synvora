@@ -67,8 +67,22 @@ export async function GET() {
 
     // Flush events to ensure they're sent before the response
     console.log("[Sentry Test] Flushing events...");
-    const flushResult = await Sentry.flush(5000); // Wait up to 5 seconds for events to be sent
-    console.log("[Sentry Test] Flush result:", flushResult);
+    console.log("[Sentry Test] DSN configured:", !!sentryDsn);
+    console.log("[Sentry Test] DSN preview:", sentryDsn ? `${sentryDsn.substring(0, 40)}...` : "not set");
+    
+    // Try multiple flush attempts with increasing timeouts
+    let flushResult = false;
+    for (let i = 0; i < 3; i++) {
+      console.log(`[Sentry Test] Flush attempt ${i + 1}/3...`);
+      flushResult = await Sentry.flush(2000);
+      if (flushResult) {
+        console.log(`[Sentry Test] Flush succeeded on attempt ${i + 1}`);
+        break;
+      }
+      console.log(`[Sentry Test] Flush failed on attempt ${i + 1}, waiting...`);
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    console.log("[Sentry Test] Final flush result:", flushResult);
 
     return NextResponse.json({
       success: true,
