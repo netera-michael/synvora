@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { MercuryClient } from "@/lib/mercury";
 
 export async function GET() {
     const session = await getServerSession(authOptions);
@@ -13,7 +14,7 @@ export async function GET() {
     const log = (msg: string) => logs.push(`[${new Date().toISOString()}] ${msg}`);
 
     try {
-        log("Starting Mercury debug (Auth Header Test)...");
+        log("Starting Mercury Transaction Fetch Test...");
 
         // 1. Check Settings
         const settings = await prisma.mercurySettings.findFirst();
@@ -22,57 +23,53 @@ export async function GET() {
             return NextResponse.json({ success: false, logs }, { status: 400 });
         }
 
-        const apiKey = settings.apiKey;
-        log(`API Key present (length: ${apiKey.length})`);
+        log("✅ Settings found.");
 
-        // Clean key (remove 'secret-token:' if present for testing variations)
-        const cleanKey = apiKey.replace(/^secret-token:/, '');
-        log(`Clean key length: ${cleanKey.length}`);
+        // 2. Initialize Client (now uses fixed Auth logic)
+        const client = new MercuryClient(settings.apiKey);
+        log("Client initialized");
 
-        // Formats to test
-        const formats = [
-            { name: "Current (secret-token: <key>)", header: apiKey.startsWith('secret-token:') ? apiKey : `secret-token:${apiKey}` },
-            { name: "Bearer <clean_key>", header: `Bearer ${cleanKey}` },
-            { name: "Bearer secret-token:<clean_key>", header: `Bearer secret-token:${cleanKey}` },
-            { name: "Basic Auth (username=secret-token:<clean_key>)", header: `Basic ${Buffer.from(`secret-token:${cleanKey}:`).toString('base64')}` },
-            { name: "Basic Auth (username=<clean_key>)", header: `Basic ${Buffer.from(`${cleanKey}:`).toString('base64')}` }
-        ];
+        // 3. Fetch Accounts
+        log("Fetching accounts...");
+        const accounts = await client.getAccounts();
+        log(`✅ Found ${accounts.length} accounts.`);
 
-        const url = "https://api.mercury.com/api/v1/accounts";
-        let success = false;
-
-        for (const format of formats) {
-            log(`\nTesting format: ${format.name}`);
-            log(`Header value: ${format.header.substring(0, 20)}...`);
-
-            try {
-                const res = await fetch(url, {
-                    headers: {
-                        'Authorization': format.header,
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                log(`Status: ${res.status}`);
-                if (res.ok) {
-                    log("✅ SUCCESS!");
-                    const data = await res.json();
-                    log(`Accounts found: ${data.accounts?.length}`);
-                    success = true;
-                    break; // Stop after first success
-                } else {
-                    const text = await res.text();
-                    log(`❌ Failed: ${text.substring(0, 100)}`);
-                }
-            } catch (e: any) {
-                log(`❌ Exception: ${e.message}`);
-            }
+        if (accounts.length === 0) {
+            log("⚠️ No accounts found. Cannot fetch transactions.");
+            return NextResponse.json({ success: true, logs });
         }
 
-        return NextResponse.json({ success, logs });
+        // 4. Fetch Transactions for first account
+        const account = accounts[0];
+        log(`Fetching latest transactions for account: ${account.name} (${account.id})...`);
+
+        // Fetch last 90 days to ensure we get something
+        const end = new Date();
+        const start = new Date();
+        start.setDate(start.getDate() - 90);
+
+        const transactions = await client.getTransactions({
+            accountId: account.id,
+            startDate: start.toISOString().split('T')[0],
+            endDate: end.toISOString().split('T')[0]
+        });
+
+        log(`✅ Fetched ${transactions.length} transactions (last 90 days).`);
+
+        // Show latest 10
+        const latest10 = transactions.slice(0, 10);
+        log(`\nLatest ${latest10.length} transactions:`);
+        latest10.forEach((tx, i) => {
+            log(`[${i + 1}] ${tx.postedAt} | ${tx.amount} | ${tx.counterparty?.name || 'Unknown'} | ${tx.id}`);
+        });
+
+        return NextResponse.json({ success: true, logs, transactions: latest10 });
 
     } catch (error: any) {
-        log(`❌ Unexpected error: ${error.message}`);
+        log(`❌ Error: ${error.message}`);
+        if (error.cause) {
+            log(`Cause: ${JSON.stringify(error.cause)}`);
+        }
         return NextResponse.json({ success: false, logs, error: error.message }, { status: 500 });
     }
 }
