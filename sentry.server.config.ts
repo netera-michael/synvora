@@ -42,12 +42,6 @@ if (dsn) {
       // Always return event (don't filter it out)
       return event;
     },
-    
-    // Configure for serverless environments
-    integrations: [
-      // Use HTTP transport explicitly for serverless
-      new Sentry.Integrations.Http({ tracing: true }),
-    ],
 
     // Uncomment the line below to enable Spotlight (https://spotlightjs.com)
     // spotlight: process.env.NODE_ENV === 'development',
