@@ -37,12 +37,6 @@ if (dsn) {
       // Always return event (don't filter it out)
       return event;
     },
-    
-    // Ensure transport is configured for serverless
-    transportOptions: {
-      // Increase timeout for serverless environments
-      timeout: 10000,
-    },
 
     // Uncomment the line below to enable Spotlight (https://spotlightjs.com)
     // spotlight: process.env.NODE_ENV === 'development',
