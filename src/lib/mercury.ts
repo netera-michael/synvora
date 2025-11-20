@@ -137,14 +137,15 @@ export class MercuryClient {
     const url = `${this.baseUrl}${endpoint}`;
     console.log(`Mercury API request: ${options.method || 'GET'} ${url}`);
 
-    // Mercury API uses "Bearer" token
-    // Remove "secret-token:" prefix if present (legacy or user copy-paste)
+    // Mercury API uses "Bearer" token with "secret-token:" prefix in the value
+    // Remove "secret-token:" prefix if present in the key itself to avoid double prefixing
     let cleanKey = this.apiKey;
     if (cleanKey.startsWith("secret-token:")) {
       cleanKey = cleanKey.replace("secret-token:", "");
     }
 
-    const authHeader = `Bearer ${cleanKey}`;
+    // The correct format verified by debug logs is: Bearer secret-token:<key>
+    const authHeader = `Bearer secret-token:${cleanKey}`;
 
     // Ensure headers object exists
     const headers = new Headers(options.headers);
