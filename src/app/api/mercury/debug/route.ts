@@ -39,26 +39,37 @@ export async function GET() {
             return NextResponse.json({ success: true, logs });
         }
 
-        // 4. Fetch Transactions for first account
-        const account = accounts[0];
-        log(`Fetching latest transactions for account: ${account.name} (${account.id})...`);
-
-        // Fetch last 90 days to ensure we get something
+        // 4. Fetch Transactions for ALL accounts
+        // Fetch last 365 days to ensure we get something
         const end = new Date();
         const start = new Date();
-        start.setDate(start.getDate() - 90);
+        start.setDate(start.getDate() - 365);
 
-        const transactions = await client.getTransactions({
-            accountId: account.id,
-            startDate: start.toISOString().split('T')[0],
-            endDate: end.toISOString().split('T')[0]
-        });
+        let allTransactions: any[] = [];
 
-        log(`✅ Fetched ${transactions.length} transactions (last 90 days).`);
+        for (const account of accounts) {
+            log(`Fetching transactions for account: ${account.name} (${account.id})...`);
+            try {
+                const transactions = await client.getTransactions({
+                    accountId: account.id,
+                    startDate: start.toISOString().split('T')[0],
+                    endDate: end.toISOString().split('T')[0]
+                });
+                log(`✅ Fetched ${transactions.length} transactions.`);
+                allTransactions = [...allTransactions, ...transactions];
+            } catch (e: any) {
+                log(`❌ Failed to fetch for ${account.name}: ${e.message}`);
+            }
+        }
+
+        log(`\nTotal transactions found: ${allTransactions.length}`);
+
+        // Sort by date desc
+        allTransactions.sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime());
 
         // Show latest 10
-        const latest10 = transactions.slice(0, 10);
-        log(`\nLatest ${latest10.length} transactions:`);
+        const latest10 = allTransactions.slice(0, 10);
+        log(`\nLatest ${latest10.length} transactions (across all accounts):`);
         latest10.forEach((tx, i) => {
             log(`[${i + 1}] ${tx.postedAt} | ${tx.amount} | ${tx.counterparty?.name || 'Unknown'} | ${tx.id}`);
         });
