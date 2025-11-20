@@ -27,7 +27,9 @@ if (dsn) {
     // Release tracking
     release: process.env.VERCEL_GIT_COMMIT_SHA || undefined,
 
-    // Ensure events are sent even in serverless environments
+    // Serverless-specific configuration
+    // In serverless environments, we need to ensure events are sent synchronously
+    maxQueueSize: 30, // Limit queue size for serverless
     beforeSend(event, hint) {
       // Log to console for debugging
       console.log("[Sentry] Attempting to send event:", {
@@ -42,6 +44,10 @@ if (dsn) {
       // Always return event (don't filter it out)
       return event;
     },
+    
+    // Ensure transport sends events immediately in serverless
+    // Don't use background transport which might not work in serverless
+    transport: Sentry.makeNodeTransport || undefined,
 
     // Uncomment the line below to enable Spotlight (https://spotlightjs.com)
     // spotlight: process.env.NODE_ENV === 'development',

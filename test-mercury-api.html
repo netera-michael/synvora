@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mercury API Tester</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .error {
+            color: red;
+        }
+        .success {
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <h1>Mercury API Tester</h1>
+    
+    <div class="input-group">
+        <label for="apiKey">API Key:</label>
+        <input type="password" id="apiKey" placeholder="Enter your Mercury API key">
+    </div>
+    
+    <div class="input-group">
+        <label for="accountId">Account ID:</label>
+        <input type="text" id="accountId" value="3c8b442a-645b-11ef-8023-a7af5606bdf9" placeholder="Enter account ID">
+    </div>
+    
+    <div class="input-group">
+        <label for="endpoint">Endpoint:</label>
+        <select id="endpoint">
+            <option value="/accounts">Get All Accounts</option>
+            <option value="/accounts/{accountId}/transactions">Get Transactions (with account ID)</option>
+            <option value="/accounts/{accountId}/transactions?start=2025-10-19&end=2025-11-19">Get Transactions (with dates)</option>
+        </select>
+    </div>
+    
+    <button onclick="testAPI()">Test API</button>
+    
+    <div id="result"></div>
+    
+    <script>
+        async function testAPI() {
+            const apiKey = document.getElementById('apiKey').value;
+            const accountId = document.getElementById('accountId').value;
+            const endpointSelect = document.getElementById('endpoint');
+            let endpoint = endpointSelect.value;
+            
+            if (!apiKey) {
+                document.getElementById('result').innerHTML = '<span class="error">Please enter your API key</span>';
+                return;
+            }
+            
+            // Replace placeholder with actual account ID
+            endpoint = endpoint.replace('{accountId}', accountId);
+            
+            const baseUrl = 'https://api.mercury.com/v1';
+            const url = `${baseUrl}${endpoint}`;
+            
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing...<br>URL: ' + url + '<br><br>';
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const responseText = await response.text();
+                let responseData;
+                try {
+                    responseData = JSON.parse(responseText);
+                } catch (e) {
+                    responseData = responseText;
+                }
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <span class="success">✅ Success (${response.status})</span><br>
+                        <strong>URL:</strong> ${url}<br><br>
+                        <strong>Response:</strong><br>
+                        ${JSON.stringify(responseData, null, 2)}
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <span class="error">❌ Error (${response.status})</span><br>
+                        <strong>URL:</strong> ${url}<br><br>
+                        <strong>Response:</strong><br>
+                        ${JSON.stringify(responseData, null, 2)}
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <span class="error">❌ Network Error</span><br>
+                    <strong>Error:</strong> ${error.message}<br>
+                    <strong>URL:</strong> ${url}
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
+

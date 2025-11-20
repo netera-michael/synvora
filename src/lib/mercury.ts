@@ -85,13 +85,26 @@ export class MercuryClient {
 
         try {
           console.log(`Trying Mercury API: ${options.method || 'GET'} ${url}`);
+          
+          // Construct headers explicitly to ensure Authorization is set correctly
+          const headers = new Headers();
+          headers.set("Authorization", authHeader);
+          headers.set("Content-Type", "application/json");
+          
+          // Merge any additional headers from options
+          if (options.headers) {
+            const additionalHeaders = new Headers(options.headers);
+            additionalHeaders.forEach((value, key) => {
+              headers.set(key, value);
+            });
+          }
+          
+          console.log(`Mercury API request: ${options.method || 'GET'} ${url}`);
+          console.log(`Authorization header: ${authHeader.substring(0, 20)}... (length: ${authHeader.length})`);
+          
           const response = await fetch(url, {
             ...options,
-            headers: {
-              "Authorization": authHeader,
-              "Content-Type": "application/json",
-              ...options.headers,
-            },
+            headers: headers,
           });
 
           if (response.ok) {
