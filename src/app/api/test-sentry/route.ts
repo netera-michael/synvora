@@ -20,9 +20,15 @@ export async function GET() {
   const isSentryInitialized = !!sentryDsn;
 
   try {
+    // Ensure Sentry is initialized by importing the server config
+    // This ensures Sentry.init() has been called before we try to capture events
+    await import("../../../sentry.server.config");
+    
     // Test 1: Actually throw an error (this will be auto-captured by Sentry)
     const testError = new Error("Sentry Test Error - This is a test error to verify Sentry is working correctly");
     testError.name = "SentryTestError";
+    
+    console.log("[Sentry Test] About to capture events, DSN:", sentryDsn ? "configured" : "not configured");
     
     // Add context before throwing
     Sentry.setUser({
@@ -35,20 +41,23 @@ export async function GET() {
     Sentry.setContext("test_context", {
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV || "unknown",
-        sentryDsnConfigured: !!sentryDsn,
+      sentryDsnConfigured: !!sentryDsn,
     });
 
     // Test 2: Capture a message first
-    Sentry.captureMessage("Sentry test message - Error tracking is working!", {
+    console.log("[Sentry Test] Capturing message...");
+    const messageId = Sentry.captureMessage("Sentry test message - Error tracking is working!", {
       level: "info",
       tags: {
         test: "true",
         type: "message"
       }
     });
+    console.log("[Sentry Test] Message captured with ID:", messageId);
 
     // Test 3: Capture exception
-    Sentry.captureException(testError, {
+    console.log("[Sentry Test] Capturing exception...");
+    const exceptionId = Sentry.captureException(testError, {
       tags: {
         test: "true",
         component: "test-sentry",
@@ -57,9 +66,10 @@ export async function GET() {
       extra: {
         timestamp: new Date().toISOString(),
         user: session.user.email,
-      sentryDsn: sentryDsn ? "configured" : "not configured",
+        sentryDsn: sentryDsn ? "configured" : "not configured",
       }
     });
+    console.log("[Sentry Test] Exception captured with ID:", exceptionId);
 
     // Test 4: Actually throw an error (this should be auto-captured by Sentry)
     // This will be caught by Next.js error boundary and Sentry should capture it
