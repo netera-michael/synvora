@@ -13,6 +13,12 @@ Sentry.init({
   // Setting this option to true will print useful information to the console while you're setting up Sentry.
   debug: true, // Temporarily enabled for testing
 
+  // Environment
+  environment: process.env.NODE_ENV || "production",
+
+  // Release tracking
+  release: process.env.VERCEL_GIT_COMMIT_SHA || undefined,
+
   // Uncomment the line below to enable Spotlight (https://spotlightjs.com)
   // spotlight: process.env.NODE_ENV === 'development',
 });
