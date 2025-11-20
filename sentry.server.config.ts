@@ -8,6 +8,10 @@ const dsn = process.env.SENTRY_DSN;
 
 // Only initialize if DSN is provided
 if (dsn) {
+  console.log("[Sentry Init] Starting initialization...");
+  console.log("[Sentry Init] DSN present:", !!dsn);
+  console.log("[Sentry Init] DSN preview:", dsn.substring(0, 40) + "...");
+  
   Sentry.init({
     dsn,
 
@@ -33,10 +37,17 @@ if (dsn) {
         dsnConfigured: !!dsn,
         eventId: event.event_id,
         timestamp: event.timestamp,
+        type: event.type,
       });
       // Always return event (don't filter it out)
       return event;
     },
+    
+    // Configure for serverless environments
+    integrations: [
+      // Use HTTP transport explicitly for serverless
+      new Sentry.Integrations.Http({ tracing: true }),
+    ],
 
     // Uncomment the line below to enable Spotlight (https://spotlightjs.com)
     // spotlight: process.env.NODE_ENV === 'development',

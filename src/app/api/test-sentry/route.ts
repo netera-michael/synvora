@@ -28,6 +28,8 @@ export async function GET() {
     testError.name = "SentryTestError";
     
     console.log("[Sentry Test] About to capture events, DSN:", sentryDsn ? "configured" : "not configured");
+    console.log("[Sentry Test] NODE_ENV:", process.env.NODE_ENV);
+    console.log("[Sentry Test] VERCEL_ENV:", process.env.VERCEL_ENV);
     
     // Add context before throwing
     Sentry.setUser({
@@ -53,6 +55,7 @@ export async function GET() {
       }
     });
     console.log("[Sentry Test] Message captured with ID:", messageId);
+    console.log("[Sentry Test] Message ID type:", typeof messageId);
 
     // Test 3: Capture exception
     console.log("[Sentry Test] Capturing exception...");
@@ -69,6 +72,10 @@ export async function GET() {
       }
     });
     console.log("[Sentry Test] Exception captured with ID:", exceptionId);
+    console.log("[Sentry Test] Exception ID type:", typeof exceptionId);
+    
+    // Check if there are pending events
+    console.log("[Sentry Test] Checking pending events...");
 
     // Test 4: Actually throw an error (this should be auto-captured by Sentry)
     // This will be caught by Next.js error boundary and Sentry should capture it
