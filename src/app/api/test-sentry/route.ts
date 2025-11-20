@@ -20,9 +20,8 @@ export async function GET() {
   const isSentryInitialized = !!sentryDsn;
 
   try {
-    // Ensure Sentry is initialized by importing the server config
-    // This ensures Sentry.init() has been called before we try to capture events
-    await import("../../../sentry.server.config");
+    // Sentry is already initialized via instrumentation.ts
+    // No need to manually import - it's auto-loaded by Next.js
     
     // Test 1: Actually throw an error (this will be auto-captured by Sentry)
     const testError = new Error("Sentry Test Error - This is a test error to verify Sentry is working correctly");

@@ -15,8 +15,8 @@ export async function GET() {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    // Ensure Sentry is initialized
-    await import("../../../sentry.server.config");
+    // Sentry is already initialized via instrumentation.ts
+    // No need to manually import - it's auto-loaded by Next.js
 
     // Set user context
     Sentry.setUser({
