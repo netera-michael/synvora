@@ -62,7 +62,7 @@ export async function POST(request: Request) {
       // Return more detailed error message
       const errorMessage = apiError?.message || "Failed to fetch transactions from Mercury API";
       return NextResponse.json(
-        { 
+        {
           message: errorMessage,
           transactions: [],
           count: 0,
@@ -76,15 +76,15 @@ export async function POST(request: Request) {
     // Log for debugging
     console.log(`Fetched ${transactions.length} transactions from Mercury`);
 
-    // Filter to only credit transactions (incoming money)
-    const creditTransactions = transactions.filter(
-      (t) => t.direction === "credit"
+    // Filter to only debit transactions (outgoing money/payouts)
+    const debitTransactions = transactions.filter(
+      (t) => t.direction === "debit"
     );
 
-    console.log(`Found ${creditTransactions.length} credit transactions`);
+    console.log(`Found ${debitTransactions.length} debit transactions`);
 
     // Check which transactions already exist as payouts
-    const transactionIds = creditTransactions.map((t) => t.id);
+    const transactionIds = debitTransactions.map((t) => t.id);
     const existingPayouts = await prisma.payout.findMany({
       where: {
         mercuryTransactionId: {
@@ -103,15 +103,15 @@ export async function POST(request: Request) {
     );
 
     // Filter out already imported transactions
-    const newTransactions = creditTransactions.filter(
+    const newTransactions = debitTransactions.filter(
       (t) => !existingTransactionIds.has(t.id)
     );
 
     return NextResponse.json({
       transactions: newTransactions || [],
       count: newTransactions.length,
-      totalFetched: creditTransactions.length,
-      alreadyImported: creditTransactions.length - newTransactions.length
+      totalFetched: debitTransactions.length,
+      alreadyImported: debitTransactions.length - newTransactions.length
     });
   } catch (error: unknown) {
     console.error("Failed to fetch Mercury transactions:", error);

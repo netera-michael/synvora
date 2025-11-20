@@ -78,8 +78,8 @@ export async function POST(request: Request) {
         continue;
       }
 
-      // Only import credit transactions (incoming money)
-      if (transaction.direction !== "credit") {
+      // Only import debit transactions (outgoing money/payouts)
+      if (transaction.direction !== "debit") {
         skipped++;
         continue;
       }
@@ -87,7 +87,7 @@ export async function POST(request: Request) {
       // Create payout from transaction
       await prisma.payout.create({
         data: {
-          amount: transaction.amount,
+          amount: Math.abs(transaction.amount), // Store as positive value for payout record
           currency: "USD",
           status: "Posted",
           description: transaction.memo || `Mercury: ${transaction.counterparty.name}`,
