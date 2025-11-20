@@ -235,7 +235,11 @@ export class MercuryClient {
    * Get a transaction by ID
    */
   async getTransaction(transactionId: string): Promise<MercuryTransaction> {
-    return this.request<MercuryTransaction>(`/transactions/${transactionId}`);
+    const transaction = await this.request<MercuryTransaction>(`/transactions/${transactionId}`);
+    return {
+      ...transaction,
+      direction: transaction.direction || (transaction.amount > 0 ? "credit" : "debit")
+    };
   }
 
   /**
@@ -274,7 +278,12 @@ export class MercuryClient {
     }
 
     const response = await this.request<{ transactions: MercuryTransaction[] }>(endpoint);
-    return response.transactions || [];
+
+    // Polyfill direction if missing (Mercury API doesn't always return it)
+    return (response.transactions || []).map(t => ({
+      ...t,
+      direction: t.direction || (t.amount > 0 ? "credit" : "debit")
+    }));
   }
 
   /**
