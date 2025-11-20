@@ -19,6 +19,7 @@ type MercuryTransaction = {
   };
   memo?: string;
   postedAt: string;
+  createdAt?: string;
   externalId?: string;
 };
 
@@ -238,14 +239,15 @@ export class MercuryClient {
     const transaction = await this.request<MercuryTransaction>(`/transactions/${transactionId}`);
     return {
       ...transaction,
-      direction: transaction.direction || (transaction.amount > 0 ? "credit" : "debit")
+      direction: transaction.direction || (transaction.amount > 0 ? "credit" : "debit"),
+      postedAt: transaction.postedAt || transaction.createdAt || new Date().toISOString()
     };
   }
 
   /**
    * Get transactions for an account
    * Mercury API: GET /api/v1/account/{accountId}/transactions
-   * Documentation: https://docs.mercury.com/reference/listaccounttransactions
+   * Documentation: https://docs.mercury.com/reference/listacc
    */
   async getTransactions(params: {
     accountId: string;
@@ -280,9 +282,11 @@ export class MercuryClient {
     const response = await this.request<{ transactions: MercuryTransaction[] }>(endpoint);
 
     // Polyfill direction if missing (Mercury API doesn't always return it)
+    // Polyfill postedAt from createdAt if missing
     return (response.transactions || []).map(t => ({
       ...t,
-      direction: t.direction || (t.amount > 0 ? "credit" : "debit")
+      direction: t.direction || (t.amount > 0 ? "credit" : "debit"),
+      postedAt: t.postedAt || t.createdAt || new Date().toISOString() // Fallback to current date if absolutely nothing else
     }));
   }
 

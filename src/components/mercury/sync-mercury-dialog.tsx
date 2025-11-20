@@ -32,6 +32,7 @@ type MercuryTransaction = {
   };
   memo?: string;
   postedAt: string;
+  createdAt?: string;
 };
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -279,11 +280,10 @@ export function SyncMercuryDialog({ open, onClose, onSyncComplete, venues }: Syn
 
                     {formState.message && (
                       <div
-                        className={`rounded-lg border p-3 text-sm ${
-                          formState.status === "error"
+                        className={`rounded-lg border p-3 text-sm ${formState.status === "error"
                             ? "border-rose-200 bg-rose-50 text-rose-700"
                             : "border-emerald-200 bg-emerald-50 text-emerald-700"
-                        }`}
+                          }`}
                       >
                         {formState.message}
                       </div>

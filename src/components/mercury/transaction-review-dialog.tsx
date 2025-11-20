@@ -18,6 +18,7 @@ type MercuryTransaction = {
   };
   memo?: string;
   postedAt: string;
+  createdAt?: string;
 };
 
 type TransactionReviewDialogProps = {
@@ -47,6 +48,14 @@ export function TransactionReviewDialog({
     const safe = Array.isArray(transactions) ? transactions : [];
     setSelectedTransactions(new Set(safe.map((t) => t.id)));
   }, [transactions]);
+
+  console.log("TransactionReviewDialog debug:", {
+    venues,
+    venueId: venues[0]?.id || 0,
+    transactionsCount: transactions.length,
+    selectedCount: selectedTransactions.size
+  });
+
   const [venueId, setVenueId] = useState<number>(venues[0]?.id || 0);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{
@@ -212,9 +221,8 @@ export function TransactionReviewDialog({
                           return (
                             <tr
                               key={transaction.id}
-                              className={`text-sm ${
-                                isSelected ? "bg-synvora-primary/5" : "hover:bg-slate-50"
-                              } transition`}
+                              className={`text-sm ${isSelected ? "bg-synvora-primary/5" : "hover:bg-slate-50"
+                                } transition`}
                             >
                               <td className="py-3 pr-4">
                                 <input
@@ -296,7 +304,7 @@ export function TransactionReviewDialog({
                         <button
                           type="button"
                           onClick={handleImport}
-                          disabled={importing || selectedTransactions.size === 0 || !venueId}
+                          disabled={importing || selectedTransactions.size === 0 || venues.length === 0}
                           className="inline-flex items-center gap-2 rounded-lg bg-synvora-primary px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-synvora-primary/90 disabled:cursor-not-allowed disabled:bg-slate-300"
                         >
                           {importing ? (
