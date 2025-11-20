@@ -16,7 +16,8 @@ export async function GET() {
 
   // Check if Sentry is initialized
   const sentryDsn = process.env.SENTRY_DSN;
-  const isSentryInitialized = Sentry.getCurrentHub().getClient() !== undefined;
+  // Check if DSN is configured (Sentry will auto-initialize if DSN is set)
+  const isSentryInitialized = !!sentryDsn;
 
   try {
     // Test 1: Actually throw an error (this will be auto-captured by Sentry)
@@ -34,8 +35,7 @@ export async function GET() {
     Sentry.setContext("test_context", {
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV || "unknown",
-      sentryDsnConfigured: !!sentryDsn,
-      sentryInitialized: isSentryInitialized,
+        sentryDsnConfigured: !!sentryDsn,
     });
 
     // Test 2: Capture a message first
@@ -57,8 +57,7 @@ export async function GET() {
       extra: {
         timestamp: new Date().toISOString(),
         user: session.user.email,
-        sentryDsn: sentryDsn ? "configured" : "not configured",
-        sentryInitialized: isSentryInitialized,
+      sentryDsn: sentryDsn ? "configured" : "not configured",
       }
     });
 
@@ -77,7 +76,6 @@ export async function GET() {
         clientDsn: !!process.env.NEXT_PUBLIC_SENTRY_DSN,
         org: process.env.SENTRY_ORG || "not set",
         project: process.env.SENTRY_PROJECT || "not set",
-        sentryInitialized: isSentryInitialized,
         dsnPreview: sentryDsn ? `${sentryDsn.substring(0, 20)}...` : "not set"
       },
       timestamp: new Date().toISOString(),
@@ -90,8 +88,7 @@ export async function GET() {
     return NextResponse.json({
       success: false,
       message: "Failed to send test error",
-      error: error instanceof Error ? error.message : "Unknown error",
-      sentryInitialized: isSentryInitialized
+      error: error instanceof Error ? error.message : "Unknown error"
     }, { status: 500 });
   }
 }
