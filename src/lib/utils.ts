@@ -12,8 +12,11 @@ export function formatCurrency(value: number, currency = "USD") {
   }).format(value);
 }
 
-export function formatDate(date: Date | string) {
+export function formatDate(date: Date | string | null | undefined) {
+  if (!date) return "-";
   const parsed = typeof date === "string" ? new Date(date) : date;
+  if (isNaN(parsed.getTime())) return "-";
+
   return parsed.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
@@ -21,8 +24,11 @@ export function formatDate(date: Date | string) {
   });
 }
 
-export function formatDateTime(date: Date | string) {
+export function formatDateTime(date: Date | string | null | undefined) {
+  if (!date) return "-";
   const parsed = typeof date === "string" ? new Date(date) : date;
+  if (isNaN(parsed.getTime())) return "-";
+
   return `${parsed.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
@@ -34,8 +40,11 @@ export function formatDateTime(date: Date | string) {
   }).toLowerCase()}`;
 }
 
-export function formatDayTime(date: Date | string) {
+export function formatDayTime(date: Date | string | null | undefined) {
+  if (!date) return "-";
   const parsed = typeof date === "string" ? new Date(date) : date;
+  if (isNaN(parsed.getTime())) return "-";
+
   return `${parsed.toLocaleDateString("en-US", { weekday: "long" })} at ${parsed
     .toLocaleTimeString("en-US", {
       hour: "2-digit",
@@ -47,7 +56,9 @@ export function formatDayTime(date: Date | string) {
 
 const pad = (value: number) => value.toString().padStart(2, "0");
 
-export function formatDateTimeForInput(date: Date | string) {
+export function formatDateTimeForInput(date: Date | string | null | undefined) {
+  if (!date) return "";
   const parsed = typeof date === "string" ? new Date(date) : date;
+  if (isNaN(parsed.getTime())) return "";
   return `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(parsed.getDate())}T${pad(parsed.getHours())}:${pad(parsed.getMinutes())}`;
 }
