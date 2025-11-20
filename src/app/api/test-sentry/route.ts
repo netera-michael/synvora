@@ -66,7 +66,9 @@ export async function GET() {
     // Uncomment to test: throw testError;
 
     // Flush events to ensure they're sent before the response
-    await Sentry.flush(3000); // Wait up to 3 seconds for events to be sent
+    console.log("[Sentry Test] Flushing events...");
+    const flushResult = await Sentry.flush(5000); // Wait up to 5 seconds for events to be sent
+    console.log("[Sentry Test] Flush result:", flushResult);
 
     return NextResponse.json({
       success: true,

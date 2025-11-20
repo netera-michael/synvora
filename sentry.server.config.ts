@@ -4,22 +4,43 @@
 
 import * as Sentry from "@sentry/nextjs";
 
-Sentry.init({
-  dsn: process.env.SENTRY_DSN,
+const dsn = process.env.SENTRY_DSN;
 
-  // Adjust this value in production, or use tracesSampler for greater control
-  tracesSampleRate: 1,
+// Only initialize if DSN is provided
+if (dsn) {
+  Sentry.init({
+    dsn,
 
-  // Setting this option to true will print useful information to the console while you're setting up Sentry.
-  debug: true, // Temporarily enabled for testing
+    // Adjust this value in production, or use tracesSampler for greater control
+    tracesSampleRate: 1,
 
-  // Environment
-  environment: process.env.NODE_ENV || "production",
+    // Setting this option to true will print useful information to the console while you're setting up Sentry.
+    debug: true, // Temporarily enabled for testing
 
-  // Release tracking
-  release: process.env.VERCEL_GIT_COMMIT_SHA || undefined,
+    // Environment
+    environment: process.env.NODE_ENV || "production",
 
-  // Uncomment the line below to enable Spotlight (https://spotlightjs.com)
-  // spotlight: process.env.NODE_ENV === 'development',
-});
+    // Release tracking
+    release: process.env.VERCEL_GIT_COMMIT_SHA || undefined,
+
+    // Ensure events are sent even in serverless environments
+    beforeSend(event, hint) {
+      // Log to console for debugging
+      console.log("[Sentry] Attempting to send event:", {
+        message: event.message,
+        level: event.level,
+        tags: event.tags,
+        dsnConfigured: !!dsn,
+      });
+      return event;
+    },
+
+    // Uncomment the line below to enable Spotlight (https://spotlightjs.com)
+    // spotlight: process.env.NODE_ENV === 'development',
+  });
+  
+  console.log("[Sentry] Initialized with DSN:", dsn ? `${dsn.substring(0, 30)}...` : "not configured");
+} else {
+  console.warn("[Sentry] DSN not configured - Sentry will not capture errors");
+}
 
