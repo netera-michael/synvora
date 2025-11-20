@@ -5,7 +5,20 @@ import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
 
 const schema = z.object({
-  transactionIds: z.array(z.string()).min(1),
+  transactions: z.array(z.object({
+    id: z.string(),
+    amount: z.number(),
+    direction: z.enum(["credit", "debit"]),
+    counterparty: z.object({
+      name: z.string()
+    }).optional(),
+    merchant: z.object({
+      name: z.string()
+    }).optional(),
+    memo: z.string().optional(),
+    postedAt: z.string(),
+    createdAt: z.string().optional() // Allow createdAt for fallback
+  })).min(1),
   venueId: z.number().int().positive()
 });
 
@@ -30,26 +43,9 @@ export async function POST(request: Request) {
     );
   }
 
-  const { transactionIds, venueId } = parsed.data;
+  const { transactions, venueId } = parsed.data;
 
   try {
-    // Get Mercury settings
-    const settings = await prisma.mercurySettings.findFirst();
-    if (!settings || !settings.apiKey) {
-      return NextResponse.json(
-        { message: "Mercury API key not configured" },
-        { status: 400 }
-      );
-    }
-
-    const { MercuryClient } = await import("@/lib/mercury");
-    const client = new MercuryClient(settings.apiKey);
-
-    // Fetch transaction details from Mercury
-    const transactions = await Promise.all(
-      transactionIds.map((id) => client.getTransaction(id))
-    );
-
     // Verify venue exists
     const venue = await prisma.venue.findUnique({
       where: { id: venueId }
@@ -84,15 +80,18 @@ export async function POST(request: Request) {
         continue;
       }
 
+      // Resolve counterparty name
+      const counterpartyName = transaction.counterparty?.name || transaction.merchant?.name || "Unknown";
+
       // Create payout from transaction
       await prisma.payout.create({
         data: {
           amount: Math.abs(transaction.amount), // Store as positive value for payout record
           currency: "USD",
           status: "Posted",
-          description: transaction.memo || `Mercury: ${transaction.counterparty.name}`,
+          description: transaction.memo || `Mercury: ${counterpartyName}`,
           account: "Mercury",
-          processedAt: new Date(transaction.postedAt),
+          processedAt: new Date(transaction.postedAt || transaction.createdAt || new Date().toISOString()),
           notes: transaction.memo || null,
           venueId,
           createdById: Number(session.user.id),
@@ -108,7 +107,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       imported,
       skipped,
-      total: transactionIds.length
+      total: transactions.length
     });
   } catch (error: unknown) {
     console.error("Failed to import Mercury transactions:", error);

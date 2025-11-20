@@ -88,13 +88,17 @@ export function TransactionReviewDialog({
     setImportResult(null);
 
     try {
+      const transactionsToImport = safeTransactions.filter((t) =>
+        selectedTransactions.has(t.id)
+      );
+
       const response = await fetch("/api/mercury/import", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          transactionIds: Array.from(selectedTransactions),
+          transactions: transactionsToImport,
           venueId
         })
       });
