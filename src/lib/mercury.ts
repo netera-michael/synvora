@@ -51,7 +51,7 @@ export class MercuryClient {
   private async tryRequest<T>(endpoints: string[], options: RequestInit = {}): Promise<T> {
     const baseUrls = [
       "https://api.mercury.com/v1",
-      "https://api.mercury.com/api/v1", 
+      "https://api.mercury.com/api/v1",
       "https://api.mercury.com/api",
       "https://api.mercury.com" // Try without any version prefix
     ];
@@ -74,9 +74,9 @@ export class MercuryClient {
         if (baseUrl.includes('/v1') && endpoint.startsWith('/v1/')) {
           cleanEndpoint = endpoint.replace(/^\/v1/, '');
         }
-        
+
         const url = `${baseUrl}${cleanEndpoint}`;
-        
+
         // Skip if we've already tried this exact URL
         if (attemptedUrls.includes(url)) {
           continue;
@@ -85,12 +85,12 @@ export class MercuryClient {
 
         try {
           console.log(`Trying Mercury API: ${options.method || 'GET'} ${url}`);
-          
+
           // Construct headers explicitly to ensure Authorization is set correctly
           const headers = new Headers();
           headers.set("Authorization", authHeader);
           headers.set("Content-Type", "application/json");
-          
+
           // Merge any additional headers from options
           if (options.headers) {
             const additionalHeaders = new Headers(options.headers);
@@ -98,10 +98,10 @@ export class MercuryClient {
               headers.set(key, value);
             });
           }
-          
+
           console.log(`Mercury API request: ${options.method || 'GET'} ${url}`);
           console.log(`Authorization header: ${authHeader.substring(0, 20)}... (length: ${authHeader.length})`);
-          
+
           const response = await fetch(url, {
             ...options,
             headers: headers,
@@ -112,10 +112,10 @@ export class MercuryClient {
             const data = await response.json();
             return data;
           }
-          
+
           const errorText = await response.text();
           console.log(`❌ Failed ${url}: ${response.status} ${errorText.substring(0, 200)}`);
-          
+
           if (response.status !== 404) {
             // If it's not 404, this might be the right endpoint but wrong auth/permissions
             throw new Error(`Mercury API error: ${response.status} ${errorText}`);
@@ -136,36 +136,23 @@ export class MercuryClient {
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     console.log(`Mercury API request: ${options.method || 'GET'} ${url}`);
-    
-    // Mercury API uses "secret-token:" prefix, not "Bearer"
-    // Handle both formats: if apiKey already has "secret-token:", use it as-is
-    // Otherwise, prepend "secret-token:"
-    let authHeader: string;
-    if (!this.apiKey || this.apiKey.trim() === "") {
-      const error = new Error("Mercury API key is empty or not set");
-      // Capture error in Sentry (server-side only)
-      if (typeof window === 'undefined') {
-        Sentry.captureException(error, {
-          tags: { component: "MercuryClient" },
-          extra: { endpoint, url }
-        });
-      }
-      throw error;
+
+    // Mercury API uses "Bearer" token
+    // Remove "secret-token:" prefix if present (legacy or user copy-paste)
+    let cleanKey = this.apiKey;
+    if (cleanKey.startsWith("secret-token:")) {
+      cleanKey = cleanKey.replace("secret-token:", "");
     }
-    
-    if (this.apiKey.startsWith("secret-token:")) {
-      authHeader = this.apiKey;
-    } else {
-      authHeader = `secret-token:${this.apiKey}`;
-    }
-    
+
+    const authHeader = `Bearer ${cleanKey}`;
+
     // Ensure headers object exists
     const headers = new Headers(options.headers);
     headers.set("Authorization", authHeader);
     headers.set("Content-Type", "application/json");
-    
+
     console.log(`Authorization header: ${authHeader.substring(0, 20)}... (length: ${authHeader.length})`);
-    
+
     try {
       const response = await fetch(url, {
         ...options,
@@ -175,16 +162,16 @@ export class MercuryClient {
       if (!response.ok) {
         const errorText = await response.text();
         console.error(`Mercury API error for ${url}: ${response.status} ${errorText}`);
-        
+
         // Capture API errors in Sentry with context (server-side only)
         if (typeof window === 'undefined') {
           Sentry.captureException(new Error(`Mercury API error: ${response.status}`), {
-            tags: { 
+            tags: {
               component: "MercuryClient",
               status_code: response.status,
               endpoint: endpoint
             },
-            extra: { 
+            extra: {
               url,
               status: response.status,
               errorText: errorText.substring(0, 500), // Limit error text size
@@ -193,7 +180,7 @@ export class MercuryClient {
             }
           });
         }
-        
+
         throw new Error(`Mercury API error: ${response.status} ${errorText}`);
       }
 
@@ -261,7 +248,7 @@ export class MercuryClient {
     endDate?: string;
   }): Promise<MercuryTransaction[]> {
     // Format dates in YYYY-MM-DD
-    const startDate = params.startDate?.includes('T') 
+    const startDate = params.startDate?.includes('T')
       ? params.startDate.split('T')[0]
       : params.startDate;
     const endDate = params.endDate?.includes('T')
@@ -271,7 +258,7 @@ export class MercuryClient {
     // Mercury API uses: /api/v1/account/{accountId}/transactions
     // Base URL already includes /api/v1, so use /account/{id}/transactions (singular "account")
     let endpoint = `/account/${params.accountId}/transactions`;
-    
+
     // Add date query parameters if provided
     const queryParams = new URLSearchParams();
     if (startDate) {
@@ -280,7 +267,7 @@ export class MercuryClient {
     if (endDate) {
       queryParams.append("end", endDate);
     }
-    
+
     if (queryParams.toString()) {
       endpoint += `?${queryParams.toString()}`;
     }
