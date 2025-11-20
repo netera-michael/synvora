@@ -61,9 +61,9 @@ export async function GET() {
       }
     });
 
-    // Test 4: Actually throw an error (this should be auto-captured)
-    // Uncomment the line below to test auto-capture:
-    // throw testError;
+    // Test 4: Actually throw an error (this should be auto-captured by Sentry)
+    // This will be caught by Next.js error boundary and Sentry should capture it
+    // Uncomment to test: throw testError;
 
     // Flush events to ensure they're sent before the response
     await Sentry.flush(3000); // Wait up to 3 seconds for events to be sent
