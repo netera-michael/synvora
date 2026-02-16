@@ -38,7 +38,7 @@ export async function calculateEGPFromLineItems(
   // console.log(`[Product Matching] Order line items:`, lineItems);
 
   if (!products.length) {
-    console.warn(`No active products found for venue ${venueId}`);
+    console.warn(`[Product Matching] ⚠️ No active products found for venue ${venueId}. Pricing calculations will fail.`);
     return null;
   }
 

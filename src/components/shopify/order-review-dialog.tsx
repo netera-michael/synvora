@@ -2,7 +2,7 @@
 
 import { Fragment, useState } from "react";
 import { Dialog, Transition } from "@headlessui/react";
-import { X, ChevronDown, ChevronRight, Loader2, CheckCircle2 } from "lucide-react";
+import { X, ChevronDown, ChevronRight, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
 import { formatEGP } from "@/lib/product-pricing";
 
 type TransformedOrder = {
@@ -169,6 +169,8 @@ export function OrderReviewDialog({
     return sum + order.totalAmount;
   }, 0);
 
+  const hasMissingPricing = orders.some((o) => o.originalAmount === null);
+
   return (
     <Transition show={open} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
@@ -222,6 +224,23 @@ export function OrderReviewDialog({
                   <X className="h-4 w-4" />
                 </button>
               </div>
+
+              {/* Warning for Missing Pricing */}
+              {hasMissingPricing && !importResult && (
+                <div className="mx-6 mt-4 rounded-xl bg-amber-50 border border-amber-200 p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-amber-800">
+                      <p className="font-semibold">Missing Pricing Information</p>
+                      <p className="mt-1">
+                        Some orders are showing &quot;-&quot; for amounts because the products haven&apos;t been synced to the database yet.
+                        <br />
+                        Please <strong>close this dialog</strong> and click <strong>&quot;Sync Products&quot;</strong> for this store to fix pricing.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Success Message */}
               {importResult && (
