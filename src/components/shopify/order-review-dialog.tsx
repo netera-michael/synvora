@@ -73,6 +73,26 @@ export function OrderReviewDialog({
     skipped: number;
   } | null>(null);
 
+  const [aedToUsdRate, setAedToUsdRate] = useState<number | null>(null);
+  const [aedOverrides, setAedOverrides] = useState<Record<string, number>>({});
+
+  // Fetch live AED/USD rate
+  const fetchAedRate = async () => {
+    try {
+      const response = await fetch("/api/exchange-rate?from=AED&to=USD");
+      if (response.ok) {
+        const data = await response.json();
+        setAedToUsdRate(data.rate);
+      }
+    } catch (error) {
+      console.error("Failed to fetch AED rate:", error);
+    }
+  };
+
+  useState(() => {
+    fetchAedRate();
+  });
+
   const toggleOrder = (externalId: string) => {
     const newSelected = new Set(selectedOrders);
     if (newSelected.has(externalId)) {
@@ -107,9 +127,46 @@ export function OrderReviewDialog({
     setImporting(true);
     setImportResult(null);
 
-    const ordersToImport = orders.filter((order) =>
-      selectedOrders.has(order.externalId)
-    );
+    const ordersToImport = orders
+      .filter((order) => selectedOrders.has(order.externalId))
+      .map((order) => {
+        const date = new Date(order.processedAt).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric"
+        });
+
+        const aedOverride = aedOverrides[date];
+        if (aedOverride && aedToUsdRate) {
+          const group = orders.filter(
+            (o) =>
+              selectedOrders.has(o.externalId) &&
+              new Date(o.processedAt).toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "short",
+                day: "numeric"
+              }) === date
+          );
+
+          const groupTotalEGP = group.reduce((sum, o) => sum + (o.originalAmount || 0), 0);
+          const totalUSDFromAED = aedOverride * aedToUsdRate;
+
+          // Proportional distribution
+          const weight = groupTotalEGP > 0 ? (order.originalAmount || 0) / groupTotalEGP : 1 / group.length;
+          const adjustedTotalUSD = totalUSDFromAED * weight;
+
+          // Derived exchange rate (TotalEGP / (CalculatedUSD / 1.035))
+          const baseUSD = totalUSDFromAED / 1.035;
+          const derivedRate = groupTotalEGP > 0 && baseUSD > 0 ? groupTotalEGP / baseUSD : order.exchangeRate;
+
+          return {
+            ...order,
+            totalAmount: adjustedTotalUSD,
+            exchangeRate: derivedRate
+          };
+        }
+        return order;
+      });
 
     try {
       const response = await fetch("/api/shopify/import", {
@@ -480,17 +537,51 @@ export function OrderReviewDialog({
                             ];
                           });
 
+                          const aedOverride = aedOverrides[group.date];
+                          const derivedUSD = aedOverride && aedToUsdRate ? aedOverride * aedToUsdRate : dailyUSD;
+                          const derivedRate = aedOverride && dailyEGP > 0 ? dailyEGP / (derivedUSD / 1.035) : null;
+
                           // Add a summary row after each day
                           rows.push(
-                            <tr key={`summary-${group.date}`} className="bg-synvora-surface-active/50 font-semibold">
-                              <td colSpan={isMultiStore ? 6 : 5} className="py-3 px-6 text-xs font-bold text-synvora-text-secondary uppercase tracking-wide text-right">
+                            <tr key={`summary-${group.date}`} className="bg-synvora-surface-active/50 font-semibold items-center">
+                              <td colSpan={isMultiStore ? 6 : 5} className="py-3 px-6 text-xs font-bold text-synvora-text-secondary uppercase tracking-wide text-right align-middle">
                                 {group.date} Totals
                               </td>
-                              <td className="py-3 px-6 text-right text-synvora-text">
+                              <td className="py-3 px-6 text-right text-synvora-text align-middle">
                                 {formatEGP(dailyEGP)} EGP
                               </td>
-                              <td className="py-3 px-6 text-right text-synvora-text">
-                                {formatCurrency(dailyUSD, "USD")}
+                              <td className="py-3 px-6 text-right text-synvora-text align-middle">
+                                <div className="flex flex-col items-end gap-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[10px] text-synvora-text-secondary">AED Override:</span>
+                                    <input
+                                      type="number"
+                                      value={aedOverride || ""}
+                                      onChange={(e) => {
+                                        const val = e.target.value ? parseFloat(e.target.value) : undefined;
+                                        setAedOverrides((prev) => {
+                                          const next = { ...prev };
+                                          if (val === undefined) {
+                                            delete next[group.date];
+                                          } else {
+                                            next[group.date] = val;
+                                          }
+                                          return next;
+                                        });
+                                      }}
+                                      placeholder="0.00"
+                                      className="w-20 rounded border border-synvora-border px-2 py-0.5 text-right text-xs focus:border-synvora-primary focus:outline-none focus:ring-1 focus:ring-synvora-primary"
+                                    />
+                                  </div>
+                                  <span className={aedOverride ? "text-synvora-primary" : ""}>
+                                    {formatCurrency(derivedUSD, "USD")}
+                                  </span>
+                                  {derivedRate && (
+                                    <span className="text-[10px] text-synvora-primary font-bold">
+                                      Rate: {derivedRate.toFixed(2)} EGP/USD
+                                    </span>
+                                  )}
+                                </div>
                               </td>
                               <td colSpan={2} className="px-6 py-3"></td>
                             </tr>
