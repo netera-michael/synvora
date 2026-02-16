@@ -7,6 +7,8 @@ import { formatEGP } from "@/lib/product-pricing";
 
 type TransformedOrder = {
   externalId: string;
+  shopifyStoreId?: number;
+  storeName?: string;
   orderNumber: string;
   customerName: string;
   status: string;
@@ -62,6 +64,8 @@ export function OrderReviewDialog({
   );
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
   const [importing, setImporting] = useState(false);
+
+  const isMultiStore = orders.some(o => o.shopifyStoreId && o.shopifyStoreId !== orders[0]?.shopifyStoreId);
   const [importResult, setImportResult] = useState<{
     imported: number;
     updated: number;
@@ -97,7 +101,7 @@ export function OrderReviewDialog({
   };
 
   const handleImport = async () => {
-    if (!store || selectedOrders.size === 0) return;
+    if (selectedOrders.size === 0) return;
 
     setImporting(true);
     setImportResult(null);
@@ -113,7 +117,7 @@ export function OrderReviewDialog({
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          storeId: store.id,
+          storeId: store?.id || null,
           orders: ordersToImport
         })
       });
@@ -277,6 +281,7 @@ export function OrderReviewDialog({
                           />
                         </th>
                         <th className="pb-3 pr-4">Order #</th>
+                        {isMultiStore && <th className="pb-3 pr-4">Store</th>}
                         <th className="pb-3 pr-4">Customer</th>
                         <th className="pb-3 pr-4">Date</th>
                         <th className="pb-3 pr-4">Location</th>
@@ -309,6 +314,11 @@ export function OrderReviewDialog({
                               <td className="py-3 pr-4 font-medium text-synvora-text">
                                 {order.orderNumber}
                               </td>
+                              {isMultiStore && (
+                                <td className="py-3 pr-4 text-xs font-medium text-slate-500">
+                                  {order.storeName}
+                                </td>
+                              )}
                               <td className="py-3 pr-4 text-synvora-text">
                                 {order.customerName}
                               </td>
@@ -351,7 +361,7 @@ export function OrderReviewDialog({
                             {/* Expanded Row - Line Items */}
                             {isExpanded && (
                               <tr>
-                                <td colSpan={9} className="py-3 px-4 bg-synvora-surface-active">
+                                <td colSpan={isMultiStore ? 10 : 9} className="py-3 px-4 bg-synvora-surface-active">
                                   <div className="space-y-2">
                                     <p className="text-xs font-semibold text-synvora-text-secondary uppercase">
                                       Line Items

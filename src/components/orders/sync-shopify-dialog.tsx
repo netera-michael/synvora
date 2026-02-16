@@ -155,16 +155,26 @@ export function SyncShopifyDialog({ open, onClose, onSyncComplete }: SyncShopify
     const [endYear, endMonth, endDay] = formState.endDate.split("-").map(Number);
     const endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59, 999);
 
+    const body: any = {
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString()
+    };
+
+    if (formState.storeId === "all") {
+      const firstStore = storesData?.stores[0];
+      if (firstStore) {
+        body.venueId = firstStore.venue.id;
+      }
+    } else {
+      body.storeId = parseInt(formState.storeId, 10);
+    }
+
     const response = await fetch("/api/shopify/fetch", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        storeId: parseInt(formState.storeId, 10),
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString()
-      })
+      body: JSON.stringify(body)
     });
 
     if (!response.ok) {
@@ -307,6 +317,9 @@ export function SyncShopifyDialog({ open, onClose, onSyncComplete }: SyncShopify
                           required
                         >
                           <option value="">Select a store</option>
+                          {storesData?.stores.length && storesData.stores.length > 1 && (
+                            <option value="all">All Stores</option>
+                          )}
                           {storesData?.stores.map((store) => (
                             <option key={store.id} value={store.id}>
                               {store.nickname || store.storeDomain} ({store.venue.name})

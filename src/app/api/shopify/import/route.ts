@@ -16,6 +16,7 @@ const lineItemSchema = z.object({
 
 const orderSchema = z.object({
   externalId: z.string(),
+  shopifyStoreId: z.number().optional(),
   orderNumber: z.string(),
   customerName: z.string(),
   status: z.string(),
@@ -34,7 +35,7 @@ const orderSchema = z.object({
 });
 
 const schema = z.object({
-  storeId: z.number(),
+  storeId: z.number().nullable().optional(),
   orders: z.array(orderSchema)
 });
 
@@ -62,16 +63,22 @@ export async function POST(request: Request) {
   const { storeId, orders } = parsed.data;
 
   try {
-    // Fetch the Shopify store with venue information
-    const store = await prisma.shopifyStore.findUnique({
-      where: { id: storeId },
-      include: {
-        venue: true
-      }
+    // Collect all unique store IDs
+    const uniqueStoreIds = new Set<number>();
+    if (storeId) uniqueStoreIds.add(storeId);
+    orders.forEach(o => {
+      if (o.shopifyStoreId) uniqueStoreIds.add(o.shopifyStoreId);
     });
 
-    if (!store) {
-      return NextResponse.json({ message: "Store not found" }, { status: 404 });
+    // Fetch all needed stores
+    const stores = await prisma.shopifyStore.findMany({
+      where: { id: { in: Array.from(uniqueStoreIds) } },
+      include: { venue: true }
+    });
+    const storeMap = new Map(stores.map(s => [s.id, s]));
+
+    if (uniqueStoreIds.size > 0 && stores.length === 0) {
+      return NextResponse.json({ message: "Store(s) not found" }, { status: 404 });
     }
 
     // Bulk check existing orders
@@ -96,8 +103,6 @@ export async function POST(request: Request) {
 
     // Assign order numbers to new orders
     if (inserts.length > 0) {
-      // Efficiently find the current max order number
-      // We assume the most recently created order has the highest number
       const lastOrder = await prisma.order.findFirst({
         orderBy: { id: 'desc' },
         select: { orderNumber: true }
@@ -109,11 +114,7 @@ export async function POST(request: Request) {
         if (num) maxOrderNum = num;
       }
 
-      // Sort new orders by processedAt ASC (oldest first) to assign numbers chronologically
       inserts.sort((a, b) => new Date(a.processedAt).getTime() - new Date(b.processedAt).getTime());
-
-      // Assign numbers relative to max
-      // Modifying the order objects in place with a temporary property
       inserts.forEach((order, index) => {
         (order as any)._generatedOrderNumber = `#${maxOrderNum + index + 1}`;
       });
@@ -126,6 +127,15 @@ export async function POST(request: Request) {
     // Process Updates
     for (const order of updates) {
       try {
+        const currentStoreId = order.shopifyStoreId || storeId;
+        const currentStore = currentStoreId ? storeMap.get(currentStoreId) : null;
+
+        if (!currentStore) {
+          console.error(`Store not found for order ${order.orderNumber}`);
+          skipped++;
+          continue;
+        }
+
         await prisma.$transaction(async (tx) => {
           await tx.order.update({
             where: { id: order.dbId },
@@ -144,16 +154,13 @@ export async function POST(request: Request) {
               shippingCountry: order.shippingCountry,
               tags: order.tags.join(","),
               notes: order.notes,
-              shopifyStoreId: store.id,
+              shopifyStoreId: currentStore.id,
               source: "shopify",
-              venueId: store.venueId
+              venueId: currentStore.venueId
             }
           });
 
-          // Delete old line items and create new ones
-          await tx.orderLineItem.deleteMany({
-            where: { orderId: order.dbId }
-          });
+          await tx.orderLineItem.deleteMany({ where: { orderId: order.dbId } });
 
           if (order.lineItems.length > 0) {
             await tx.orderLineItem.createMany({
@@ -179,6 +186,15 @@ export async function POST(request: Request) {
     // Process Inserts
     for (const order of inserts) {
       try {
+        const currentStoreId = order.shopifyStoreId || storeId;
+        const currentStore = currentStoreId ? storeMap.get(currentStoreId) : null;
+
+        if (!currentStore) {
+          console.error(`Store not found for order ${order.orderNumber}`);
+          skipped++;
+          continue;
+        }
+
         const generatedNum = (order as any)._generatedOrderNumber;
 
         await prisma.order.create({
@@ -200,9 +216,9 @@ export async function POST(request: Request) {
             tags: order.tags.join(","),
             notes: order.notes,
             createdById: Number(session.user.id),
-            shopifyStoreId: store.id,
+            shopifyStoreId: currentStore.id,
             source: "shopify",
-            venueId: store.venueId,
+            venueId: currentStore.venueId,
             lineItems: {
               create: order.lineItems.map((item) => ({
                 productName: item.productName,

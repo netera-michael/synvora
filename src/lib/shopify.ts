@@ -81,7 +81,7 @@ export async function fetchShopifyOrders({
   return data.orders;
 }
 
-export async function transformShopifyOrders(orders: ShopifyOrder[], exchangeRate: number, venueId: number) {
+export async function transformShopifyOrders(orders: ShopifyOrder[], exchangeRate: number, venueId: number, shopifyStoreId?: number) {
   return Promise.all(
     orders.map(async (order) => {
       const customerName = order.customer
@@ -114,6 +114,7 @@ export async function transformShopifyOrders(orders: ShopifyOrder[], exchangeRat
 
       return {
         externalId: String(order.id),
+        shopifyStoreId,
         orderNumber: order.name ?? `#${order.order_number}`,
         customerName,
         status: order.financial_status === "refunded" ? "Closed" : "Open",
