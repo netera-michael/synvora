@@ -1,5 +1,7 @@
 import { calculateOrderAmounts } from "./product-pricing";
 
+export const SHOPIFY_API_VERSION = "2025-10";
+
 type ShopifyOrder = {
   id: number;
   name: string;
@@ -49,7 +51,7 @@ export async function fetchShopifyOrders({
   createdAtMin,
   createdAtMax
 }: FetchOrdersOptions) {
-  const url = new URL(`https://${storeDomain}/admin/api/2023-10/orders.json`);
+  const url = new URL(`https://${storeDomain}/admin/api/${SHOPIFY_API_VERSION}/orders.json`);
   url.searchParams.set("status", "any");
   url.searchParams.set("limit", "250");
   if (sinceId) {
@@ -88,9 +90,9 @@ export async function transformShopifyOrders(orders: ShopifyOrder[], exchangeRat
 
       const tags = order.tags
         ? order.tags
-            .split(",")
-            .map((tag) => tag.trim())
-            .filter(Boolean)
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter(Boolean)
         : [];
 
       const shippingCity =

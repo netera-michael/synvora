@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { z } from "zod";
 import { authOptions } from "@/lib/auth";
+import { SHOPIFY_API_VERSION } from "@/lib/shopify";
 
 const schema = z.object({
   storeDomain: z.string().min(5),
@@ -33,7 +34,7 @@ export async function POST(request: Request) {
 
   try {
     // Test connection by fetching shop info
-    const url = `https://${storeDomain}/admin/api/2023-10/shop.json`;
+    const url = `https://${storeDomain}/admin/api/${SHOPIFY_API_VERSION}/shop.json`;
 
     const response = await fetch(url, {
       headers: {

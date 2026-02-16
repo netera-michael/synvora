@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
+import { SHOPIFY_API_VERSION } from "@/lib/shopify";
 
 const schema = z.object({
   storeId: z.number()
@@ -59,7 +60,7 @@ export async function POST(request: Request) {
     }
 
     // Fetch products from Shopify
-    const url = new URL(`https://${store.storeDomain}/admin/api/2023-10/products.json`);
+    const url = new URL(`https://${store.storeDomain}/admin/api/${SHOPIFY_API_VERSION}/products.json`);
     url.searchParams.set("limit", "250");
     url.searchParams.set("status", "active");
 
