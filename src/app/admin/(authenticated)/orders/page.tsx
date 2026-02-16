@@ -8,6 +8,7 @@ import { Plus, Printer, CloudDownload, Edit, X, Trash2, Copy, Download, MoreVert
 import { Menu, Transition } from "@headlessui/react";
 import { Fragment } from "react";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 import type { OrderDto } from "@/types/orders";
 import { OrderTable } from "@/components/orders/order-table";
 import { OrderDrawer } from "@/components/orders/order-drawer";
@@ -127,6 +128,7 @@ export default function OrdersPage() {
   const [duplicateOrder, setDuplicateOrder] = useState<OrderDto | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [selectedOrders, setSelectedOrders] = useState<Set<number>>(new Set());
+  const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null);
 
   // Update timezone offset in URL if it changed, but avoid infinite loops
   useEffect(() => {
@@ -369,21 +371,42 @@ export default function OrdersPage() {
     }
   };
 
-  const toggleSelectOrder = (orderId: number) => {
+  const toggleSelectOrder = (orderId: number, event: React.MouseEvent) => {
+    const currentIndex = ordersList.findIndex(o => o.id === orderId);
     const newSelected = new Set(selectedOrders);
-    if (newSelected.has(orderId)) {
-      newSelected.delete(orderId);
+
+    if (event.shiftKey && lastSelectedIndex !== null) {
+      const start = Math.min(lastSelectedIndex, currentIndex);
+      const end = Math.max(lastSelectedIndex, currentIndex);
+      const idsInRange = ordersList.slice(start, end + 1).map(o => o.id);
+
+      const isSelecting = !selectedOrders.has(orderId);
+      idsInRange.forEach(id => {
+        if (isSelecting) {
+          newSelected.add(id);
+        } else {
+          newSelected.delete(id);
+        }
+      });
     } else {
-      newSelected.add(orderId);
+      if (newSelected.has(orderId)) {
+        newSelected.delete(orderId);
+      } else {
+        newSelected.add(orderId);
+      }
     }
+
     setSelectedOrders(newSelected);
+    setLastSelectedIndex(currentIndex);
   };
 
   const toggleSelectAll = () => {
     if (selectedOrders.size === ordersList.length) {
       setSelectedOrders(new Set());
+      setLastSelectedIndex(null);
     } else {
       setSelectedOrders(new Set(ordersList.map(order => order.id)));
+      setLastSelectedIndex(null);
     }
   };
 
@@ -393,17 +416,25 @@ export default function OrdersPage() {
     }
 
     try {
-      const deletePromises = Array.from(selectedOrders).map(orderId =>
-        fetch(`/api/orders/${orderId}`, { method: "DELETE" })
-      );
+      const response = await fetch("/api/orders/bulk-delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: Array.from(selectedOrders) }),
+      });
 
-      await Promise.all(deletePromises);
+      if (!response.ok) {
+        throw new Error("Failed to delete orders");
+      }
+
+      await response.json();
+      toast.success(`Successfully deleted ${selectedOrders.size} order(s)`);
       setSelectedOrders(new Set());
+      setLastSelectedIndex(null);
       setEditMode(false);
       mutate();
     } catch (error) {
       console.error("Failed to delete orders:", error);
-      alert("Failed to delete some orders. Please try again.");
+      toast.error("Failed to delete some orders. Please try again.");
     }
   };
 

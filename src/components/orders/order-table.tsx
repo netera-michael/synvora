@@ -15,7 +15,7 @@ type OrderTableProps = {
   isAdmin?: boolean;
   editMode?: boolean;
   selectedOrders?: Set<number>;
-  onToggleSelect?: (orderId: number) => void;
+  onToggleSelect?: (orderId: number, event: React.MouseEvent) => void;
   onToggleSelectAll?: () => void;
   isLoading?: boolean;
 };
@@ -154,7 +154,7 @@ export function OrderTable({
               <tr
                 key={order.id}
                 className={`hover:bg-synvora-surface-active/80 ${isSelected ? "bg-synvora-primary/5" : ""}`}
-                onClick={editMode ? () => onToggleSelect?.(order.id) : () => onSelect(order)}
+                onClick={editMode ? (e) => onToggleSelect?.(order.id, e) : () => onSelect(order)}
                 style={{ cursor: "pointer" }}
               >
                 {editMode && (
@@ -162,7 +162,7 @@ export function OrderTable({
                     <input
                       type="checkbox"
                       checked={isSelected}
-                      onChange={() => onToggleSelect?.(order.id)}
+                      onChange={(e) => onToggleSelect?.(order.id, e as unknown as React.MouseEvent)}
                       className="rounded border-synvora-border text-synvora-primary focus:ring-synvora-primary"
                       onClick={(e) => e.stopPropagation()}
                     />
