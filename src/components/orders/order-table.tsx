@@ -158,13 +158,18 @@ export function OrderTable({
                 style={{ cursor: "pointer" }}
               >
                 {editMode && (
-                  <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                  <td
+                    className="px-6 py-4"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleSelect?.(order.id, e);
+                    }}
+                  >
                     <input
                       type="checkbox"
                       checked={isSelected}
-                      onChange={(e) => onToggleSelect?.(order.id, e as unknown as React.MouseEvent)}
                       className="rounded border-synvora-border text-synvora-primary focus:ring-synvora-primary"
-                      onClick={(e) => e.stopPropagation()}
+                      onChange={() => { }} // Managed by parent td click
                     />
                   </td>
                 )}
