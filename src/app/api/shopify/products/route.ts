@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
 import { SHOPIFY_API_VERSION } from "@/lib/shopify";
+import { decrypt } from "@/lib/encryption";
 
 const schema = z.object({
   storeId: z.number()
@@ -67,7 +68,7 @@ export async function POST(request: Request) {
     const response = await fetch(url, {
       headers: {
         "Content-Type": "application/json",
-        "X-Shopify-Access-Token": store.accessToken
+        "X-Shopify-Access-Token": decrypt(store.accessToken)
       },
       cache: "no-store"
     });
