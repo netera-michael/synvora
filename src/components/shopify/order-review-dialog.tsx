@@ -79,9 +79,11 @@ export function OrderReviewDialog({
   // Fetch live AED/USD rate
   const fetchAedRate = async () => {
     try {
-      const response = await fetch("/api/exchange-rate?from=AED&to=USD");
-      if (response.ok) {
-        const data = await response.json();
+      const res = await fetch("/api/exchange-rate?from=AED&to=USD", {
+        cache: 'no-store'
+      });
+      if (res.ok) {
+        const data = await res.json();
         setAedToUsdRate(data.rate);
       }
     } catch (error) {
