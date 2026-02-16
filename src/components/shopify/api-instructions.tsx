@@ -37,6 +37,11 @@ export function APIInstructions() {
         <li>
           Your <strong>store domain</strong> is: <code className="bg-synvora-surface-active px-1 rounded">your-store-name.myshopify.com</code>
         </li>
+        <li>
+          <strong>Webhook Setup:</strong> Go to <strong>Settings</strong> → <strong>Notifications</strong> → <strong>Webhooks</strong>. Create a webhook for <code className="bg-synvora-surface-active px-1 rounded">Order creation</code> pointing to:
+          <br />
+          <code className="bg-synvora-surface-active px-1 rounded block mt-1">https://synvora-psi.vercel.app/api/webhooks/shopify</code>
+        </li>
       </ol>
       <p className="text-xs text-synvora-text-secondary pt-2 border-t border-synvora-border">
         ⚠️ <strong>Important:</strong> Keep your access token secure. Never share it publicly or commit it to version control.

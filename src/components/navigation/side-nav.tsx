@@ -25,6 +25,7 @@ const NAV_GROUPS: NavGroup[] = [
     title: "Manage",
     items: [
       { href: "/admin/orders", label: "Orders", icon: ClipboardList },
+      { href: "/admin/orders/pending" as any, label: "Pending Orders", icon: ClipboardList },
       { href: "/admin/products", label: "Products", icon: Package },
       { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
       { href: "/admin/customers", label: "Customers", icon: Users },
