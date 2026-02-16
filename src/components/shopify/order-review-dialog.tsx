@@ -149,15 +149,15 @@ export function OrderReviewDialog({
           );
 
           const groupTotalEGP = group.reduce((sum, o) => sum + (o.originalAmount || 0), 0);
-          const totalUSDFromAED = aedOverride * aedToUsdRate;
+          const baseUSDFromAED = aedOverride * aedToUsdRate;
+          const totalUSDFromAED = baseUSDFromAED * 1.035;
 
           // Proportional distribution
           const weight = groupTotalEGP > 0 ? (order.originalAmount || 0) / groupTotalEGP : 1 / group.length;
           const adjustedTotalUSD = totalUSDFromAED * weight;
 
-          // Derived exchange rate (TotalEGP / (CalculatedUSD / 1.035))
-          const baseUSD = totalUSDFromAED / 1.035;
-          const derivedRate = groupTotalEGP > 0 && baseUSD > 0 ? groupTotalEGP / baseUSD : order.exchangeRate;
+          // Derived exchange rate (TotalEGP / baseUSD)
+          const derivedRate = groupTotalEGP > 0 && baseUSDFromAED > 0 ? groupTotalEGP / baseUSDFromAED : order.exchangeRate;
 
           return {
             ...order,
@@ -538,8 +538,9 @@ export function OrderReviewDialog({
                           });
 
                           const aedOverride = aedOverrides[group.date];
-                          const derivedUSD = aedOverride && aedToUsdRate ? aedOverride * aedToUsdRate : dailyUSD;
-                          const derivedRate = aedOverride && dailyEGP > 0 ? dailyEGP / (derivedUSD / 1.035) : null;
+                          const baseUSD = aedOverride && aedToUsdRate ? aedOverride * aedToUsdRate : null;
+                          const derivedUSD = aedOverride && aedToUsdRate ? baseUSD! * 1.035 : dailyUSD;
+                          const derivedRate = aedOverride && dailyEGP > 0 && baseUSD ? dailyEGP / baseUSD : null;
 
                           // Add a summary row after each day
                           rows.push(
@@ -553,7 +554,7 @@ export function OrderReviewDialog({
                               <td className="py-3 px-6 text-right text-synvora-text align-middle">
                                 <div className="flex flex-col items-end gap-1">
                                   <div className="flex items-center gap-2">
-                                    <span className="text-[10px] text-synvora-text-secondary">AED Override:</span>
+                                    <span className="text-[10px] text-synvora-text-secondary">AED Payout:</span>
                                     <input
                                       type="number"
                                       value={aedOverride || ""}
@@ -573,9 +574,16 @@ export function OrderReviewDialog({
                                       className="w-20 rounded border border-synvora-border px-2 py-0.5 text-right text-xs focus:border-synvora-primary focus:outline-none focus:ring-1 focus:ring-synvora-primary"
                                     />
                                   </div>
-                                  <span className={aedOverride ? "text-synvora-primary" : ""}>
-                                    {formatCurrency(derivedUSD, "USD")}
-                                  </span>
+                                  <div className="flex flex-col items-end">
+                                    <span className={aedOverride ? "text-synvora-primary" : ""}>
+                                      {formatCurrency(derivedUSD, "USD")}
+                                    </span>
+                                    {aedOverride && baseUSD && (
+                                      <span className="text-[10px] text-synvora-text-secondary">
+                                        Payout: {formatCurrency(baseUSD, "USD")}
+                                      </span>
+                                    )}
+                                  </div>
                                   {derivedRate && (
                                     <span className="text-[10px] text-synvora-primary font-bold">
                                       Rate: {derivedRate.toFixed(2)} EGP/USD
