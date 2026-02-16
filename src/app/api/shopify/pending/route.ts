@@ -95,55 +95,66 @@ export async function POST(request: Request) {
         const storeMap = new Map(stores.map(s => [s.storeDomain, s.id]));
 
         const importResults = [];
+        const successfulIds: number[] = [];
+        const errors: string[] = [];
 
         for (const queueItem of queuedOrders) {
             const storeId = storeMap.get(queueItem.storeDomain);
             if (!storeId) {
-                console.error(`Store not found for domain: ${queueItem.storeDomain}`);
-                continue; // Skip if we can't link to a store
+                const msg = `Store not found for domain: ${queueItem.storeDomain} (Order ID: ${queueItem.id})`;
+                console.error(msg);
+                errors.push(msg);
+                continue;
             }
 
-            // Re-use the transformation logic? 
-            // The `transformShopifyOrders` takes an array of Shopify objects.
-            // queueItem.orderData is the raw shopify object.
-            const rawOrder = queueItem.orderData as any;
+            try {
+                // queueItem.orderData is the raw shopify object.
+                const rawOrder = queueItem.orderData as any;
 
-            // Transform single order
-            // Using a simplified inline transformation or adapting the helper
-            // Ideally we reuse `transformShopifyOrders` but it handles array.
-            const [transformed] = await transformShopifyOrders([rawOrder], exchangeRate, venueId);
+                // Transform single order
+                const [transformed] = await transformShopifyOrders([rawOrder], exchangeRate, venueId);
 
-            if (transformed) {
-                // Create the Order in DB
-                const orderData = {
-                    ...transformed,
-                    tags: Array.isArray(transformed.tags) ? transformed.tags.join(", ") : transformed.tags || "",
-                    shopifyStoreId: storeId,
-                    venueId: venueId,
-                };
+                if (transformed) {
+                    // Create the Order in DB
+                    const orderData = {
+                        ...transformed,
+                        tags: Array.isArray(transformed.tags) ? transformed.tags.join(", ") : transformed.tags || "",
+                        shopifyStoreId: storeId,
+                        venueId: venueId,
+                    };
 
-                const { lineItems, ...rest } = orderData;
+                    const { lineItems, ...rest } = orderData;
 
-                const createdOrder = await prisma.order.create({
-                    data: {
-                        ...rest,
-                        lineItems: {
-                            create: lineItems
+                    const createdOrder = await prisma.order.create({
+                        data: {
+                            ...rest,
+                            lineItems: {
+                                create: lineItems
+                            }
                         }
-                    }
-                });
-                importResults.push(createdOrder);
+                    });
+                    importResults.push(createdOrder);
+                    successfulIds.push(queueItem.id);
+                } else {
+                    errors.push(`Transformation failed for Order ID: ${queueItem.id}`);
+                }
+            } catch (err: any) {
+                console.error(`Error processing order ${queueItem.id}:`, err);
+                errors.push(`Error processing Order ID ${queueItem.id}: ${err.message}`);
             }
         }
 
-        // 3. Delete from Queue after successful import
-        await prisma.shopifyImportQueue.deleteMany({
-            where: { id: { in: orderIds } }
-        });
+        // 3. Delete ONLY successfully imported orders from Queue
+        if (successfulIds.length > 0) {
+            await prisma.shopifyImportQueue.deleteMany({
+                where: { id: { in: successfulIds } }
+            });
+        }
 
         return NextResponse.json({
-            message: `Successfully imported ${importResults.length} orders`,
-            count: importResults.length
+            message: `Successfully imported ${importResults.length} orders. ${errors.length > 0 ? `${errors.length} failed.` : ""}`,
+            count: importResults.length,
+            errors: errors.length > 0 ? errors : undefined
         });
 
     } catch (error) {
