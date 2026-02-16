@@ -160,11 +160,11 @@ export function OrderReviewDialog({
   const selectedOrdersData = orders.filter((order) =>
     selectedOrders.has(order.externalId)
   );
-  
+
   const totalEGP = selectedOrdersData.reduce((sum, order) => {
     return sum + (order.originalAmount || 0);
   }, 0);
-  
+
   const totalUSD = selectedOrdersData.reduce((sum, order) => {
     return sum + order.totalAmount;
   }, 0);
@@ -196,12 +196,12 @@ export function OrderReviewDialog({
           >
             <Dialog.Panel className="w-full max-w-6xl max-h-[90vh] overflow-hidden rounded-3xl bg-white shadow-2xl">
               {/* Header */}
-              <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+              <div className="flex items-center justify-between border-b border-synvora-border px-6 py-4">
                 <div>
-                  <Dialog.Title className="text-lg font-semibold text-slate-900">
+                  <Dialog.Title className="text-lg font-semibold text-synvora-text">
                     Review Orders for Import
                   </Dialog.Title>
-                  <Dialog.Description className="text-sm text-slate-500">
+                  <Dialog.Description className="text-sm text-synvora-text-secondary">
                     {store && (
                       <>
                         Store: <span className="font-medium">{store.nickname || store.storeDomain}</span>
@@ -216,7 +216,7 @@ export function OrderReviewDialog({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-slate-300"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-synvora-border text-synvora-text-secondary transition hover:border-synvora-border"
                   disabled={importing}
                 >
                   <X className="h-4 w-4" />
@@ -241,19 +241,19 @@ export function OrderReviewDialog({
               {/* Orders Table */}
               <div className="overflow-auto max-h-[calc(90vh-220px)] px-6 py-4">
                 {orders.length === 0 ? (
-                  <div className="text-center py-12 text-slate-500">
+                  <div className="text-center py-12 text-synvora-text-secondary">
                     No orders found for the selected date range
                   </div>
                 ) : (
                   <table className="w-full">
-                    <thead className="sticky top-0 bg-white border-b-2 border-slate-200">
-                      <tr className="text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                    <thead className="sticky top-0 bg-white border-b-2 border-synvora-border">
+                      <tr className="text-left text-xs font-semibold text-synvora-text-secondary uppercase tracking-wider">
                         <th className="pb-3 pr-4">
                           <input
                             type="checkbox"
                             checked={selectedOrders.size === orders.length}
                             onChange={toggleAll}
-                            className="rounded border-slate-300 text-synvora-primary focus:ring-synvora-primary"
+                            className="rounded border-synvora-border text-synvora-primary focus:ring-synvora-primary"
                             disabled={importing}
                           />
                         </th>
@@ -267,7 +267,7 @@ export function OrderReviewDialog({
                         <th className="pb-3"></th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-synvora-border">
                       {orders.map((order) => {
                         const isExpanded = expandedOrders.has(order.externalId);
                         const isSelected = selectedOrders.has(order.externalId);
@@ -275,50 +275,49 @@ export function OrderReviewDialog({
                         return (
                           <Fragment key={order.externalId}>
                             <tr
-                              className={`text-sm ${
-                                isSelected ? "bg-synvora-primary/5" : "hover:bg-slate-50"
-                              } transition`}
+                              className={`text-sm ${isSelected ? "bg-synvora-primary/5" : "hover:bg-synvora-surface-active"
+                                } transition`}
                             >
                               <td className="py-3 pr-4">
                                 <input
                                   type="checkbox"
                                   checked={isSelected}
                                   onChange={() => toggleOrder(order.externalId)}
-                                  className="rounded border-slate-300 text-synvora-primary focus:ring-synvora-primary"
+                                  className="rounded border-synvora-border text-synvora-primary focus:ring-synvora-primary"
                                   disabled={importing}
                                 />
                               </td>
-                              <td className="py-3 pr-4 font-medium text-slate-900">
+                              <td className="py-3 pr-4 font-medium text-synvora-text">
                                 {order.orderNumber}
                               </td>
-                              <td className="py-3 pr-4 text-slate-700">
+                              <td className="py-3 pr-4 text-synvora-text">
                                 {order.customerName}
                               </td>
-                              <td className="py-3 pr-4 text-slate-600">
+                              <td className="py-3 pr-4 text-synvora-text-secondary">
                                 {formatDate(order.processedAt)}
                               </td>
-                              <td className="py-3 pr-4 text-slate-600">
+                              <td className="py-3 pr-4 text-synvora-text-secondary">
                                 {[order.shippingCity, order.shippingCountry]
                                   .filter(Boolean)
                                   .join(", ") || "-"}
                               </td>
-                              <td className="py-3 pr-4 text-right font-medium text-slate-900">
+                              <td className="py-3 pr-4 text-right font-medium text-synvora-text">
                                 {order.originalAmount
                                   ? `${formatEGP(order.originalAmount)} EGP`
                                   : "-"}
                               </td>
-                              <td className="py-3 pr-4 text-right font-medium text-slate-900">
+                              <td className="py-3 pr-4 text-right font-medium text-synvora-text">
                                 {formatCurrency(order.totalAmount, order.currency)}
                               </td>
                               <td className="py-3 pr-4">
-                                <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-800">
+                                <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-synvora-text">
                                   {order.financialStatus || order.status}
                                 </span>
                               </td>
                               <td className="py-3">
                                 <button
                                   onClick={() => toggleExpand(order.externalId)}
-                                  className="text-slate-400 hover:text-slate-600 transition"
+                                  className="text-slate-400 hover:text-synvora-text-secondary transition"
                                   disabled={importing}
                                 >
                                   {isExpanded ? (
@@ -333,15 +332,15 @@ export function OrderReviewDialog({
                             {/* Expanded Row - Line Items */}
                             {isExpanded && (
                               <tr>
-                                <td colSpan={9} className="py-3 px-4 bg-slate-50">
+                                <td colSpan={9} className="py-3 px-4 bg-synvora-surface-active">
                                   <div className="space-y-2">
-                                    <p className="text-xs font-semibold text-slate-600 uppercase">
+                                    <p className="text-xs font-semibold text-synvora-text-secondary uppercase">
                                       Line Items
                                     </p>
-                                    <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+                                    <div className="bg-white rounded-lg border border-synvora-border overflow-hidden">
                                       <table className="w-full text-sm">
-                                        <thead className="bg-slate-50">
-                                          <tr className="text-left text-xs text-slate-600">
+                                        <thead className="bg-synvora-surface-active">
+                                          <tr className="text-left text-xs text-synvora-text-secondary">
                                             <th className="px-3 py-2">Product</th>
                                             <th className="px-3 py-2">SKU</th>
                                             <th className="px-3 py-2 text-center">Quantity</th>
@@ -349,22 +348,22 @@ export function OrderReviewDialog({
                                             <th className="px-3 py-2 text-right">Total</th>
                                           </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-slate-100">
+                                        <tbody className="divide-y divide-synvora-border">
                                           {order.lineItems.map((item, idx) => (
                                             <tr key={idx}>
-                                              <td className="px-3 py-2 text-slate-900">
+                                              <td className="px-3 py-2 text-synvora-text">
                                                 {item.productName}
                                               </td>
-                                              <td className="px-3 py-2 text-slate-600">
+                                              <td className="px-3 py-2 text-synvora-text-secondary">
                                                 {item.sku || "-"}
                                               </td>
-                                              <td className="px-3 py-2 text-center text-slate-900">
+                                              <td className="px-3 py-2 text-center text-synvora-text">
                                                 {item.quantity}
                                               </td>
-                                              <td className="px-3 py-2 text-right text-slate-900">
+                                              <td className="px-3 py-2 text-right text-synvora-text">
                                                 {formatCurrency(item.price, order.currency)}
                                               </td>
-                                              <td className="px-3 py-2 text-right font-medium text-slate-900">
+                                              <td className="px-3 py-2 text-right font-medium text-synvora-text">
                                                 {formatCurrency(item.total, order.currency)}
                                               </td>
                                             </tr>
@@ -378,14 +377,14 @@ export function OrderReviewDialog({
                                       <div className="mt-3 space-y-2">
                                         {order.tags.length > 0 && (
                                           <div>
-                                            <p className="text-xs font-semibold text-slate-600 mb-1">
+                                            <p className="text-xs font-semibold text-synvora-text-secondary mb-1">
                                               Tags:
                                             </p>
                                             <div className="flex flex-wrap gap-1">
                                               {order.tags.map((tag, idx) => (
                                                 <span
                                                   key={idx}
-                                                  className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs text-slate-700"
+                                                  className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs text-synvora-text"
                                                 >
                                                   {tag}
                                                 </span>
@@ -395,10 +394,10 @@ export function OrderReviewDialog({
                                         )}
                                         {order.notes && (
                                           <div>
-                                            <p className="text-xs font-semibold text-slate-600 mb-1">
+                                            <p className="text-xs font-semibold text-synvora-text-secondary mb-1">
                                               Notes:
                                             </p>
-                                            <p className="text-xs text-slate-700 bg-white rounded border border-slate-200 p-2">
+                                            <p className="text-xs text-synvora-text bg-white rounded border border-synvora-border p-2">
                                               {order.notes}
                                             </p>
                                           </div>
@@ -418,23 +417,23 @@ export function OrderReviewDialog({
               </div>
 
               {/* Footer */}
-              <div className="flex items-center justify-between border-t border-slate-200 px-6 py-4 bg-slate-50">
-                <div className="flex items-center gap-6 text-sm text-slate-600">
+              <div className="flex items-center justify-between border-t border-synvora-border px-6 py-4 bg-synvora-surface-active">
+                <div className="flex items-center gap-6 text-sm text-synvora-text-secondary">
                   <div>
-                    <span className="font-semibold text-slate-900">{selectedOrders.size}</span> of{" "}
-                    <span className="font-semibold text-slate-900">{orders.length}</span> orders selected
+                    <span className="font-semibold text-synvora-text">{selectedOrders.size}</span> of{" "}
+                    <span className="font-semibold text-synvora-text">{orders.length}</span> orders selected
                   </div>
                   {selectedOrders.size > 0 && (
                     <>
                       <div className="h-4 w-px bg-slate-300" />
                       <div>
-                        <span className="text-xs uppercase tracking-wide text-slate-500">Total EGP:</span>{" "}
-                        <span className="font-semibold text-slate-900">{formatEGP(totalEGP)} EGP</span>
+                        <span className="text-xs uppercase tracking-wide text-synvora-text-secondary">Total EGP:</span>{" "}
+                        <span className="font-semibold text-synvora-text">{formatEGP(totalEGP)} EGP</span>
                       </div>
                       <div className="h-4 w-px bg-slate-300" />
                       <div>
-                        <span className="text-xs uppercase tracking-wide text-slate-500">Total USD:</span>{" "}
-                        <span className="font-semibold text-slate-900">{formatCurrency(totalUSD, "USD")}</span>
+                        <span className="text-xs uppercase tracking-wide text-synvora-text-secondary">Total USD:</span>{" "}
+                        <span className="font-semibold text-synvora-text">{formatCurrency(totalUSD, "USD")}</span>
                       </div>
                     </>
                   )}
@@ -443,7 +442,7 @@ export function OrderReviewDialog({
                   <button
                     type="button"
                     onClick={onClose}
-                    className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-slate-300"
+                    className="rounded-xl border border-synvora-border px-4 py-2 text-sm font-semibold text-synvora-text-secondary transition hover:border-synvora-border"
                     disabled={importing}
                   >
                     Cancel

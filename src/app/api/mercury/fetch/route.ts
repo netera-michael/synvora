@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     }
 
     // Log API key status for debugging (don't log the actual key)
-    console.log(`Mercury API key present: ${!!settings.apiKey}, length: ${settings.apiKey?.length || 0}, starts with secret-token: ${settings.apiKey?.startsWith('secret-token:') || false}`);
+
 
     const client = new MercuryClient(settings.apiKey);
 
@@ -74,14 +74,14 @@ export async function POST(request: Request) {
     }
 
     // Log for debugging
-    console.log(`Fetched ${transactions.length} transactions from Mercury`);
+
 
     // Filter to only debit transactions (outgoing money/payouts)
     const debitTransactions = transactions.filter(
       (t) => t.direction === "debit"
     );
 
-    console.log(`Found ${debitTransactions.length} debit transactions`);
+
 
     // Check which transactions already exist as payouts
     const transactionIds = debitTransactions.map((t) => t.id);

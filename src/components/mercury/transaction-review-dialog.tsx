@@ -49,12 +49,8 @@ export function TransactionReviewDialog({
     setSelectedTransactions(new Set(safe.map((t) => t.id)));
   }, [transactions]);
 
-  console.log("TransactionReviewDialog debug:", {
-    venues,
-    venueId: venues[0]?.id || 0,
-    transactionsCount: transactions.length,
-    selectedCount: selectedTransactions.size
-  });
+
+
 
   const [venueId, setVenueId] = useState<number>(venues[0]?.id || 0);
   const [importing, setImporting] = useState(false);

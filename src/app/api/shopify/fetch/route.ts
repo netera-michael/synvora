@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
+import { decrypt } from "@/lib/encryption";
 import { fetchShopifyOrders, transformShopifyOrders } from "@/lib/shopify";
 import { getCurrentExchangeRate } from "@/lib/exchange-rate";
 
@@ -54,16 +55,16 @@ export async function POST(request: Request) {
     // Fetch orders from Shopify with date range
     const shopifyOrders = await fetchShopifyOrders({
       storeDomain: store.storeDomain,
-      accessToken: store.accessToken,
+      accessToken: decrypt(store.accessToken),
       createdAtMin: startDate,
       createdAtMax: endDate
     });
 
-    // Transform orders with EGP calculations
-    const transformed = await transformShopifyOrders(shopifyOrders, exchangeRate, store.venueId);
+    // Optimization: Filter out existing orders BEFORE transformation
+    // This avoids expensive calculations for orders that won't be imported anyway
+    const externalIds = shopifyOrders.map(o => String(o.id));
 
     // Check which orders already exist in the database
-    const externalIds = transformed.map(order => order.externalId);
     const existingOrders = await prisma.order.findMany({
       where: {
         externalId: {
@@ -76,13 +77,16 @@ export async function POST(request: Request) {
     });
 
     const existingExternalIds = new Set(existingOrders.map(order => order.externalId));
-    
-    // Filter out orders that are already imported
-    const newOrders = transformed.filter(order => !existingExternalIds.has(order.externalId));
-    const existingCount = transformed.length - newOrders.length;
+
+    // Filter raw Shopify orders
+    const newShopifyOrders = shopifyOrders.filter(o => !existingExternalIds.has(String(o.id)));
+    const existingCount = shopifyOrders.length - newShopifyOrders.length;
+
+    // Transform ONLY the new orders
+    const transformedNewOrders = await transformShopifyOrders(newShopifyOrders, exchangeRate, store.venueId);
 
     return NextResponse.json({
-      orders: newOrders, // Only return orders that haven't been imported yet
+      orders: transformedNewOrders,
       exchangeRate,
       store: {
         id: store.id,
@@ -93,8 +97,8 @@ export async function POST(request: Request) {
           name: store.venue.name
         }
       },
-      count: newOrders.length,
-      totalFetched: transformed.length,
+      count: transformedNewOrders.length,
+      totalFetched: shopifyOrders.length,
       alreadyImported: existingCount
     });
   } catch (error: unknown) {

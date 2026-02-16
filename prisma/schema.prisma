@@ -50,7 +50,11 @@ model Order {
   createdBy    User?          @relation("UserOrders", fields: [createdById], references: [id])
   shopifyStore ShopifyStore?  @relation(fields: [shopifyStoreId], references: [id])
   lineItems    OrderLineItem[]
-  venue        Venue          @relation(fields: [venueId], references: [id])
+  venue Venue @relation(fields: [venueId], references: [id])
+  
+  @@unique([shopifyStoreId, externalId])
+  @@index([processedAt])
+  @@index([venueId])
 }
 
 model OrderLineItem {
@@ -64,6 +68,8 @@ model OrderLineItem {
   total             Float    @default(0)
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
 }
 
 model ShopifyStore {
@@ -79,6 +85,8 @@ model ShopifyStore {
   owner  User?  @relation(fields: [ownerId], references: [id])
   venue  Venue  @relation(fields: [venueId], references: [id])
   orders Order[]
+
+  @@index([venueId])
 }
 
 model Venue {
@@ -110,6 +118,7 @@ model Product {
 
   @@unique([sku, venueId])
   @@index([shopifyProductId])
+  @@index([venueId])
 }
 
 enum Role {

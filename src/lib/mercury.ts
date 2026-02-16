@@ -85,7 +85,7 @@ export class MercuryClient {
         attemptedUrls.push(url);
 
         try {
-          console.log(`Trying Mercury API: ${options.method || 'GET'} ${url}`);
+
 
           // Construct headers explicitly to ensure Authorization is set correctly
           const headers = new Headers();
@@ -100,8 +100,7 @@ export class MercuryClient {
             });
           }
 
-          console.log(`Mercury API request: ${options.method || 'GET'} ${url}`);
-          console.log(`Authorization header: ${authHeader.substring(0, 20)}... (length: ${authHeader.length})`);
+
 
           const response = await fetch(url, {
             ...options,
@@ -109,13 +108,13 @@ export class MercuryClient {
           });
 
           if (response.ok) {
-            console.log(`✅ Success with ${url}`);
+
             const data = await response.json();
             return data;
           }
 
           const errorText = await response.text();
-          console.log(`❌ Failed ${url}: ${response.status} ${errorText.substring(0, 200)}`);
+
 
           if (response.status !== 404) {
             // If it's not 404, this might be the right endpoint but wrong auth/permissions
@@ -136,7 +135,7 @@ export class MercuryClient {
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
-    console.log(`Mercury API request: ${options.method || 'GET'} ${url}`);
+
 
     // Mercury API uses "Bearer" token with "secret-token:" prefix in the value
     // Remove "secret-token:" prefix if present in the key itself to avoid double prefixing
@@ -153,7 +152,7 @@ export class MercuryClient {
     headers.set("Authorization", authHeader);
     headers.set("Content-Type", "application/json");
 
-    console.log(`Authorization header: ${authHeader.substring(0, 20)}... (length: ${authHeader.length})`);
+
 
     try {
       const response = await fetch(url, {

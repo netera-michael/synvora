@@ -213,22 +213,22 @@ export function SyncShopifyDialog({ open, onClose, onSyncComplete }: SyncShopify
               leaveFrom="translate-y-0 opacity-100"
               leaveTo="translate-y-4 opacity-0"
             >
-              <Dialog.Panel className="w-full max-w-lg rounded-3xl bg-white shadow-2xl">
-                <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+              <Dialog.Panel className="w-full max-w-lg rounded-xl bg-white shadow-2xl">
+                <div className="flex items-center justify-between border-b border-synvora-border px-6 py-4">
                   <div>
-                    <Dialog.Title className="text-lg font-semibold text-slate-900">
+                    <Dialog.Title className="text-lg font-semibold text-synvora-text">
                       Sync Shopify Orders
                     </Dialog.Title>
-                    <Dialog.Description className="text-sm text-slate-500">
+                    <Dialog.Description className="text-sm text-synvora-text-secondary">
                       Select a store and date range to fetch orders for review
                     </Dialog.Description>
                   </div>
                   <button
                     type="button"
                     onClick={close}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-slate-300"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-synvora-text-secondary hover:bg-synvora-surface-hover hover:text-synvora-text transition"
                   >
-                    <X className="h-4 w-4" />
+                    <X className="h-5 w-5" />
                   </button>
                 </div>
 
@@ -255,14 +255,14 @@ export function SyncShopifyDialog({ open, onClose, onSyncComplete }: SyncShopify
                     </div>
                   ) : (
                     <>
-                      <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
+                      <label className="flex flex-col gap-1.5 text-sm font-medium text-synvora-text">
                         Shopify Store <span className="text-red-500">*</span>
                         <select
                           value={formState.storeId}
                           onChange={(event) =>
                             setFormState((current) => ({ ...current, storeId: event.target.value }))
                           }
-                          className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
+                          className="rounded-lg border border-synvora-border px-3 py-2 text-sm text-synvora-text shadow-sm focus:border-synvora-primary focus:outline-none focus:ring-1 focus:ring-synvora-primary"
                           required
                         >
                           <option value="">Select a store</option>
@@ -274,7 +274,7 @@ export function SyncShopifyDialog({ open, onClose, onSyncComplete }: SyncShopify
                         </select>
                       </label>
 
-                      <label className="mt-4 flex flex-col gap-2 text-sm font-semibold text-slate-700">
+                      <label className="mt-4 flex flex-col gap-1.5 text-sm font-medium text-synvora-text">
                         Start Date <span className="text-red-500">*</span>
                         <input
                           type="date"
@@ -282,12 +282,12 @@ export function SyncShopifyDialog({ open, onClose, onSyncComplete }: SyncShopify
                           onChange={(event) =>
                             setFormState((current) => ({ ...current, startDate: event.target.value }))
                           }
-                          className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
+                          className="rounded-lg border border-synvora-border px-3 py-2 text-sm text-synvora-text shadow-sm focus:border-synvora-primary focus:outline-none focus:ring-1 focus:ring-synvora-primary"
                           required
                         />
                       </label>
 
-                      <label className="mt-4 flex flex-col gap-2 text-sm font-semibold text-slate-700">
+                      <label className="mt-4 flex flex-col gap-1.5 text-sm font-medium text-synvora-text">
                         End Date <span className="text-red-500">*</span>
                         <input
                           type="date"
@@ -295,7 +295,7 @@ export function SyncShopifyDialog({ open, onClose, onSyncComplete }: SyncShopify
                           onChange={(event) =>
                             setFormState((current) => ({ ...current, endDate: event.target.value }))
                           }
-                          className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-inner focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
+                          className="rounded-lg border border-synvora-border px-3 py-2 text-sm text-synvora-text shadow-sm focus:border-synvora-primary focus:outline-none focus:ring-1 focus:ring-synvora-primary"
                           required
                         />
                       </label>
@@ -314,18 +314,18 @@ export function SyncShopifyDialog({ open, onClose, onSyncComplete }: SyncShopify
                     </p>
                   )}
 
-                  <div className="mt-6 flex items-center justify-end gap-3 border-t border-slate-200 pt-4">
+                  <div className="mt-6 flex items-center justify-end gap-3 border-t border-synvora-border pt-4">
                     <button
                       type="button"
                       onClick={close}
-                      className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-slate-300"
+                      className="rounded-lg border border-synvora-border px-4 py-2 text-sm font-medium text-synvora-text-secondary transition hover:bg-synvora-surface-hover hover:text-synvora-text"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
                       disabled={formState.status === "loading" || storesData?.stores.length === 0}
-                      className="inline-flex items-center gap-2 rounded-xl bg-synvora-primary px-5 py-2 text-sm font-semibold text-white shadow transition hover:bg-synvora-primary/90 disabled:cursor-not-allowed disabled:bg-slate-300"
+                      className="inline-flex items-center gap-2 rounded-lg bg-synvora-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-synvora-primary/90 disabled:cursor-not-allowed disabled:bg-synvora-surface-disabled disabled:text-synvora-text-secondary"
                     >
                       <CloudDownload className="h-4 w-4" />
                       {formState.status === "loading" ? "Fetching..." : "Fetch Orders"}

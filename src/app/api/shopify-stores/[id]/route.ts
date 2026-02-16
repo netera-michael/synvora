@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
+import { encrypt } from "@/lib/encryption";
 
 const updateSchema = z.object({
   storeDomain: z.string().min(5).optional(),
@@ -41,7 +42,10 @@ export async function PATCH(
     );
   }
 
-  const updates = parsed.data;
+  const updates = { ...parsed.data };
+  if (updates.accessToken) {
+    updates.accessToken = encrypt(updates.accessToken);
+  }
 
   try {
     // Check if store exists

@@ -133,7 +133,7 @@ export function SyncMercuryDialog({ open, onClose, onSyncComplete, venues }: Syn
     }
 
     const payload = await response.json();
-    console.log("Fetch response:", payload);
+
 
     // Check if all transactions are already imported
     if (payload.totalFetched > 0 && payload.count === 0) {
@@ -281,8 +281,8 @@ export function SyncMercuryDialog({ open, onClose, onSyncComplete, venues }: Syn
                     {formState.message && (
                       <div
                         className={`rounded-lg border p-3 text-sm ${formState.status === "error"
-                            ? "border-rose-200 bg-rose-50 text-rose-700"
-                            : "border-emerald-200 bg-emerald-50 text-emerald-700"
+                          ? "border-rose-200 bg-rose-50 text-rose-700"
+                          : "border-emerald-200 bg-emerald-50 text-emerald-700"
                           }`}
                       >
                         {formState.message}

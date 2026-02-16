@@ -14,7 +14,13 @@ const config: Config = {
           primary: "#0A5AFF",
           dark: "#082c6c",
           accent: "#1D9BF0",
-          surface: "#f6f8fb"
+          surface: "#F6F6F7", // Updated to matches Polaris bg-surface-secondary
+          "surface-active": "#F1F2F3",
+          border: "#C9CCCF",
+          text: "#202223",
+          "text-secondary": "#6D7175",
+          "surface-disabled": "#fafbfb",
+          "border-hover": "#8C9196"
         }
       }
     }

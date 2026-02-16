@@ -143,21 +143,21 @@ export default function PayoutsPage() {
                           )}
                         </td>
                         <td className="px-6 py-4 text-right text-sm">
-                        <button
-                          type="button"
-                          onClick={() => openEdit(payout)}
-                          className="mr-2 inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-synvora-primary hover:text-synvora-primary"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(payout.id)}
-                          className="inline-flex items-center rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 transition hover:border-rose-300"
-                        >
-                          Delete
-                        </button>
-                      </td>
+                          <button
+                            type="button"
+                            onClick={() => openEdit(payout)}
+                            className="mr-2 inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-synvora-primary hover:text-synvora-primary"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(payout.id)}
+                            className="inline-flex items-center rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 transition hover:border-rose-300"
+                          >
+                            Delete
+                          </button>
+                        </td>
                       </>
                     ) : null}
                   </tr>
@@ -255,7 +255,7 @@ function PayoutDialog({ open, payout, onClose, onSaved, venues }: PayoutDialogPr
         account: payout.account,
         processedAt: payout.processedAt.slice(0, 10),
         notes: payout.notes ?? "",
-        venueId: payout.venueId
+        venueId: payout.venueId ?? venues[0]?.id ?? 0
       });
     } else {
       setFormState({

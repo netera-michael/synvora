@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
+import { encrypt } from "@/lib/encryption";
 
 const createSchema = z.object({
   storeDomain: z.string().min(5),
@@ -43,7 +44,13 @@ export async function GET() {
       }
     });
 
-    return NextResponse.json({ stores });
+    // Mask access tokens for security
+    const safeStores = stores.map(store => ({
+      ...store,
+      accessToken: store.accessToken ? `${store.accessToken.substring(0, 4)}... (encrypted)` : ""
+    }));
+
+    return NextResponse.json({ stores: safeStores });
   } catch (error: any) {
     console.error("Failed to fetch Shopify stores:", error);
 
@@ -116,7 +123,7 @@ export async function POST(request: Request) {
     const store = await prisma.shopifyStore.create({
       data: {
         storeDomain,
-        accessToken,
+        accessToken: encrypt(accessToken),
         nickname,
         venueId,
         ownerId: Number(session.user.id)

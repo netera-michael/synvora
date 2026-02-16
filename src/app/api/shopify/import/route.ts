@@ -74,152 +74,63 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Store not found" }, { status: 404 });
     }
 
+    // Bulk check existing orders
+    const externalIds = orders.map(o => o.externalId);
+    const existingOrders = await prisma.order.findMany({
+      where: { externalId: { in: externalIds } },
+      select: { id: true, externalId: true }
+    });
+
+    const existingMap = new Map(existingOrders.map(o => [o.externalId, o]));
+
+    const updates: (typeof orders[0] & { dbId: number })[] = [];
+    const inserts: typeof orders = [];
+
+    for (const order of orders) {
+      if (existingMap.has(order.externalId)) {
+        updates.push({ ...order, dbId: existingMap.get(order.externalId)!.id });
+      } else {
+        inserts.push(order);
+      }
+    }
+
+    // Assign order numbers to new orders
+    if (inserts.length > 0) {
+      // Efficiently find the current max order number
+      // We assume the most recently created order has the highest number
+      const lastOrder = await prisma.order.findFirst({
+        orderBy: { id: 'desc' },
+        select: { orderNumber: true }
+      });
+
+      let maxOrderNum = 1000;
+      if (lastOrder?.orderNumber) {
+        const num = extractOrderNumber(lastOrder.orderNumber);
+        if (num) maxOrderNum = num;
+      }
+
+      // Sort new orders by processedAt ASC (oldest first) to assign numbers chronologically
+      inserts.sort((a, b) => new Date(a.processedAt).getTime() - new Date(b.processedAt).getTime());
+
+      // Assign numbers relative to max
+      // Modifying the order objects in place with a temporary property
+      inserts.forEach((order, index) => {
+        (order as any)._generatedOrderNumber = `#${maxOrderNum + index + 1}`;
+      });
+    }
+
     let imported = 0;
     let updated = 0;
     let skipped = 0;
 
-    // Get all existing orders to determine chronological positions
-    const existingOrders = await prisma.order.findMany({
-      select: {
-        orderNumber: true,
-        processedAt: true
-      },
-      orderBy: {
-        processedAt: "desc"
-      }
-    });
-
-    // Filter out orders that will be updated (keep existing order numbers)
-    const ordersToImport = orders.filter(order => {
-      return !existingOrders.some(existing => {
-        // Check if this order already exists by externalId
-        return false; // We'll check this in the loop
-      });
-    });
-
-    // Sort new orders by processedAt DESC (newest first) for number assignment
-    // This ensures newest orders get highest numbers
-    const sortedNewOrders = ordersToImport
-      .filter(order => {
-        // We'll check existence in the loop, but pre-sort for number assignment
-        return true;
-      })
-      .sort((a, b) => {
-        const dateA = new Date(a.processedAt).getTime();
-        const dateB = new Date(b.processedAt).getTime();
-        return dateB - dateA; // Descending (newest first)
-      });
-
-    // Create a map of processedAt -> order number for quick lookup
-    const orderNumberMap = new Map<string, string>();
-    
-    // Pre-assign order numbers based on chronological position
-    // We need to merge existing orders with new orders, sort by processedAt DESC,
-    // and assign numbers sequentially
-    const allOrdersForNumbering = [
-      ...existingOrders.map(o => ({ processedAt: o.processedAt.toISOString(), orderNumber: o.orderNumber, isNew: false })),
-      ...sortedNewOrders.map(o => ({ processedAt: o.processedAt, orderNumber: null, isNew: true, order: o }))
-    ].sort((a, b) => {
-      const dateA = new Date(a.processedAt).getTime();
-      const dateB = new Date(b.processedAt).getTime();
-      return dateB - dateA; // Descending (newest first)
-    });
-
-    // Find the highest existing order number
-    let maxOrderNum = 1000;
-    for (const item of allOrdersForNumbering) {
-      if (!item.isNew && item.orderNumber) {
-        const num = extractOrderNumber(item.orderNumber);
-        if (num && num > maxOrderNum) {
-          maxOrderNum = num;
-        }
-      }
-    }
-
-    // Count new orders to assign
-    const newOrdersCount = allOrdersForNumbering.filter(item => item.isNew).length;
-    
-    // Assign order numbers to new orders in reverse order
-    // Newest order gets highest number (maxOrderNum + newOrdersCount)
-    // Oldest new order gets lowest number (maxOrderNum + 1)
-    let position = 0;
-    for (const item of allOrdersForNumbering) {
-      if (item.isNew && 'order' in item && item.order) {
-        const assignedNum = maxOrderNum + (newOrdersCount - position);
-        orderNumberMap.set(item.order.externalId, `#${assignedNum}`);
-        position++;
-      }
-    }
-
-    // Now process orders (sorted by processedAt DESC to process newest first)
-    for (const order of sortedNewOrders) {
+    // Process Updates
+    for (const order of updates) {
       try {
-        const existing = await prisma.order.findUnique({
-          where: { externalId: order.externalId }
-        });
-
-        if (existing) {
-          // Update existing order
-          await prisma.$transaction(async (tx) => {
-            await tx.order.update({
-              where: { id: existing.id },
-              data: {
-                // Keep existing Synvora orderNumber, update Shopify reference
-                shopifyOrderNumber: order.orderNumber,
-                customerName: order.customerName,
-                status: order.status,
-                financialStatus: order.financialStatus,
-                fulfillmentStatus: order.fulfillmentStatus,
-                totalAmount: order.totalAmount,
-                originalAmount: order.originalAmount,
-                exchangeRate: order.exchangeRate,
-                currency: order.currency,
-                processedAt: new Date(order.processedAt),
-                shippingCity: order.shippingCity,
-                shippingCountry: order.shippingCountry,
-                tags: order.tags.join(","),
-                notes: order.notes,
-                shopifyStoreId: store.id,
-                source: "shopify",
-                venueId: store.venueId
-              }
-            });
-
-            // Delete old line items and create new ones
-            await tx.orderLineItem.deleteMany({
-              where: { orderId: existing.id }
-            });
-
-            if (order.lineItems.length > 0) {
-              await tx.orderLineItem.createMany({
-                data: order.lineItems.map((item) => ({
-                  orderId: existing.id,
-                  productName: item.productName,
-                  quantity: item.quantity,
-                  sku: item.sku,
-                  shopifyProductId: item.shopifyProductId,
-                  price: item.price,
-                  total: item.total
-                }))
-              });
-            }
-          });
-          updated += 1;
-        } else {
-          // Use pre-assigned order number from map
-          const assignedOrderNumber = orderNumberMap.get(order.externalId);
-          if (!assignedOrderNumber) {
-            // Fallback to generating if not in map (shouldn't happen)
-            const nextOrderNumber = await generateNextOrderNumber();
-            orderNumberMap.set(order.externalId, nextOrderNumber);
-          }
-          
-          // Create new order
-          const createdOrder = await prisma.order.create({
+        await prisma.$transaction(async (tx) => {
+          await tx.order.update({
+            where: { id: order.dbId },
             data: {
-              externalId: order.externalId,
-              orderNumber: orderNumberMap.get(order.externalId)!,
-              shopifyOrderNumber: order.orderNumber, // Store Shopify order number
+              shopifyOrderNumber: order.orderNumber,
               customerName: order.customerName,
               status: order.status,
               financialStatus: order.financialStatus,
@@ -233,28 +144,81 @@ export async function POST(request: Request) {
               shippingCountry: order.shippingCountry,
               tags: order.tags.join(","),
               notes: order.notes,
-              createdById: Number(session.user.id),
               shopifyStoreId: store.id,
               source: "shopify",
-              venueId: store.venueId,
-              lineItems: {
-                create: order.lineItems.map((item) => ({
-                  productName: item.productName,
-                  quantity: item.quantity,
-                  sku: item.sku,
-                  shopifyProductId: item.shopifyProductId,
-                  price: item.price,
-                  total: item.total
-                }))
-              }
+              venueId: store.venueId
             }
           });
 
-          imported += 1;
-        }
+          // Delete old line items and create new ones
+          await tx.orderLineItem.deleteMany({
+            where: { orderId: order.dbId }
+          });
+
+          if (order.lineItems.length > 0) {
+            await tx.orderLineItem.createMany({
+              data: order.lineItems.map((item) => ({
+                orderId: order.dbId,
+                productName: item.productName,
+                quantity: item.quantity,
+                sku: item.sku,
+                shopifyProductId: item.shopifyProductId,
+                price: item.price,
+                total: item.total
+              }))
+            });
+          }
+        });
+        updated++;
+      } catch (error) {
+        console.error(`Failed to update order ${order.orderNumber}:`, error);
+        skipped++;
+      }
+    }
+
+    // Process Inserts
+    for (const order of inserts) {
+      try {
+        const generatedNum = (order as any)._generatedOrderNumber;
+
+        await prisma.order.create({
+          data: {
+            externalId: order.externalId,
+            orderNumber: generatedNum,
+            shopifyOrderNumber: order.orderNumber,
+            customerName: order.customerName,
+            status: order.status,
+            financialStatus: order.financialStatus,
+            fulfillmentStatus: order.fulfillmentStatus,
+            totalAmount: order.totalAmount,
+            originalAmount: order.originalAmount,
+            exchangeRate: order.exchangeRate,
+            currency: order.currency,
+            processedAt: new Date(order.processedAt),
+            shippingCity: order.shippingCity,
+            shippingCountry: order.shippingCountry,
+            tags: order.tags.join(","),
+            notes: order.notes,
+            createdById: Number(session.user.id),
+            shopifyStoreId: store.id,
+            source: "shopify",
+            venueId: store.venueId,
+            lineItems: {
+              create: order.lineItems.map((item) => ({
+                productName: item.productName,
+                quantity: item.quantity,
+                sku: item.sku,
+                shopifyProductId: item.shopifyProductId,
+                price: item.price,
+                total: item.total
+              }))
+            }
+          }
+        });
+        imported++;
       } catch (error) {
         console.error(`Failed to import order ${order.orderNumber}:`, error);
-        skipped += 1;
+        skipped++;
       }
     }
 
