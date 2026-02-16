@@ -90,9 +90,9 @@ export function OrderTable({
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-synvora-border bg-white shadow-sm">
+    <div className="rounded-2xl border border-synvora-border bg-white shadow-sm">
       <table className="min-w-full divide-y divide-synvora-border text-sm">
-        <thead className="bg-synvora-surface-active text-left text-xs font-semibold uppercase tracking-wide text-synvora-text-secondary">
+        <thead className="bg-synvora-surface-active text-left text-xs font-semibold uppercase tracking-wide text-synvora-text-secondary [&_tr:first-child_th:first-child]:rounded-tl-2xl [&_tr:first-child_th:last-child]:rounded-tr-2xl">
           <tr>
             {editMode && (
               <th scope="col" className="px-6 py-4 w-12">
@@ -138,7 +138,7 @@ export function OrderTable({
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100 bg-white">
+        <tbody className="divide-y divide-slate-100 bg-white [&_tr:last-child_td:first-child]:rounded-bl-2xl [&_tr:last-child_td:last-child]:rounded-br-2xl">
           {orders.map((order) => {
             const payoutBase =
               typeof order.originalAmount === "number" && order.originalAmount >= 0 && typeof order.exchangeRate === "number" && order.exchangeRate > 0
@@ -238,7 +238,7 @@ export function OrderTable({
                         leaveFrom="transform opacity-100 scale-100"
                         leaveTo="transform opacity-0 scale-95"
                       >
-                        <Menu.Items className="absolute right-0 z-10 mt-2 w-40 origin-top-right rounded-lg border border-synvora-border bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                        <Menu.Items className="absolute right-0 z-50 mt-2 w-40 origin-top-right rounded-lg border border-synvora-border bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                           <div className="py-1">
                             {onEdit && (
                               <Menu.Item>

@@ -194,7 +194,7 @@ export function OrderReviewDialog({
             leaveFrom="translate-y-0 opacity-100"
             leaveTo="translate-y-4 opacity-0"
           >
-            <Dialog.Panel className="w-full max-w-6xl max-h-[90vh] overflow-hidden rounded-3xl bg-white shadow-2xl">
+            <Dialog.Panel className="w-full max-w-6xl max-h-[90vh] overflow-hidden rounded-xl bg-white shadow-2xl">
               {/* Header */}
               <div className="flex items-center justify-between border-b border-synvora-border px-6 py-4">
                 <div>
@@ -442,7 +442,7 @@ export function OrderReviewDialog({
                   <button
                     type="button"
                     onClick={onClose}
-                    className="rounded-xl border border-synvora-border px-4 py-2 text-sm font-semibold text-synvora-text-secondary transition hover:border-synvora-border"
+                    className="rounded-lg border border-synvora-border px-4 py-2 text-sm font-semibold text-synvora-text-secondary transition hover:bg-slate-50 hover:text-synvora-text"
                     disabled={importing}
                   >
                     Cancel
@@ -451,7 +451,7 @@ export function OrderReviewDialog({
                     type="button"
                     onClick={handleImport}
                     disabled={importing || selectedOrders.size === 0 || importResult !== null}
-                    className="inline-flex items-center gap-2 rounded-xl bg-synvora-primary px-5 py-2 text-sm font-semibold text-white shadow transition hover:bg-synvora-primary/90 disabled:cursor-not-allowed disabled:bg-slate-300"
+                    className="inline-flex items-center gap-2 rounded-lg bg-synvora-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-synvora-primary/90 focus:outline-none focus:ring-2 focus:ring-synvora-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
                   >
                     {importing ? (
                       <>

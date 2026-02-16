@@ -147,15 +147,15 @@ export function StoreDialog({ open, onClose, store }: StoreDialogProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-2xl rounded-lg bg-white shadow-xl">
+      <div className="w-full max-w-2xl rounded-xl bg-white shadow-xl">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-          <h2 className="text-xl font-semibold text-slate-900">
+        <div className="flex items-center justify-between border-b border-synvora-border px-6 py-4">
+          <h2 className="text-xl font-semibold text-synvora-text">
             {store ? "Edit Shopify Store" : "Add Shopify Store"}
           </h2>
           <button
             onClick={onClose}
-            className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            className="rounded-lg p-1 text-synvora-text-secondary hover:bg-synvora-surface-hover hover:text-synvora-text"
           >
             <X className="h-5 w-5" />
           </button>
@@ -171,7 +171,7 @@ export function StoreDialog({ open, onClose, store }: StoreDialogProps) {
 
           {/* Store Domain */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-sm font-medium text-synvora-text mb-1">
               Store Domain <span className="text-red-500">*</span>
             </label>
             <input
@@ -179,14 +179,14 @@ export function StoreDialog({ open, onClose, store }: StoreDialogProps) {
               value={formData.storeDomain}
               onChange={(e) => setFormData({ ...formData, storeDomain: e.target.value })}
               placeholder="your-store.myshopify.com"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
+              className="w-full rounded-lg border border-synvora-border px-3 py-2 text-sm focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
               required
             />
           </div>
 
           {/* Access Token */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-sm font-medium text-synvora-text mb-1">
               Admin API Access Token <span className="text-red-500">*</span>
             </label>
             <input
@@ -194,11 +194,11 @@ export function StoreDialog({ open, onClose, store }: StoreDialogProps) {
               value={formData.accessToken}
               onChange={(e) => setFormData({ ...formData, accessToken: e.target.value })}
               placeholder="shpat_..."
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
+              className="w-full rounded-lg border border-synvora-border px-3 py-2 text-sm focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
               required={!store}
             />
             {store && (
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs text-synvora-text-secondary">
                 Leave blank to keep existing token
               </p>
             )}
@@ -217,7 +217,7 @@ export function StoreDialog({ open, onClose, store }: StoreDialogProps) {
 
           {/* Nickname */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-sm font-medium text-synvora-text mb-1">
               Nickname (optional)
             </label>
             <input
@@ -225,19 +225,19 @@ export function StoreDialog({ open, onClose, store }: StoreDialogProps) {
               value={formData.nickname}
               onChange={(e) => setFormData({ ...formData, nickname: e.target.value })}
               placeholder="My Main Store"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
+              className="w-full rounded-lg border border-synvora-border px-3 py-2 text-sm focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
             />
           </div>
 
           {/* Venue */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-sm font-medium text-synvora-text mb-1">
               Venue <span className="text-red-500">*</span>
             </label>
             <select
               value={formData.venueId}
               onChange={(e) => setFormData({ ...formData, venueId: e.target.value })}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
+              className="w-full rounded-lg border border-synvora-border px-3 py-2 text-sm focus:border-synvora-primary focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
               required
             >
               <option value="">Select venue</option>
@@ -255,7 +255,7 @@ export function StoreDialog({ open, onClose, store }: StoreDialogProps) {
               type="button"
               onClick={handleTestConnection}
               disabled={testing || !formData.storeDomain || !formData.accessToken}
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-lg border border-synvora-border px-4 py-2 text-sm font-medium text-synvora-text-secondary hover:bg-synvora-surface-hover hover:text-synvora-text disabled:cursor-not-allowed disabled:opacity-50"
             >
               {testing ? (
                 <>
@@ -271,7 +271,7 @@ export function StoreDialog({ open, onClose, store }: StoreDialogProps) {
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                className="rounded-lg border border-synvora-border px-4 py-2 text-sm font-medium text-synvora-text-secondary hover:bg-synvora-surface-hover hover:text-synvora-text"
               >
                 Cancel
               </button>
