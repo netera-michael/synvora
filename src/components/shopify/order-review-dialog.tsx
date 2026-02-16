@@ -4,6 +4,7 @@ import { Fragment, useState } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { X, ChevronDown, ChevronRight, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
 import { formatEGP } from "@/lib/product-pricing";
+import { toast } from "sonner";
 
 type TransformedOrder = {
   externalId: string;
@@ -124,13 +125,22 @@ export function OrderReviewDialog({
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({ message: "Failed to import orders" }));
-        alert(`Error: ${error.message}`);
+        console.error("Import failed:", error);
+
+        let errorMessage = error.message;
+        if (error.issues) {
+          console.error("Validation issues:", error.issues);
+          errorMessage = "Validation failed. Check console for details.";
+        }
+
+        toast.error(`Error: ${errorMessage}`);
         setImporting(false);
         return;
       }
 
       const result = await response.json();
       setImportResult(result);
+      toast.success(`Imported ${result.imported} orders successfully!`);
 
       // Wait 2 seconds to show the success message, then close
       setTimeout(() => {
@@ -138,7 +148,7 @@ export function OrderReviewDialog({
       }, 2000);
     } catch (error) {
       console.error("Import error:", error);
-      alert("Failed to import orders. Please try again.");
+      toast.error("Failed to import orders. Please try again.");
       setImporting(false);
     }
   };

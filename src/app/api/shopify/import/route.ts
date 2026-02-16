@@ -26,7 +26,7 @@ const orderSchema = z.object({
   originalAmount: z.number().nullable(),
   exchangeRate: z.number(),
   currency: z.string(),
-  processedAt: z.string(), // ISO date string
+  processedAt: z.union([z.string(), z.date()]), // ISO date string or Date object
   shippingCity: z.string().nullable(),
   shippingCountry: z.string().nullable(),
   tags: z.array(z.string()),
@@ -54,6 +54,7 @@ export async function POST(request: Request) {
   const parsed = schema.safeParse(payload);
 
   if (!parsed.success) {
+    console.error("Payload validation failed:", JSON.stringify(parsed.error.flatten(), null, 2));
     return NextResponse.json(
       { message: "Invalid payload", issues: parsed.error.flatten() },
       { status: 400 }
