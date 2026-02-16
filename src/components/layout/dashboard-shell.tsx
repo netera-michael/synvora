@@ -15,12 +15,12 @@ export function DashboardShell({ session, children }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-synvora.surface text-slate-900">
+    <div className="min-h-screen bg-synvora-surface text-synvora-text">
       <TopBar session={session} onToggleSidebar={() => setSidebarOpen((prev) => !prev)} />
       <div className="flex">
         <div
           className={cn(
-            "fixed inset-y-0 left-0 z-40 w-64 border-r border-slate-200 bg-white transition-transform duration-200 ease-in-out lg:static lg:translate-x-0",
+            "fixed inset-y-0 left-0 z-40 w-64 border-r border-synvora-border bg-white transition-transform duration-200 ease-in-out lg:static lg:translate-x-0",
             sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
           )}
         >
@@ -30,7 +30,7 @@ export function DashboardShell({ session, children }: DashboardShellProps) {
           <button
             type="button"
             aria-label="Close sidebar"
-            className="fixed inset-0 z-30 bg-slate-900/40 backdrop-blur-sm lg:hidden"
+            className="fixed inset-0 z-30 bg-synvora-text/40 backdrop-blur-sm lg:hidden"
             onClick={() => setSidebarOpen(false)}
           />
         )}

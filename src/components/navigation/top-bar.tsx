@@ -59,31 +59,31 @@ export function TopBar({ session, onToggleSidebar }: TopBarProps) {
   const [notificationCount, setNotificationCount] = useState(0); // Initially no notifications
 
   return (
-    <header className="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 lg:px-8 print:hidden">
+    <header className="flex h-16 items-center justify-between border-b border-synvora-border bg-white px-4 lg:px-8 print:hidden">
       <div className="flex items-center gap-3">
         <button
           type="button"
-          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-synvora-primary hover:text-synvora-primary lg:hidden"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-synvora-border text-synvora-text-secondary transition hover:bg-synvora-surface-hover hover:text-synvora-text lg:hidden"
           onClick={onToggleSidebar}
         >
           <Menu className="h-5 w-5" />
         </button>
         <div className="hidden items-center gap-3 lg:flex">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-synvora-primary text-sm font-semibold text-white shadow-sm">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-synvora-primary text-sm font-semibold text-white shadow-sm">
             S
           </div>
           <div>
-            <p className="text-sm font-semibold text-slate-900">Synvora</p>
-            <p className="text-xs text-slate-500">Admin</p>
+            <p className="text-sm font-semibold text-synvora-text">Synvora</p>
+            <p className="text-xs text-synvora-text-secondary">Admin</p>
           </div>
         </div>
       </div>
 
       <div className="flex max-w-md flex-1 items-center gap-3 px-4">
         <form className="relative flex w-full items-center" onSubmit={handleSubmit}>
-          <Search className="absolute left-3 h-4 w-4 text-slate-400" />
+          <Search className="absolute left-3 h-4 w-4 text-synvora-text-secondary" />
           <input
-            className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-10 pr-3 text-sm text-slate-700 shadow-inner focus:border-synvora-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-synvora-primary/30"
+            className="w-full rounded-lg border border-synvora-border bg-synvora-surface py-2 pl-10 pr-3 text-sm text-synvora-text shadow-inner focus:border-synvora-primary focus:bg-white focus:outline-none focus:ring-1 focus:ring-synvora-primary"
             placeholder="Search orders, customers, drafts"
             value={searchValue}
             onChange={handleChange}
@@ -95,7 +95,7 @@ export function TopBar({ session, onToggleSidebar }: TopBarProps) {
       <div className="flex items-center gap-4">
         <button
           type="button"
-          className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-synvora-primary hover:text-synvora-primary"
+          className="relative inline-flex h-10 w-10 items-center justify-center rounded-lg border border-synvora-border text-synvora-text-secondary transition hover:bg-synvora-surface-hover hover:text-synvora-text"
           onClick={() => {
             // TODO: Implement notification panel functionality when needed
           }}
@@ -108,9 +108,9 @@ export function TopBar({ session, onToggleSidebar }: TopBarProps) {
         <button
           type="button"
           onClick={() => signOut({ callbackUrl: "/login" })}
-          className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-synvora-primary hover:text-synvora-primary"
+          className="flex items-center gap-2 rounded-lg border border-synvora-border bg-white px-3 py-2 text-sm font-medium text-synvora-text-secondary transition hover:bg-synvora-surface-hover hover:text-synvora-text"
         >
-          <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-synvora-primary/10 text-xs font-semibold text-synvora-primary">
+          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-synvora-primary/10 text-xs font-semibold text-synvora-primary">
             {session.user.name?.[0]?.toUpperCase() ?? "S"}
           </span>
           <span>{session.user.name ?? session.user.email}</span>

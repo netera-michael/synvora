@@ -64,11 +64,11 @@ export function SideNav({ session }: SideNavProps) {
   });
 
   return (
-    <aside className="hidden w-64 flex-none border-r border-slate-200 bg-white pb-16 lg:block">
+    <aside className="hidden w-64 flex-none border-r border-synvora-border bg-white pb-16 lg:block">
       <nav className="flex h-full flex-col gap-6 p-4">
         {groups.map((group) => (
           <div key={group.title} className="flex flex-col gap-2">
-            <p className="px-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+            <p className="px-3 text-xs font-medium uppercase tracking-wide text-synvora-text-secondary">
               {group.title}
             </p>
             {group.items.map((item) => {
@@ -79,10 +79,10 @@ export function SideNav({ session }: SideNavProps) {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "inline-flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition",
+                    "inline-flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition",
                     isActive
-                      ? "bg-synvora-primary/10 text-synvora-primary"
-                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                      ? "bg-synvora-surface-active text-synvora-text font-semibold"
+                      : "text-synvora-text-secondary hover:bg-synvora-surface-hover hover:text-synvora-text"
                   )}
                 >
                   <Icon className="h-4 w-4" />
