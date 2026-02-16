@@ -104,6 +104,47 @@ export function SyncShopifyDialog({ open, onClose, onSyncComplete }: SyncShopify
     onClose();
   };
 
+  // Generate last 12 months for quick selection
+  const last12Months = Array.from({ length: 12 }, (_, i) => {
+    const d = new Date();
+    d.setDate(1); // Set to first of month to avoid issues with varying days in month
+    d.setMonth(d.getMonth() - i);
+    const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const label = d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+    return { value, label };
+  });
+
+  const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    if (!value) return;
+
+    if (value === "last30") {
+      const defaults = getDefaultDates();
+      setFormState((prev) => ({
+        ...prev,
+        startDate: defaults.start,
+        endDate: defaults.end
+      }));
+      return;
+    }
+
+    const [year, month] = value.split("-").map(Number);
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0); // Last day of the month
+
+    // Adjust for today if selection is current month
+    const today = new Date();
+    if (year === today.getFullYear() && month - 1 === today.getMonth()) {
+      // keep endDate as last day of month, or today? Usually last day covers everything up to now.
+    }
+
+    setFormState((prev) => ({
+      ...prev,
+      startDate: startDate.toISOString().split("T")[0],
+      endDate: endDate.toISOString().split("T")[0]
+    }));
+  };
+
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFormState((current) => ({ ...current, status: "loading", message: "" }));
@@ -269,6 +310,23 @@ export function SyncShopifyDialog({ open, onClose, onSyncComplete }: SyncShopify
                           {storesData?.stores.map((store) => (
                             <option key={store.id} value={store.id}>
                               {store.nickname || store.storeDomain} ({store.venue.name})
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <label className="mt-4 flex flex-col gap-1.5 text-sm font-medium text-synvora-text">
+                        Quick Select Month
+                        <select
+                          onChange={handleMonthChange}
+                          defaultValue="last30"
+                          className="rounded-lg border border-synvora-border px-3 py-2 text-sm text-synvora-text shadow-sm focus:border-synvora-primary focus:outline-none focus:ring-1 focus:ring-synvora-primary"
+                        >
+                          <option value="last30">Last 30 Days</option>
+                          <option disabled>──────────</option>
+                          {last12Months.map((m) => (
+                            <option key={m.value} value={m.value}>
+                              {m.label}
                             </option>
                           ))}
                         </select>
