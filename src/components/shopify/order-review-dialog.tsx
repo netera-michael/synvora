@@ -292,154 +292,199 @@ export function OrderReviewDialog({
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-synvora-border">
-                      {orders.map((order) => {
-                        const isExpanded = expandedOrders.has(order.externalId);
-                        const isSelected = selectedOrders.has(order.externalId);
-
-                        return (
-                          <Fragment key={order.externalId}>
-                            <tr
-                              className={`text-sm ${isSelected ? "bg-synvora-primary/5" : "hover:bg-synvora-surface-active"
-                                } transition`}
-                            >
-                              <td className="py-3 pr-4">
-                                <input
-                                  type="checkbox"
-                                  checked={isSelected}
-                                  onChange={() => toggleOrder(order.externalId)}
-                                  className="rounded border-synvora-border text-synvora-primary focus:ring-synvora-primary"
-                                  disabled={importing}
-                                />
-                              </td>
-                              <td className="py-3 pr-4 font-medium text-synvora-text">
-                                {order.orderNumber}
-                              </td>
-                              {isMultiStore && (
-                                <td className="py-3 pr-4 text-xs font-medium text-slate-500">
-                                  {order.storeName}
-                                </td>
-                              )}
-                              <td className="py-3 pr-4 text-synvora-text">
-                                {order.customerName}
-                              </td>
-                              <td className="py-3 pr-4 text-synvora-text-secondary">
-                                {formatDate(order.processedAt)}
-                              </td>
-                              <td className="py-3 pr-4 text-synvora-text-secondary">
-                                {[order.shippingCity, order.shippingCountry]
-                                  .filter(Boolean)
-                                  .join(", ") || "-"}
-                              </td>
-                              <td className="py-3 pr-4 text-right font-medium text-synvora-text">
-                                {order.originalAmount
-                                  ? `${formatEGP(order.originalAmount)} EGP`
-                                  : "-"}
-                              </td>
-                              <td className="py-3 pr-4 text-right font-medium text-synvora-text">
-                                {formatCurrency(order.totalAmount, order.currency)}
-                              </td>
-                              <td className="py-3 pr-4">
-                                <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-synvora-text">
-                                  {order.financialStatus || order.status}
-                                </span>
-                              </td>
-                              <td className="py-3">
-                                <button
-                                  onClick={() => toggleExpand(order.externalId)}
-                                  className="text-slate-400 hover:text-synvora-text-secondary transition"
-                                  disabled={importing}
-                                >
-                                  {isExpanded ? (
-                                    <ChevronDown className="h-4 w-4" />
-                                  ) : (
-                                    <ChevronRight className="h-4 w-4" />
-                                  )}
-                                </button>
-                              </td>
-                            </tr>
-
-                            {/* Expanded Row - Line Items */}
-                            {isExpanded && (
-                              <tr>
-                                <td colSpan={isMultiStore ? 10 : 9} className="py-3 px-4 bg-synvora-surface-active">
-                                  <div className="space-y-2">
-                                    <p className="text-xs font-semibold text-synvora-text-secondary uppercase">
-                                      Line Items
-                                    </p>
-                                    <div className="bg-white rounded-lg border border-synvora-border overflow-hidden">
-                                      <table className="w-full text-sm">
-                                        <thead className="bg-synvora-surface-active">
-                                          <tr className="text-left text-xs text-synvora-text-secondary">
-                                            <th className="px-3 py-2">Product</th>
-                                            <th className="px-3 py-2">SKU</th>
-                                            <th className="px-3 py-2 text-center">Quantity</th>
-                                            <th className="px-3 py-2 text-right">Price</th>
-                                            <th className="px-3 py-2 text-right">Total</th>
-                                          </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-synvora-border">
-                                          {order.lineItems.map((item, idx) => (
-                                            <tr key={idx}>
-                                              <td className="px-3 py-2 text-synvora-text">
-                                                {item.productName}
-                                              </td>
-                                              <td className="px-3 py-2 text-synvora-text-secondary">
-                                                {item.sku || "-"}
-                                              </td>
-                                              <td className="px-3 py-2 text-center text-synvora-text">
-                                                {item.quantity}
-                                              </td>
-                                              <td className="px-3 py-2 text-right text-synvora-text">
-                                                {formatCurrency(item.price, order.currency)}
-                                              </td>
-                                              <td className="px-3 py-2 text-right font-medium text-synvora-text">
-                                                {formatCurrency(item.total, order.currency)}
-                                              </td>
-                                            </tr>
-                                          ))}
-                                        </tbody>
-                                      </table>
-                                    </div>
-
-                                    {/* Additional Info */}
-                                    {(order.tags.length > 0 || order.notes) && (
-                                      <div className="mt-3 space-y-2">
-                                        {order.tags.length > 0 && (
-                                          <div>
-                                            <p className="text-xs font-semibold text-synvora-text-secondary mb-1">
-                                              Tags:
-                                            </p>
-                                            <div className="flex flex-wrap gap-1">
-                                              {order.tags.map((tag, idx) => (
-                                                <span
-                                                  key={idx}
-                                                  className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs text-synvora-text"
-                                                >
-                                                  {tag}
-                                                </span>
-                                              ))}
-                                            </div>
-                                          </div>
-                                        )}
-                                        {order.notes && (
-                                          <div>
-                                            <p className="text-xs font-semibold text-synvora-text-secondary mb-1">
-                                              Notes:
-                                            </p>
-                                            <p className="text-xs text-synvora-text bg-white rounded border border-synvora-border p-2">
-                                              {order.notes}
-                                            </p>
-                                          </div>
-                                        )}
-                                      </div>
-                                    )}
-                                  </div>
-                                </td>
-                              </tr>
-                            )}
-                          </Fragment>
+                      {(() => {
+                        // Sort orders by date descending
+                        const sortedOrders = [...orders].sort(
+                          (a, b) => new Date(b.processedAt).getTime() - new Date(a.processedAt).getTime()
                         );
-                      })}
+
+                        // Group orders by day
+                        const groups: { date: string; orders: typeof orders }[] = [];
+                        sortedOrders.forEach((order) => {
+                          const date = new Date(order.processedAt).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric"
+                          });
+                          const lastGroup = groups[groups.length - 1];
+                          if (lastGroup && lastGroup.date === date) {
+                            lastGroup.orders.push(order);
+                          } else {
+                            groups.push({ date, orders: [order] });
+                          }
+                        });
+
+                        return groups.flatMap((group, groupIdx) => {
+                          const dailyEGP = group.orders.reduce((sum, o) => sum + (o.originalAmount || 0), 0);
+                          const dailyUSD = group.orders.reduce((sum, o) => sum + o.totalAmount, 0);
+
+                          const rows = group.orders.flatMap((order) => {
+                            const isExpanded = expandedOrders.has(order.externalId);
+                            const isSelected = selectedOrders.has(order.externalId);
+
+                            return [
+                              <tr
+                                key={order.externalId}
+                                className={`text-sm ${isSelected ? "bg-synvora-primary/5" : "hover:bg-synvora-surface-active"
+                                  } transition`}
+                              >
+                                <td className="py-3 pr-4">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => toggleOrder(order.externalId)}
+                                    className="rounded border-synvora-border text-synvora-primary focus:ring-synvora-primary"
+                                    disabled={importing}
+                                  />
+                                </td>
+                                <td className="py-3 pr-4 font-medium text-synvora-text">
+                                  {order.orderNumber}
+                                </td>
+                                {isMultiStore && (
+                                  <td className="py-3 pr-4 text-xs font-medium text-slate-500">
+                                    {order.storeName}
+                                  </td>
+                                )}
+                                <td className="py-3 pr-4 text-synvora-text">
+                                  {order.customerName}
+                                </td>
+                                <td className="py-3 pr-4 text-synvora-text-secondary">
+                                  {formatDate(order.processedAt)}
+                                </td>
+                                <td className="py-3 pr-4 text-synvora-text-secondary">
+                                  {[order.shippingCity, order.shippingCountry]
+                                    .filter(Boolean)
+                                    .join(", ") || "-"}
+                                </td>
+                                <td className="py-3 pr-4 text-right font-medium text-synvora-text">
+                                  {order.originalAmount
+                                    ? `${formatEGP(order.originalAmount)} EGP`
+                                    : "-"}
+                                </td>
+                                <td className="py-3 pr-4 text-right font-medium text-synvora-text">
+                                  {formatCurrency(order.totalAmount, order.currency)}
+                                </td>
+                                <td className="py-3 pr-4">
+                                  <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-synvora-text">
+                                    {order.financialStatus || order.status}
+                                  </span>
+                                </td>
+                                <td className="py-3">
+                                  <button
+                                    onClick={() => toggleExpand(order.externalId)}
+                                    className="text-slate-400 hover:text-synvora-text-secondary transition"
+                                    disabled={importing}
+                                  >
+                                    {isExpanded ? (
+                                      <ChevronDown className="h-4 w-4" />
+                                    ) : (
+                                      <ChevronRight className="h-4 w-4" />
+                                    )}
+                                  </button>
+                                </td>
+                              </tr>,
+
+                              /* Expanded Row - Line Items */
+                              isExpanded && (
+                                <tr key={`${order.externalId}-expanded`}>
+                                  <td colSpan={isMultiStore ? 10 : 9} className="py-3 px-4 bg-synvora-surface-active">
+                                    <div className="space-y-2">
+                                      <p className="text-xs font-semibold text-synvora-text-secondary uppercase">
+                                        Line Items
+                                      </p>
+                                      <div className="bg-white rounded-lg border border-synvora-border overflow-hidden">
+                                        <table className="w-full text-sm">
+                                          <thead className="bg-synvora-surface-active">
+                                            <tr className="text-left text-xs text-synvora-text-secondary">
+                                              <th className="px-3 py-2">Product</th>
+                                              <th className="px-3 py-2">SKU</th>
+                                              <th className="px-3 py-2 text-center">Quantity</th>
+                                              <th className="px-3 py-2 text-right">Price</th>
+                                              <th className="px-3 py-2 text-right">Total</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody className="divide-y divide-synvora-border">
+                                            {order.lineItems.map((item, idx) => (
+                                              <tr key={idx}>
+                                                <td className="px-3 py-2 text-synvora-text">
+                                                  {item.productName}
+                                                </td>
+                                                <td className="px-3 py-2 text-synvora-text-secondary">
+                                                  {item.sku || "-"}
+                                                </td>
+                                                <td className="px-3 py-2 text-center text-synvora-text">
+                                                  {item.quantity}
+                                                </td>
+                                                <td className="px-3 py-2 text-right text-synvora-text">
+                                                  {formatCurrency(item.price, order.currency)}
+                                                </td>
+                                                <td className="px-3 py-2 text-right font-medium text-synvora-text">
+                                                  {formatCurrency(item.total, order.currency)}
+                                                </td>
+                                              </tr>
+                                            ))}
+                                          </tbody>
+                                        </table>
+                                      </div>
+
+                                      {/* Additional Info */}
+                                      {(order.tags.length > 0 || order.notes) && (
+                                        <div className="mt-3 space-y-2">
+                                          {order.tags.length > 0 && (
+                                            <div>
+                                              <p className="text-xs font-semibold text-synvora-text-secondary mb-1">
+                                                Tags:
+                                              </p>
+                                              <div className="flex flex-wrap gap-1">
+                                                {order.tags.map((tag, idx) => (
+                                                  <span
+                                                    key={idx}
+                                                    className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs text-synvora-text"
+                                                  >
+                                                    {tag}
+                                                  </span>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          )}
+                                          {order.notes && (
+                                            <div>
+                                              <p className="text-xs font-semibold text-synvora-text-secondary mb-1">
+                                                Notes:
+                                              </p>
+                                              <p className="text-xs text-synvora-text bg-white rounded border border-synvora-border p-2">
+                                                {order.notes}
+                                              </p>
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                              )
+                            ];
+                          });
+
+                          // Add a summary row after each day
+                          rows.push(
+                            <tr key={`summary-${group.date}`} className="bg-synvora-surface-active/50 font-medium">
+                              <td colSpan={isMultiStore ? 6 : 5} className="py-2 px-4 text-xs font-bold text-synvora-text-secondary uppercase tracking-wider text-right">
+                                {group.date} Totals
+                              </td>
+                              <td className="py-2 pr-4 text-right text-synvora-text">
+                                {formatEGP(dailyEGP)} EGP
+                              </td>
+                              <td className="py-2 pr-4 text-right text-synvora-text">
+                                {formatCurrency(dailyUSD, "USD")}
+                              </td>
+                              <td colSpan={2}></td>
+                            </tr>
+                          );
+
+                          return rows;
+                        });
+                      })()}
                     </tbody>
                   </table>
                 )}
