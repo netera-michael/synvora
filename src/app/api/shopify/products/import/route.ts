@@ -60,6 +60,9 @@ export async function POST(request: Request) {
 
     for (const product of products) {
       try {
+        // Normalize empty string SKUs to null for database consistency
+        const productSku = product.sku && product.sku.trim() !== "" ? product.sku.trim() : null;
+
         // Check if product already exists by Shopify Product ID
         const existing = await prisma.product.findFirst({
           where: {
@@ -74,18 +77,18 @@ export async function POST(request: Request) {
             where: { id: existing.id },
             data: {
               name: product.name,
-              sku: product.sku,
+              sku: productSku,
               egpPrice: product.egpPrice
             }
           });
           updated += 1;
         } else {
           // Check for SKU conflicts if SKU is provided
-          if (product.sku) {
+          if (productSku) {
             const skuConflict = await prisma.product.findUnique({
               where: {
                 sku_venueId: {
-                  sku: product.sku,
+                  sku: productSku,
                   venueId: store.venueId
                 }
               }
@@ -104,7 +107,7 @@ export async function POST(request: Request) {
           await prisma.product.create({
             data: {
               name: product.name,
-              sku: product.sku,
+              sku: productSku,
               shopifyProductId: product.shopifyProductId,
               egpPrice: product.egpPrice,
               venueId: store.venueId,

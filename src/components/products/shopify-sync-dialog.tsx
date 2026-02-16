@@ -122,10 +122,16 @@ export function ShopifySyncDialog({ open, onClose }: ShopifySyncDialogProps) {
 
       if (response.ok) {
         const data = await response.json();
-        alert(
-          `Successfully imported ${data.created} new products and updated ${data.updated} existing products!` +
-            (data.skipped > 0 ? `\n${data.skipped} products were skipped.` : "")
-        );
+        let message = `Successfully imported ${data.created} new products and updated ${data.updated} existing products!`;
+
+        if (data.skipped > 0) {
+          message += `\n\n${data.skipped} product(s) were skipped.`;
+          if (data.errors && data.errors.length > 0) {
+            message += `\n\nReasons:\n- ${data.errors.join("\n- ")}`;
+          }
+        }
+
+        alert(message);
         onClose();
       } else {
         const data = await response.json();
