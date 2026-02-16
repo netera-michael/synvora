@@ -325,8 +325,12 @@ export function OrderReviewDialog({
                         });
 
                         return groups.flatMap((group, groupIdx) => {
-                          const dailyEGP = group.orders.reduce((sum, o) => sum + (o.originalAmount || 0), 0);
-                          const dailyUSD = group.orders.reduce((sum, o) => sum + o.totalAmount, 0);
+                          const dailyEGP = group.orders
+                            .filter(o => selectedOrders.has(o.externalId))
+                            .reduce((sum, o) => sum + (o.originalAmount || 0), 0);
+                          const dailyUSD = group.orders
+                            .filter(o => selectedOrders.has(o.externalId))
+                            .reduce((sum, o) => sum + o.totalAmount, 0);
 
                           const rows = group.orders.flatMap((order) => {
                             const isExpanded = expandedOrders.has(order.externalId);
