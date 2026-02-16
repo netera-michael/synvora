@@ -11,6 +11,10 @@ async function fetchExchangeRateFromAPI(
   from: string = "USD",
   to: string = "EGP"
 ): Promise<number | null> {
+  // Special case: AED/USD has a fixed peg of 3.6725
+  if (from === "AED" && to === "USD") return 1 / 3.6725;
+  if (from === "USD" && to === "AED") return 3.6725;
+
   try {
     // Using exchangerate-api.com - no API key needed for basic usage
     const url = `https://api.exchangerate-api.com/v4/latest/${from}`;
