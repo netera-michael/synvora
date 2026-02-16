@@ -33,11 +33,12 @@ export const calculatePayoutFromOrder = (order: {
     typeof order.exchangeRate === "number" &&
     order.exchangeRate > 0
   ) {
-    const base = order.originalAmount / order.exchangeRate;
-    return base * 0.9825;
+    // Payout is the base amount (Original EGP / Exchange Rate)
+    return order.originalAmount / order.exchangeRate;
   }
 
-  return order.totalAmount * 0.9825;
+  // Fallback: Total / 1.035 (removes the 3.5% fee)
+  return order.totalAmount / 1.035;
 };
 
 export const slugify = (value: string) =>

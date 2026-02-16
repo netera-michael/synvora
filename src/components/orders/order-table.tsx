@@ -143,9 +143,9 @@ export function OrderTable({
             const payoutBase =
               typeof order.originalAmount === "number" && order.originalAmount >= 0 && typeof order.exchangeRate === "number" && order.exchangeRate > 0
                 ? order.originalAmount / order.exchangeRate
-                : order.totalAmount;
+                : order.totalAmount / 1.035;
             const payoutValue = Number.isFinite(payoutBase)
-              ? Number((payoutBase * 0.9825).toFixed(2))
+              ? Number(payoutBase.toFixed(2))
               : 0;
 
             const isSelected = editMode && selectedOrders.has(order.id);
