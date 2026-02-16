@@ -279,9 +279,9 @@ export function OrderReviewDialog({
                   </div>
                 ) : (
                   <table className="w-full">
-                    <thead className="sticky top-0 bg-white border-b-2 border-synvora-border">
-                      <tr className="text-left text-xs font-semibold text-synvora-text-secondary uppercase tracking-wider">
-                        <th className="pb-3 pr-4">
+                    <thead className="sticky top-0 z-10 bg-white border-b border-synvora-border">
+                      <tr className="text-left text-xs font-semibold text-synvora-text-secondary uppercase tracking-wide">
+                        <th className="px-6 py-4 w-12">
                           <input
                             type="checkbox"
                             checked={selectedOrders.size === orders.length}
@@ -290,15 +290,15 @@ export function OrderReviewDialog({
                             disabled={importing}
                           />
                         </th>
-                        <th className="pb-3 pr-4">Order #</th>
-                        {isMultiStore && <th className="pb-3 pr-4">Store</th>}
-                        <th className="pb-3 pr-4">Customer</th>
-                        <th className="pb-3 pr-4">Date</th>
-                        <th className="pb-3 pr-4">Location</th>
-                        <th className="pb-3 pr-4 text-right">EGP Amount</th>
-                        <th className="pb-3 pr-4 text-right">USD Amount</th>
-                        <th className="pb-3 pr-4">Status</th>
-                        <th className="pb-3"></th>
+                        <th className="px-6 py-4">Order #</th>
+                        {isMultiStore && <th className="px-6 py-4">Store</th>}
+                        <th className="px-6 py-4">Customer</th>
+                        <th className="px-6 py-4">Date</th>
+                        <th className="px-6 py-4">Location</th>
+                        <th className="px-6 py-4 text-right">EGP Amount</th>
+                        <th className="px-6 py-4 text-right">USD Amount</th>
+                        <th className="px-6 py-4">Status</th>
+                        <th className="px-6 py-4 text-right"></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-synvora-border">
@@ -339,10 +339,10 @@ export function OrderReviewDialog({
                             return [
                               <tr
                                 key={order.externalId}
-                                className={`text-sm ${isSelected ? "bg-synvora-primary/5" : "hover:bg-synvora-surface-active"
-                                  } transition`}
+                                className={`text-sm font-medium transition ${isSelected ? "bg-synvora-primary/5" : "hover:bg-synvora-surface-active/80"
+                                  }`}
                               >
-                                <td className="py-3 pr-4">
+                                <td className="px-6 py-4">
                                   <input
                                     type="checkbox"
                                     checked={isSelected}
@@ -351,42 +351,42 @@ export function OrderReviewDialog({
                                     disabled={importing}
                                   />
                                 </td>
-                                <td className="py-3 pr-4 font-medium text-synvora-text">
+                                <td className="px-6 py-4 text-synvora-text">
                                   {order.orderNumber}
                                 </td>
                                 {isMultiStore && (
-                                  <td className="py-3 pr-4 text-xs font-medium text-slate-500">
+                                  <td className="px-6 py-4 text-synvora-text-secondary">
                                     {order.storeName}
                                   </td>
                                 )}
-                                <td className="py-3 pr-4 text-synvora-text">
+                                <td className="px-6 py-4 text-synvora-text">
                                   {order.customerName}
                                 </td>
-                                <td className="py-3 pr-4 text-synvora-text-secondary">
+                                <td className="px-6 py-4 text-synvora-text-secondary">
                                   {formatDate(order.processedAt)}
                                 </td>
-                                <td className="py-3 pr-4 text-synvora-text-secondary">
+                                <td className="px-6 py-4 text-synvora-text-secondary">
                                   {[order.shippingCity, order.shippingCountry]
                                     .filter(Boolean)
                                     .join(", ") || "-"}
                                 </td>
-                                <td className="py-3 pr-4 text-right font-medium text-synvora-text">
+                                <td className="px-6 py-4 text-right font-medium text-synvora-text">
                                   {order.originalAmount
                                     ? `${formatEGP(order.originalAmount)} EGP`
                                     : "-"}
                                 </td>
-                                <td className="py-3 pr-4 text-right font-medium text-synvora-text">
+                                <td className="px-6 py-4 text-right font-medium text-synvora-text">
                                   {formatCurrency(order.totalAmount, order.currency)}
                                 </td>
-                                <td className="py-3 pr-4">
-                                  <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-synvora-text">
+                                <td className="px-6 py-4">
+                                  <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-synvora-text">
                                     {order.financialStatus || order.status}
                                   </span>
                                 </td>
-                                <td className="py-3">
+                                <td className="px-6 py-4 text-right">
                                   <button
                                     onClick={() => toggleExpand(order.externalId)}
-                                    className="text-slate-400 hover:text-synvora-text-secondary transition"
+                                    className="text-slate-400 hover:text-synvora-text-secondary transition p-1 rounded-md hover:bg-slate-100"
                                     disabled={importing}
                                   >
                                     {isExpanded ? (
@@ -401,38 +401,38 @@ export function OrderReviewDialog({
                               /* Expanded Row - Line Items */
                               isExpanded && (
                                 <tr key={`${order.externalId}-expanded`}>
-                                  <td colSpan={isMultiStore ? 10 : 9} className="py-3 px-4 bg-synvora-surface-active">
-                                    <div className="space-y-2">
-                                      <p className="text-xs font-semibold text-synvora-text-secondary uppercase">
+                                  <td colSpan={isMultiStore ? 10 : 9} className="px-6 py-4 bg-synvora-surface-active/30">
+                                    <div className="space-y-3">
+                                      <p className="text-[10px] font-bold text-synvora-text-secondary uppercase tracking-wider">
                                         Line Items
                                       </p>
-                                      <div className="bg-white rounded-lg border border-synvora-border overflow-hidden">
+                                      <div className="bg-white rounded-xl border border-synvora-border overflow-hidden shadow-sm">
                                         <table className="w-full text-sm">
-                                          <thead className="bg-synvora-surface-active">
-                                            <tr className="text-left text-xs text-synvora-text-secondary">
-                                              <th className="px-3 py-2">Product</th>
-                                              <th className="px-3 py-2">SKU</th>
-                                              <th className="px-3 py-2 text-center">Quantity</th>
-                                              <th className="px-3 py-2 text-right">Price</th>
-                                              <th className="px-3 py-2 text-right">Total</th>
+                                          <thead className="bg-synvora-surface-active/50 border-b border-synvora-border">
+                                            <tr className="text-left text-[10px] font-bold text-synvora-text-secondary uppercase tracking-wider">
+                                              <th className="px-4 py-2.5">Product</th>
+                                              <th className="px-4 py-2.5">SKU</th>
+                                              <th className="px-4 py-2.5 text-center">Qty</th>
+                                              <th className="px-4 py-2.5 text-right">Price</th>
+                                              <th className="px-4 py-2.5 text-right">Total</th>
                                             </tr>
                                           </thead>
                                           <tbody className="divide-y divide-synvora-border">
                                             {order.lineItems.map((item, idx) => (
-                                              <tr key={idx}>
-                                                <td className="px-3 py-2 text-synvora-text">
+                                              <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                                                <td className="px-4 py-2.5 font-medium text-synvora-text">
                                                   {item.productName}
                                                 </td>
-                                                <td className="px-3 py-2 text-synvora-text-secondary">
+                                                <td className="px-4 py-2.5 text-synvora-text-secondary font-mono text-xs">
                                                   {item.sku || "-"}
                                                 </td>
-                                                <td className="px-3 py-2 text-center text-synvora-text">
+                                                <td className="px-4 py-2.5 text-center text-synvora-text font-medium">
                                                   {item.quantity}
                                                 </td>
-                                                <td className="px-3 py-2 text-right text-synvora-text">
+                                                <td className="px-4 py-2.5 text-right text-synvora-text">
                                                   {formatCurrency(item.price, order.currency)}
                                                 </td>
-                                                <td className="px-3 py-2 text-right font-medium text-synvora-text">
+                                                <td className="px-4 py-2.5 text-right font-semibold text-synvora-text">
                                                   {formatCurrency(item.total, order.currency)}
                                                 </td>
                                               </tr>
@@ -482,17 +482,17 @@ export function OrderReviewDialog({
 
                           // Add a summary row after each day
                           rows.push(
-                            <tr key={`summary-${group.date}`} className="bg-synvora-surface-active/50 font-medium">
-                              <td colSpan={isMultiStore ? 6 : 5} className="py-2 px-4 text-xs font-bold text-synvora-text-secondary uppercase tracking-wider text-right">
+                            <tr key={`summary-${group.date}`} className="bg-synvora-surface-active/50 font-semibold">
+                              <td colSpan={isMultiStore ? 6 : 5} className="py-3 px-6 text-xs font-bold text-synvora-text-secondary uppercase tracking-wide text-right">
                                 {group.date} Totals
                               </td>
-                              <td className="py-2 pr-4 text-right text-synvora-text">
+                              <td className="py-3 px-6 text-right text-synvora-text">
                                 {formatEGP(dailyEGP)} EGP
                               </td>
-                              <td className="py-2 pr-4 text-right text-synvora-text">
+                              <td className="py-3 px-6 text-right text-synvora-text">
                                 {formatCurrency(dailyUSD, "USD")}
                               </td>
-                              <td colSpan={2}></td>
+                              <td colSpan={2} className="px-6 py-3"></td>
                             </tr>
                           );
 
