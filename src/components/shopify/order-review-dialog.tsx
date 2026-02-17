@@ -75,6 +75,7 @@ export function OrderReviewDialog({
 
   const [aedToUsdRate, setAedToUsdRate] = useState<number | null>(null);
   const [aedOverrides, setAedOverrides] = useState<Record<string, number>>({});
+  const [orderOverrides, setOrderOverrides] = useState<Record<string, { originalAmount?: number; totalAmount?: number }>>({});
 
   // Fetch live AED/USD rate
   const fetchAedRate = async () => {
@@ -132,7 +133,20 @@ export function OrderReviewDialog({
     const ordersToImport = orders
       .filter((order) => selectedOrders.has(order.externalId))
       .map((order) => {
-        const date = new Date(order.processedAt).toLocaleDateString("en-US", {
+        // Apply individual order overrides first
+        const override = orderOverrides[order.externalId];
+        let currentOrder = { ...order };
+
+        if (override) {
+          if (override.originalAmount !== undefined) {
+            currentOrder.originalAmount = override.originalAmount;
+          }
+          if (override.totalAmount !== undefined) {
+            currentOrder.totalAmount = override.totalAmount;
+          }
+        }
+
+        const date = new Date(currentOrder.processedAt).toLocaleDateString("en-US", {
           year: "numeric",
           month: "short",
           day: "numeric"
@@ -150,24 +164,30 @@ export function OrderReviewDialog({
               }) === date
           );
 
-          const groupTotalEGP = group.reduce((sum, o) => sum + (o.originalAmount || 0), 0);
+          // Calculate group total using overrides where present
+          const groupTotalEGP = group.reduce((sum, o) => {
+            const oOverride = orderOverrides[o.externalId];
+            return sum + (oOverride?.originalAmount ?? o.originalAmount ?? 0);
+          }, 0);
+
           const baseUSDFromAED = aedOverride * aedToUsdRate;
           const totalUSDFromAED = baseUSDFromAED * 1.035;
 
-          // Proportional distribution
-          const weight = groupTotalEGP > 0 ? (order.originalAmount || 0) / groupTotalEGP : 1 / group.length;
+          // Proportional distribution based on (potentially overridden) EGP
+          const currentEGP = override?.originalAmount ?? order.originalAmount ?? 0;
+          const weight = groupTotalEGP > 0 ? currentEGP / groupTotalEGP : 1 / group.length;
           const adjustedTotalUSD = totalUSDFromAED * weight;
 
           // Derived exchange rate (TotalEGP / baseUSD)
-          const derivedRate = groupTotalEGP > 0 && baseUSDFromAED > 0 ? groupTotalEGP / baseUSDFromAED : order.exchangeRate;
+          const derivedRate = groupTotalEGP > 0 && baseUSDFromAED > 0 ? groupTotalEGP / baseUSDFromAED : currentOrder.exchangeRate;
 
           return {
-            ...order,
+            ...currentOrder,
             totalAmount: adjustedTotalUSD,
             exchangeRate: derivedRate
           };
         }
-        return order;
+        return currentOrder;
       });
 
     try {
@@ -235,11 +255,13 @@ export function OrderReviewDialog({
   );
 
   const totalEGP = selectedOrdersData.reduce((sum, order) => {
-    return sum + (order.originalAmount || 0);
+    const override = orderOverrides[order.externalId];
+    return sum + (override?.originalAmount ?? order.originalAmount ?? 0);
   }, 0);
 
   const totalUSD = selectedOrdersData.reduce((sum, order) => {
-    return sum + order.totalAmount;
+    const override = orderOverrides[order.externalId];
+    return sum + (override?.totalAmount ?? order.totalAmount);
   }, 0);
 
   const hasMissingPricing = orders.some((o) => o.originalAmount === null);
@@ -430,12 +452,55 @@ export function OrderReviewDialog({
                                     .join(", ") || "-"}
                                 </td>
                                 <td className="px-6 py-4 text-right font-medium text-synvora-text">
-                                  {order.originalAmount
-                                    ? `${formatEGP(order.originalAmount)} EGP`
-                                    : "-"}
+                                  <input
+                                    type="number"
+                                    value={orderOverrides[order.externalId]?.originalAmount ?? order.originalAmount ?? ""}
+                                    onChange={(e) => {
+                                      const val = e.target.value ? parseFloat(e.target.value) : undefined;
+                                      setOrderOverrides((prev) => {
+                                        const current = prev[order.externalId] || {};
+                                        const nextEGP = val;
+                                        // Auto-calculate USD if EGP changes and no explicit USD override exists
+                                        const nextUSD = nextEGP !== undefined ? Number(((nextEGP / exchangeRate) * 1.035).toFixed(2)) : undefined;
+
+                                        return {
+                                          ...prev,
+                                          [order.externalId]: {
+                                            ...current,
+                                            originalAmount: nextEGP,
+                                            totalAmount: nextUSD
+                                          }
+                                        };
+                                      });
+                                    }}
+                                    placeholder="0.00"
+                                    className="w-24 rounded border border-synvora-border/50 bg-transparent px-2 py-1 text-right text-sm font-medium focus:border-synvora-primary focus:outline-none focus:ring-1 focus:ring-synvora-primary"
+                                    disabled={importing}
+                                  />
+                                  <span className="ml-1 text-[10px] text-synvora-text-secondary uppercase">EGP</span>
                                 </td>
                                 <td className="px-6 py-4 text-right font-medium text-synvora-text">
-                                  {formatCurrency(order.totalAmount, order.currency)}
+                                  <input
+                                    type="number"
+                                    value={orderOverrides[order.externalId]?.totalAmount ?? order.totalAmount ?? ""}
+                                    onChange={(e) => {
+                                      const val = e.target.value ? parseFloat(e.target.value) : undefined;
+                                      setOrderOverrides((prev) => {
+                                        const current = prev[order.externalId] || {};
+                                        return {
+                                          ...prev,
+                                          [order.externalId]: {
+                                            ...current,
+                                            totalAmount: val
+                                          }
+                                        };
+                                      });
+                                    }}
+                                    placeholder="0.00"
+                                    className="w-24 rounded border border-synvora-border/50 bg-transparent px-2 py-1 text-right text-sm font-medium focus:border-synvora-primary focus:outline-none focus:ring-1 focus:ring-synvora-primary"
+                                    disabled={importing}
+                                  />
+                                  <span className="ml-1 text-[10px] text-synvora-text-secondary uppercase">USD</span>
                                 </td>
                                 <td className="px-6 py-4">
                                   <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-synvora-text">
@@ -542,7 +607,13 @@ export function OrderReviewDialog({
                           const aedOverride = aedOverrides[group.date];
                           const baseUSD = aedOverride && aedToUsdRate ? aedOverride * aedToUsdRate : null;
                           const derivedUSD = aedOverride && aedToUsdRate ? baseUSD! * 1.035 : dailyUSD;
-                          const derivedRate = aedOverride && dailyEGP > 0 && baseUSD ? dailyEGP / baseUSD : null;
+                          const dailyEGPForRate = group.orders
+                            .filter(o => selectedOrders.has(o.externalId))
+                            .reduce((sum, o) => {
+                              const oOverride = orderOverrides[o.externalId];
+                              return sum + (oOverride?.originalAmount ?? o.originalAmount ?? 0);
+                            }, 0);
+                          const derivedRate = aedOverride && dailyEGPForRate > 0 && baseUSD ? dailyEGPForRate / baseUSD : null;
 
                           // Add a summary row after each day
                           rows.push(

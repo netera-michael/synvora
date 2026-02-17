@@ -7,6 +7,7 @@ type ShopifyOrder = {
   name: string;
   order_number: number;
   processed_at: string;
+  total_price: string;
   current_total_price: string;
   currency: string;
   note?: string | null;
@@ -122,7 +123,12 @@ export async function transformShopifyOrders(orders: ShopifyOrder[], exchangeRat
       }));
 
       // Calculate EGP amounts based on product prices
-      const amounts = await calculateOrderAmounts(lineItems, exchangeRate, venueId);
+      const amounts = await calculateOrderAmounts(
+        lineItems,
+        exchangeRate,
+        venueId,
+        Number(order.total_price || 0)
+      );
 
       return {
         externalId: String(order.id),

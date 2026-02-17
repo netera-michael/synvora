@@ -91,6 +91,7 @@ export async function calculateEGPFromLineItems(
  * @param lineItems - Array of order line items
  * @param exchangeRate - Current USD/EGP exchange rate
  * @param venueId - The venue ID to fetch products for
+ * @param shopifyTotal - The native total_price from Shopify (USD)
  * @returns Object with originalAmount (EGP), baseAmount (USD), and totalAmount (USD with fee)
  */
 export async function calculateOrderAmounts(
@@ -101,7 +102,8 @@ export async function calculateOrderAmounts(
     shopifyProductId?: string | null;
   }>,
   exchangeRate: number,
-  venueId: number
+  venueId: number,
+  shopifyTotal: number
 ): Promise<{
   originalAmount: number | null;
   baseAmount: number | null;
@@ -109,11 +111,25 @@ export async function calculateOrderAmounts(
 }> {
   const egpAmount = await calculateEGPFromLineItems(lineItems, venueId);
 
-  if (egpAmount === null || exchangeRate <= 0) {
+  // If matching failed (egpAmount is null), use Shopify total as fallback
+  if (egpAmount === null) {
+    if (exchangeRate <= 0) {
+      return {
+        originalAmount: null,
+        baseAmount: null,
+        totalAmount: 0
+      };
+    }
+
+    // Fallback: Deriving EGP from Shopify Total (USD)
+    const fallbackEGP = shopifyTotal * exchangeRate;
+    const fallbackBaseUSD = shopifyTotal;
+    const fallbackTotalUSD = Number((fallbackBaseUSD * 1.035).toFixed(2));
+
     return {
-      originalAmount: null,
-      baseAmount: null,
-      totalAmount: 0
+      originalAmount: fallbackEGP,
+      baseAmount: fallbackBaseUSD,
+      totalAmount: fallbackTotalUSD
     };
   }
 
