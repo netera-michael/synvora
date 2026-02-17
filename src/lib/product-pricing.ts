@@ -34,9 +34,6 @@ export async function calculateEGPFromLineItems(
     }
   });
 
-
-  // console.log(`[Product Matching] Order line items:`, lineItems);
-
   if (!products.length) {
     console.warn(`[Product Matching] ⚠️ No active products found for venue ${venueId}. Pricing calculations will fail.`);
     return null;
@@ -48,31 +45,23 @@ export async function calculateEGPFromLineItems(
   for (const item of lineItems) {
     let matchedProduct = null;
 
-    // Try to match by Shopify Product ID first (most precise)
+    // 1. Try to match by Shopify ID first (now contains Variant ID - most precise)
     if (item.shopifyProductId) {
       matchedProduct = products.find((p) => p.shopifyProductId === item.shopifyProductId);
-      if (matchedProduct) {
-
-      }
     }
 
-    // Try to match by SKU if not matched yet
+    // 2. Try to match by SKU if not matched yet
     if (!matchedProduct && item.sku) {
-      matchedProduct = products.find((p) => p.sku === item.sku);
-      if (matchedProduct) {
-
-      }
+      const normalizedSku = item.sku.trim();
+      matchedProduct = products.find((p) => p.sku === normalizedSku);
     }
 
-    // Try to match by product name (case-insensitive, trimmed)
+    // 3. Try to match by product name (case-insensitive, trimmed)
     if (!matchedProduct) {
       const normalizedName = item.productName.toLowerCase().trim();
       matchedProduct = products.find(
         (p) => p.name.toLowerCase().trim() === normalizedName
       );
-      if (matchedProduct) {
-
-      }
     }
 
     if (matchedProduct) {
@@ -93,7 +82,6 @@ export async function calculateEGPFromLineItems(
     );
     return null;
   }
-
 
   return totalEGP;
 }

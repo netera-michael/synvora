@@ -61,29 +61,44 @@ export async function POST(request: Request) {
     }
 
     // Fetch products from Shopify
-    const url = new URL(`https://${store.storeDomain}/admin/api/${SHOPIFY_API_VERSION}/products.json`);
-    url.searchParams.set("limit", "250");
-    url.searchParams.set("status", "active");
+    let allProducts: any[] = [];
+    let nextUrl: string | null = `https://${store.storeDomain}/admin/api/${SHOPIFY_API_VERSION}/products.json?limit=250&status=active`;
 
-    const response = await fetch(url, {
-      headers: {
-        "Content-Type": "application/json",
-        "X-Shopify-Access-Token": decrypt(store.accessToken)
-      },
-      cache: "no-store"
-    });
+    while (nextUrl) {
+      const response = await fetch(nextUrl, {
+        headers: {
+          "Content-Type": "application/json",
+          "X-Shopify-Access-Token": decrypt(store.accessToken)
+        },
+        cache: "no-store"
+      });
 
-    if (!response.ok) {
-      const message = await response.text();
-      throw new Error(`Shopify request failed: ${response.status} ${message}`);
+      if (!response.ok) {
+        const message = await response.text();
+        throw new Error(`Shopify request failed: ${response.status} ${message}`);
+      }
+
+      const data = (await response.json()) as { products: ShopifyProduct[] };
+      allProducts = allProducts.concat(data.products);
+
+      // Parse Link header for pagination
+      const linkHeader = response.headers.get("Link");
+      nextUrl = null;
+      if (linkHeader) {
+        const links = linkHeader.split(",");
+        const nextLink = links.find(link => link.includes('rel="next"'));
+        if (nextLink) {
+          const match = nextLink.match(/<(.*)>/);
+          if (match) nextUrl = match[1];
+        }
+      }
     }
 
-    const data = (await response.json()) as { products: ShopifyProduct[] };
-
     // Transform products for easier consumption
-    const products = data.products.flatMap((product) =>
+    const products = allProducts.flatMap((product) =>
       product.variants.map((variant) => ({
-        shopifyProductId: String(product.id),
+        // CRITICAL: Use variant.id for precise matching
+        shopifyProductId: String(variant.id),
         name: product.title,
         sku: variant.sku,
         price: parseFloat(variant.price),
