@@ -61,11 +61,11 @@ export async function POST(request: Request) {
     }
 
     // Fetch products from Shopify
-    let allProducts: any[] = [];
+    let allProducts: ShopifyProduct[] = [];
     let nextUrl: string | null = `https://${store.storeDomain}/admin/api/${SHOPIFY_API_VERSION}/products.json?limit=250&status=active`;
 
     while (nextUrl) {
-      const response = await fetch(nextUrl, {
+      const res: Response = await fetch(nextUrl, {
         headers: {
           "Content-Type": "application/json",
           "X-Shopify-Access-Token": decrypt(store.accessToken)
@@ -73,22 +73,22 @@ export async function POST(request: Request) {
         cache: "no-store"
       });
 
-      if (!response.ok) {
-        const message = await response.text();
-        throw new Error(`Shopify request failed: ${response.status} ${message}`);
+      if (!res.ok) {
+        const message = await res.text();
+        throw new Error(`Shopify request failed: ${res.status} ${message}`);
       }
 
-      const data = (await response.json()) as { products: ShopifyProduct[] };
+      const data = (await res.json()) as { products: ShopifyProduct[] };
       allProducts = allProducts.concat(data.products);
 
       // Parse Link header for pagination
-      const linkHeader = response.headers.get("Link");
+      const linkHeader = res.headers.get("Link");
       nextUrl = null;
       if (linkHeader) {
-        const links = linkHeader.split(",");
-        const nextLink = links.find(link => link.includes('rel="next"'));
+        const links: string[] = linkHeader.split(",");
+        const nextLink: string | undefined = links.find((link: string) => link.includes('rel="next"'));
         if (nextLink) {
-          const match = nextLink.match(/<(.*)>/);
+          const match: RegExpMatchArray | null = nextLink.match(/<(.*)>/);
           if (match) nextUrl = match[1];
         }
       }

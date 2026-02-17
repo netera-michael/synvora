@@ -60,7 +60,7 @@ export async function fetchShopifyOrders({
   if (createdAtMax) nextUrl += `&created_at_max=${createdAtMax}`;
 
   while (nextUrl) {
-    const response = await fetch(nextUrl, {
+    const response: Response = await fetch(nextUrl, {
       headers: {
         "Content-Type": "application/json",
         "X-Shopify-Access-Token": accessToken
@@ -80,10 +80,10 @@ export async function fetchShopifyOrders({
     const linkHeader = response.headers.get("Link");
     nextUrl = null;
     if (linkHeader) {
-      const links = linkHeader.split(",");
-      const nextLink = links.find(link => link.includes('rel="next"'));
+      const links: string[] = linkHeader.split(",");
+      const nextLink: string | undefined = links.find(link => link.includes('rel="next"'));
       if (nextLink) {
-        const match = nextLink.match(/<(.*)>/);
+        const match: RegExpMatchArray | null = nextLink.match(/<(.*)>/);
         if (match) nextUrl = match[1];
       }
     }
