@@ -101,12 +101,14 @@ export async function POST(request: Request) {
           storeName: store.nickname || store.storeDomain
         };
       } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err);
         console.error(`Failed to fetch orders for ${store.storeDomain}:`, err);
         return {
           orders: [],
           totalFetched: 0,
           alreadyImported: 0,
           error: true,
+          errorMessage: errMsg,
           storeName: store.nickname || store.storeDomain
         };
       }
@@ -116,7 +118,8 @@ export async function POST(request: Request) {
     const aggregatedOrders = allResults.flatMap(r => r.orders);
     const totalFetched = allResults.reduce((sum, r) => sum + r.totalFetched, 0);
     const alreadyImported = allResults.reduce((sum, r) => sum + r.alreadyImported, 0);
-    const hasErrors = allResults.some(r => r.error);
+    const failedStores = allResults.filter(r => r.error).map(r => `${r.storeName}: ${(r as any).errorMessage}`);
+    const hasErrors = failedStores.length > 0;
 
     return NextResponse.json({
       orders: aggregatedOrders,
@@ -124,6 +127,7 @@ export async function POST(request: Request) {
       totalFetched,
       alreadyImported,
       hasErrors,
+      storeErrors: failedStores,
       store: storeId ? {
         id: storesToFetch[0].id,
         domain: storesToFetch[0].storeDomain,

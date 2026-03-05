@@ -188,6 +188,16 @@ export function SyncShopifyDialog({ open, onClose, onSyncComplete }: SyncShopify
 
     const payload = await response.json();
 
+    // Surface store-level errors first
+    if (payload.hasErrors && payload.storeErrors?.length) {
+      setFormState((current) => ({
+        ...current,
+        status: "error",
+        message: `Store error: ${payload.storeErrors.join(" | ")}`
+      }));
+      return;
+    }
+
     // Check if all orders are already imported
     if (payload.totalFetched > 0 && payload.count === 0) {
       setFormState((current) => ({
