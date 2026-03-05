@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 import type { ComponentType } from "react";
 import { cn } from "@/lib/utils";
-import { ClipboardList, Clock, Package, BarChart3, Users, Settings, Upload, Store, CreditCard, UserCircle } from "lucide-react";
+import { ClipboardList, Clock, Package, BarChart3, Users, Settings, Upload, Store, CreditCard, UserCircle, LogOut } from "lucide-react";
 import type { Route } from "next";
 import type { Session } from "next-auth";
 
@@ -60,6 +61,8 @@ type SideNavProps = {
 export function SideNav({ session }: SideNavProps) {
   const pathname = usePathname();
   const isAdmin = session.user.role === "ADMIN";
+  const displayName = session.user.name ?? session.user.email ?? "User";
+  const avatarLetter = displayName[0].toUpperCase();
 
   const groups = NAV_GROUPS.map((group) => {
     const items = group.items.filter((item) => {
@@ -83,7 +86,7 @@ export function SideNav({ session }: SideNavProps) {
       </div>
 
       {/* Nav groups */}
-      <nav className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 pb-8">
+      <nav className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 pb-4">
         {groups.map((group) => (
           <div key={group.title} className="flex flex-col gap-0.5">
             <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-synvora-text-secondary/70">
@@ -117,6 +120,24 @@ export function SideNav({ session }: SideNavProps) {
           </div>
         ))}
       </nav>
+
+      {/* User section at bottom */}
+      <div className="flex-none border-t border-synvora-border p-3">
+        <button
+          type="button"
+          onClick={() => signOut({ callbackUrl: "/admin/login" })}
+          className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition hover:bg-synvora-surface-hover"
+        >
+          <span className="inline-flex h-8 w-8 flex-none items-center justify-center rounded-md bg-synvora-primary text-xs font-bold text-white">
+            {avatarLetter}
+          </span>
+          <div className="min-w-0 flex-1 text-left">
+            <p className="truncate text-sm font-semibold text-synvora-text">{displayName}</p>
+            <p className="text-xs text-synvora-text-secondary">{isAdmin ? "Admin" : "Client"}</p>
+          </div>
+          <LogOut className="h-4 w-4 flex-none text-synvora-text-secondary opacity-40 transition group-hover:opacity-100" />
+        </button>
+      </div>
     </aside>
   );
 }

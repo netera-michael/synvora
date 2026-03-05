@@ -4,7 +4,7 @@ import useSWR from "swr";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Route } from "next";
-import { Plus, Printer, CloudDownload, Edit, X, Trash2, Copy, Download, MoreVertical } from "lucide-react";
+import { Plus, Printer, CloudDownload, Edit, X, Trash2, Copy, Download, MoreVertical, Search } from "lucide-react";
 import { Menu, Transition } from "@headlessui/react";
 import { Fragment } from "react";
 import { useSession } from "next-auth/react";
@@ -119,6 +119,27 @@ export default function OrdersPage() {
   const metrics = printMode && printMetrics ? printMetrics : data?.metrics;
   const ordersList = printMode && printOrders ? printOrders : data?.orders ?? [];
   const pagination = printMode ? undefined : data?.pagination;
+
+  const searchFilter = searchParams.get("search") ?? "";
+  const [searchInput, setSearchInput] = useState(searchFilter);
+
+  useEffect(() => {
+    setSearchInput(searchParams.get("search") ?? "");
+  }, [searchParams]);
+
+  const applySearch = (value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value.trim()) {
+      params.set("search", value.trim());
+      params.delete("page");
+    } else {
+      params.delete("search");
+      params.delete("page");
+    }
+    params.set("tzOffset", String(tzOffset));
+    const qs = params.toString();
+    router.replace((qs ? `/admin/orders?${qs}` : "/admin/orders") as Route);
+  };
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isSyncOpen, setIsSyncOpen] = useState(false);
@@ -509,6 +530,18 @@ export default function OrdersPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-synvora-text-secondary" />
+            <input
+              type="text"
+              placeholder="Search orders…"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && applySearch(searchInput)}
+              onBlur={() => applySearch(searchInput)}
+              className="w-48 rounded-lg border border-synvora-border bg-white py-2 pl-9 pr-3 text-sm text-synvora-text shadow-sm focus:border-synvora-primary focus:outline-none focus:ring-1 focus:ring-synvora-primary"
+            />
+          </div>
           <select
             value={monthFilter}
             onChange={(event) => handleMonthChange(event.target.value)}
