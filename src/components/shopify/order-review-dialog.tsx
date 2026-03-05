@@ -90,10 +90,14 @@ export function OrderReviewDialog({
       day: "numeric",
     });
 
-  /** Get the effective EGP for an order (override > catalog > null) */
+  /** Get the effective EGP for an order (override > catalog > auto-derive from Shopify USD) */
   const getEGP = (order: TransformedOrder): number | null => {
     if (egpOverrides[order.externalId] !== undefined) return egpOverrides[order.externalId];
-    return order.originalAmount;
+    if (order.originalAmount !== null) return order.originalAmount;
+    // Auto-derive for custom sales: Shopify USD → AED (peg) → EGP (daily rate)
+    const rate = getRateForOrder(order);
+    if (rate) return Number((order.shopifyUSD * AED_USD_PEG * rate).toFixed(2));
+    return null;
   };
 
   /** Get the daily rate for an order's date */
@@ -357,7 +361,11 @@ export function OrderReviewDialog({
                           const isExpanded = expandedOrders.has(order.externalId);
                           const egp = getEGP(order);
                           const computed = getComputedAmounts(order);
-                          const isCustomSale = order.originalAmount === null && egpOverrides[order.externalId] === undefined;
+                          const isCustomSale = order.originalAmount === null;
+                          const hasManualOverride = egpOverrides[order.externalId] !== undefined;
+                          const orderRate = getRateForOrder(order);
+                          const isAutoDerived = isCustomSale && !hasManualOverride && orderRate !== null;
+                          const needsEGPEntry = isCustomSale && !hasManualOverride && !orderRate;
 
                           return [
                             <tr
@@ -382,7 +390,7 @@ export function OrderReviewDialog({
                                 <div className="flex items-center justify-end gap-1">
                                   <input
                                     type="number"
-                                    value={egpOverrides[order.externalId] ?? (order.originalAmount ?? "")}
+                                    value={hasManualOverride ? egpOverrides[order.externalId] : (getEGP(order) ?? "")}
                                     onChange={(e) => {
                                       const val = e.target.value ? parseFloat(e.target.value) : undefined;
                                       setEgpOverrides((prev) => {
@@ -392,15 +400,19 @@ export function OrderReviewDialog({
                                         return next;
                                       });
                                     }}
-                                    placeholder={isCustomSale ? "Enter EGP" : "0"}
+                                    placeholder={needsEGPEntry ? "Enter EGP" : "0"}
                                     className={`w-28 rounded border px-2 py-1 text-right text-sm focus:outline-none focus:ring-1 focus:ring-synvora-primary ${
-                                      isCustomSale
+                                      needsEGPEntry
                                         ? "border-amber-300 bg-amber-50 placeholder-amber-400"
+                                        : isAutoDerived
+                                        ? "border-blue-300 bg-blue-50 text-blue-700"
                                         : "border-synvora-border/50 bg-transparent"
                                     }`}
                                     disabled={importing}
                                   />
-                                  <span className="text-[10px] text-synvora-text-secondary uppercase">EGP</span>
+                                  <span className={`text-[10px] uppercase ${isAutoDerived ? "text-blue-500" : "text-synvora-text-secondary"}`}>
+                                    {isAutoDerived ? "USD→EGP" : "EGP"}
+                                  </span>
                                 </div>
                               </td>
 
