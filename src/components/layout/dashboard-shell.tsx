@@ -18,10 +18,10 @@ export function DashboardShell({ session, children }: DashboardShellProps) {
   return (
     <div className="min-h-screen bg-synvora-surface text-synvora-text">
       <TopBar session={session} onToggleSidebar={() => setSidebarOpen((prev) => !prev)} />
-      <div className="flex">
+      <div className="flex min-h-[calc(100vh-4rem)]">
         <div
           className={cn(
-            "fixed inset-y-0 left-0 z-40 w-64 border-r border-synvora-border bg-white transition-transform duration-200 ease-in-out lg:static lg:translate-x-0",
+            "fixed inset-y-0 left-0 z-40 transition-transform duration-200 ease-in-out lg:static lg:translate-x-0",
             sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
           )}
         >
@@ -35,7 +35,7 @@ export function DashboardShell({ session, children }: DashboardShellProps) {
             onClick={() => setSidebarOpen(false)}
           />
         )}
-        <main className="flex-1 px-4 py-6 lg:px-8">
+        <main className="flex-1 overflow-x-hidden px-4 py-6 lg:px-8">
           <ErrorBoundary>{children}</ErrorBoundary>
         </main>
       </div>

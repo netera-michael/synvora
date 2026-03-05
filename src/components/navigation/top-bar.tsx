@@ -1,7 +1,7 @@
 "use client";
 
 import { signOut } from "next-auth/react";
-import { Menu, Search, Bell } from "lucide-react";
+import { Menu, Search, Bell, LogOut } from "lucide-react";
 import type { Session } from "next-auth";
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
@@ -92,28 +92,30 @@ export function TopBar({ session, onToggleSidebar }: TopBarProps) {
         </form>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2">
         <button
           type="button"
-          className="relative inline-flex h-10 w-10 items-center justify-center rounded-lg border border-synvora-border text-synvora-text-secondary transition hover:bg-synvora-surface-hover hover:text-synvora-text"
+          className="relative inline-flex h-9 w-9 items-center justify-center rounded-lg text-synvora-text-secondary transition hover:bg-synvora-surface-hover hover:text-synvora-text"
           onClick={() => {
-            // TODO: Implement notification panel functionality when needed
+            // TODO: notification panel
           }}
         >
           <Bell className="h-4 w-4" />
           {notificationCount > 0 && (
-            <span className="absolute -right-1 -top-1 inline-flex h-2.5 w-2.5 rounded-full bg-rose-500"></span>
+            <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rose-500" />
           )}
         </button>
+        <div className="h-6 w-px bg-synvora-border" />
         <button
           type="button"
-          onClick={() => signOut({ callbackUrl: "/login" })}
-          className="flex items-center gap-2 rounded-lg border border-synvora-border bg-white px-3 py-2 text-sm font-medium text-synvora-text-secondary transition hover:bg-synvora-surface-hover hover:text-synvora-text"
+          onClick={() => signOut({ callbackUrl: "/admin/login" })}
+          className="group flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-synvora-text-secondary transition hover:bg-synvora-surface-hover hover:text-synvora-text"
         >
-          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-synvora-primary/10 text-xs font-semibold text-synvora-primary">
+          <span className="inline-flex h-7 w-7 flex-none items-center justify-center rounded-md bg-synvora-primary text-xs font-bold text-white">
             {session.user.name?.[0]?.toUpperCase() ?? "S"}
           </span>
-          <span>{session.user.name ?? session.user.email}</span>
+          <span className="hidden max-w-[120px] truncate sm:block">{session.user.name ?? session.user.email}</span>
+          <LogOut className="h-3.5 w-3.5 opacity-50 transition group-hover:opacity-100" />
         </button>
       </div>
     </header>
