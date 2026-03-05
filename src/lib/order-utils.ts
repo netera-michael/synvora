@@ -1,4 +1,5 @@
 import { prisma } from "./prisma";
+import { PLATFORM_FEE_MULTIPLIER } from "./constants";
 
 export const DEFAULT_EXCHANGE_RATE = 48.5;
 
@@ -14,7 +15,7 @@ export const calculateFromOriginalAmount = (
   }
 
   const baseAmount = originalAmount / exchangeRate;
-  const totalAmount = Number((baseAmount * 1.035).toFixed(2));
+  const totalAmount = Number((baseAmount * PLATFORM_FEE_MULTIPLIER).toFixed(2));
 
   return {
     baseAmount,
@@ -37,8 +38,8 @@ export const calculatePayoutFromOrder = (order: {
     return order.originalAmount / order.exchangeRate;
   }
 
-  // Fallback: Total / 1.035 (removes the 3.5% fee)
-  return order.totalAmount / 1.035;
+  // Fallback: Total / PLATFORM_FEE_MULTIPLIER (removes the 3.5% fee)
+  return order.totalAmount / PLATFORM_FEE_MULTIPLIER;
 };
 
 export const slugify = (value: string) =>

@@ -6,6 +6,7 @@ import { Trash2, Edit3, X, Save, ArrowLeft } from "lucide-react";
 import { useForm } from "react-hook-form";
 import type { OrderDto } from "@/types/orders";
 import { formatCurrency, formatDateTime, formatDateTimeForInput, cn } from "@/lib/utils";
+import { PLATFORM_FEE_MULTIPLIER } from "@/lib/constants";
 
 type OrderDrawerProps = {
   open: boolean;
@@ -88,7 +89,7 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
   useEffect(() => {
     if (typeof originalAmount === "number" && originalAmount >= 0 && typeof exchangeRate === "number" && exchangeRate > 0) {
       const base = originalAmount / exchangeRate;
-      const total = Number.isFinite(base) ? Number((base * 1.035).toFixed(2)) : 0;
+      const total = Number.isFinite(base) ? Number((base * PLATFORM_FEE_MULTIPLIER).toFixed(2)) : 0;
       setValue("totalAmount", total, { shouldDirty: false });
     } else {
       setValue("totalAmount", 0, { shouldDirty: false });
@@ -439,7 +440,7 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
                               className="rounded-lg border border-synvora-border/60 bg-synvora-surface-hover px-3 py-2 text-sm text-synvora-text shadow-sm focus-visible:outline-none"
                             />
                             <span className="text-xs font-normal text-synvora-text-secondary/70">
-                              Auto-calculated from EGP amount × 1.035 / rate.
+                              Auto-calculated from EGP amount × {PLATFORM_FEE_MULTIPLIER} / rate.
                             </span>
                           </label>
                           <label className="flex flex-col gap-2 text-sm font-semibold text-synvora-text-secondary">

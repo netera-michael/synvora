@@ -1,4 +1,7 @@
 import { prisma } from "@/lib/prisma";
+import { PLATFORM_FEE_MULTIPLIER } from "@/lib/constants";
+
+export { PLATFORM_FEE_MULTIPLIER };
 
 export const formatEGP = (amount: number): string => {
   return new Intl.NumberFormat("en-US", {
@@ -124,7 +127,7 @@ export async function calculateOrderAmounts(
     // Fallback: Deriving EGP from Shopify Total (USD)
     const fallbackEGP = shopifyTotal * exchangeRate;
     const fallbackBaseUSD = shopifyTotal;
-    const fallbackTotalUSD = Number((fallbackBaseUSD * 1.035).toFixed(2));
+    const fallbackTotalUSD = Number((fallbackBaseUSD * PLATFORM_FEE_MULTIPLIER).toFixed(2));
 
     return {
       originalAmount: fallbackEGP,
@@ -134,7 +137,7 @@ export async function calculateOrderAmounts(
   }
 
   const baseAmount = egpAmount / exchangeRate;
-  const totalAmount = Number((baseAmount * 1.035).toFixed(2)); // 3.5% fee
+  const totalAmount = Number((baseAmount * PLATFORM_FEE_MULTIPLIER).toFixed(2)); // 3.5% platform fee
 
   return {
     originalAmount: egpAmount,

@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { Save, X } from "lucide-react";
 import type { OrderDto } from "@/types/orders";
 import { formatCurrency, formatDateTimeForInput } from "@/lib/utils";
+import { PLATFORM_FEE_MULTIPLIER } from "@/lib/constants";
 
 type CreateOrderDialogProps = {
   open: boolean;
@@ -36,7 +37,7 @@ const mapOrderToForm = (order: OrderDto): CreateOrderValues => {
   const base =
     originalAmount !== null ? originalAmount / exchangeRate : order.totalAmount;
   const totalAmount =
-    originalAmount !== null ? Number((base * 1.035).toFixed(2)) : order.totalAmount;
+    originalAmount !== null ? Number((base * PLATFORM_FEE_MULTIPLIER).toFixed(2)) : order.totalAmount;
 
   return {
     orderNumber: "",
@@ -106,7 +107,7 @@ export function CreateOrderDialog({ open, initialOrder, onClose, onOrderCreated 
   useEffect(() => {
     if (typeof originalAmount === "number" && originalAmount >= 0 && typeof exchangeRate === "number" && exchangeRate > 0) {
       const base = originalAmount / exchangeRate;
-      const total = Number.isFinite(base) ? Number((base * 1.035).toFixed(2)) : 0;
+      const total = Number.isFinite(base) ? Number((base * PLATFORM_FEE_MULTIPLIER).toFixed(2)) : 0;
       setValue("totalAmount", total, { shouldDirty: false, shouldValidate: true });
     } else {
       setValue("totalAmount", 0, { shouldDirty: false, shouldValidate: true });
@@ -268,7 +269,7 @@ export function CreateOrderDialog({ open, initialOrder, onClose, onOrderCreated 
                       className="rounded-lg border border-synvora-border bg-synvora-surface-active px-3 py-2 text-sm text-synvora-text shadow-sm focus-visible:outline-none cursor-not-allowed"
                     />
                     <span className="text-xs font-normal text-synvora-text-secondary">
-                      Auto-calculated from EGP amount × 1.035 / rate.
+                      Auto-calculated from EGP amount × {PLATFORM_FEE_MULTIPLIER} / rate.
                     </span>
                   </label>
                   <label className="flex flex-col gap-1.5 text-sm font-medium text-synvora-text">

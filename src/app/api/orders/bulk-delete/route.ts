@@ -3,12 +3,20 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
 import { z } from "zod";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 const bulkDeleteSchema = z.object({
     ids: z.array(z.number()).min(1),
 });
 
 export async function POST(request: Request) {
+    // Rate limit: 20 bulk deletes per minute per IP
+    const ip = getClientIp(request);
+    const rl = rateLimit(`bulk-delete:${ip}`, { limit: 20, windowSeconds: 60 });
+    if (!rl.success) {
+        return NextResponse.json({ message: "Too many requests. Please wait before retrying." }, { status: 429 });
+    }
+
     const session = await getServerSession(authOptions);
     if (!session) {
         return NextResponse.json({ message: "Unauthorized" }, { status: 401 });

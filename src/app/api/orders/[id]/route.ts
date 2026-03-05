@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { ensureVenue } from "@/lib/order-utils";
 import { authOptions } from "@/lib/auth";
+import { PLATFORM_FEE_MULTIPLIER } from "@/lib/constants";
 
 const updateSchema = z
   .object({
@@ -136,7 +137,7 @@ export async function PATCH(
       : null;
   const computedTotal =
     baseAmount !== null
-      ? Number((baseAmount * 1.035).toFixed(2))
+      ? Number((baseAmount * PLATFORM_FEE_MULTIPLIER).toFixed(2))
       : data.totalAmount ?? existing.totalAmount;
 
   await prisma.$transaction(async (tx) => {
