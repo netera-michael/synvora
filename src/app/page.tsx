@@ -2,7 +2,7 @@ import { Header } from "@/components/marketing/header";
 import { Hero } from "@/components/marketing/hero";
 import { Features } from "@/components/marketing/features";
 import { HowItWorks } from "@/components/marketing/how-it-works";
-import { Testimonials } from "@/components/marketing/testimonials";
+import { Testimonials as Integrations } from "@/components/marketing/testimonials";
 import { CTA } from "@/components/marketing/cta";
 import { Footer } from "@/components/marketing/footer";
 
@@ -11,15 +11,9 @@ export default function HomePage() {
     <main className="min-h-screen">
       <Header />
       <Hero />
-      <div id="features">
-        <Features />
-      </div>
-      <div id="how-it-works">
-        <HowItWorks />
-      </div>
-      <div id="testimonials">
-        <Testimonials />
-      </div>
+      <Features />
+      <HowItWorks />
+      <Integrations />
       <CTA />
       <Footer />
     </main>

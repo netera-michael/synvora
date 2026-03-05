@@ -16,6 +16,7 @@ const config: Config = {
           accent: "#1D9BF0",
           surface: "#F6F6F7", // Updated to matches Polaris bg-surface-secondary
           "surface-active": "#F1F2F3",
+          "surface-hover": "#EDEEEF",
           border: "#C9CCCF",
           text: "#202223",
           "text-secondary": "#6D7175",
