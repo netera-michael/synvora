@@ -694,9 +694,9 @@ export default function OrdersPage() {
         <div className="rounded-xl border border-synvora-border bg-white p-5 shadow-sm">
           <p className="text-xs font-medium uppercase tracking-wide text-synvora-text-secondary">Total payout</p>
           <p className="mt-3 text-2xl font-semibold text-synvora-text">
-            {metrics ? formatCurrencyValue(metrics.totalPayout) : isLoading ? "…" : "$0.00"}
+            {metrics ? `AED ${formatNumber(metrics.totalPayout)}` : isLoading ? "…" : "AED 0.00"}
           </p>
-          <p className="mt-1 text-sm text-synvora-text-secondary">Expected net amount</p>
+          <p className="mt-1 text-sm text-synvora-text-secondary">Expected client payout</p>
         </div>
         <div className="rounded-xl border border-synvora-border bg-white p-5 shadow-sm">
           <p className="text-xs font-medium uppercase tracking-wide text-synvora-text-secondary">Tickets value (EGP)</p>

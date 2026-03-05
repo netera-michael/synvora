@@ -1,5 +1,5 @@
 import { prisma } from "./prisma";
-import { PLATFORM_FEE_MULTIPLIER } from "./constants";
+import { PLATFORM_FEE_MULTIPLIER, CLIENT_COMMISSION_RATE } from "./constants";
 
 export const DEFAULT_EXCHANGE_RATE = 48.5;
 
@@ -23,23 +23,23 @@ export const calculateFromOriginalAmount = (
   };
 };
 
+// Returns payout in AED using: EGP × (1 - commission) / aedEgpRate
 export const calculatePayoutFromOrder = (order: {
   originalAmount?: number | null;
-  exchangeRate?: number | null;
+  aedEgpRate?: number | null;
   totalAmount: number;
 }) => {
   if (
     typeof order.originalAmount === "number" &&
-    order.originalAmount >= 0 &&
-    typeof order.exchangeRate === "number" &&
-    order.exchangeRate > 0
+    order.originalAmount > 0 &&
+    typeof order.aedEgpRate === "number" &&
+    order.aedEgpRate > 0
   ) {
-    // Payout is the base amount (Original EGP / Exchange Rate)
-    return order.originalAmount / order.exchangeRate;
+    return order.originalAmount * (1 - CLIENT_COMMISSION_RATE) / order.aedEgpRate;
   }
 
-  // Fallback: Total / PLATFORM_FEE_MULTIPLIER (removes the 3.5% fee)
-  return order.totalAmount / PLATFORM_FEE_MULTIPLIER;
+  // Fallback for orders without rate data: return 0
+  return 0;
 };
 
 export const slugify = (value: string) =>

@@ -291,7 +291,7 @@ export async function GET(request: Request) {
     select: {
       totalAmount: true,
       originalAmount: true,
-      exchangeRate: true,
+      aedEgpRate: true,
       fulfillmentStatus: true
     }
   });
