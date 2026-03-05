@@ -155,7 +155,7 @@ export default function PayoutsPage() {
                 )}
               </div>
 
-              <div className="mt-5 grid grid-cols-3 divide-x divide-synvora-border">
+              <div className={`mt-5 grid divide-x divide-synvora-border ${isAdmin ? "grid-cols-3" : "grid-cols-2"}`}>
                 <div className="pr-4">
                   <div className="flex items-center gap-1.5 text-xs font-medium text-synvora-text-secondary">
                     <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
@@ -166,7 +166,7 @@ export default function PayoutsPage() {
                   </p>
                   <p className="text-xs text-synvora-text-secondary">From all orders</p>
                 </div>
-                <div className="px-4">
+                <div className={isAdmin ? "px-4" : "pl-4"}>
                   <div className="flex items-center gap-1.5 text-xs font-medium text-synvora-text-secondary">
                     <TrendingDown className="h-3.5 w-3.5 text-rose-500" />
                     Total Paid Out
@@ -176,16 +176,18 @@ export default function PayoutsPage() {
                   </p>
                   <p className="text-xs text-synvora-text-secondary">Payouts sent</p>
                 </div>
-                <div className="pl-4">
-                  <div className="flex items-center gap-1.5 text-xs font-medium text-synvora-text-secondary">
-                    <Settings2 className="h-3.5 w-3.5 text-blue-400" />
-                    Adjustment
+                {isAdmin && (
+                  <div className="pl-4">
+                    <div className="flex items-center gap-1.5 text-xs font-medium text-synvora-text-secondary">
+                      <Settings2 className="h-3.5 w-3.5 text-blue-400" />
+                      Adjustment
+                    </div>
+                    <p className="mt-1 text-lg font-semibold text-synvora-text">
+                      {venue.balanceAdjustment >= 0 ? "+" : ""}{fmt(venue.balanceAdjustment)}
+                    </p>
+                    <p className="text-xs text-synvora-text-secondary">Manual offset</p>
                   </div>
-                  <p className="mt-1 text-lg font-semibold text-synvora-text">
-                    {venue.balanceAdjustment >= 0 ? "+" : ""}{fmt(venue.balanceAdjustment)}
-                  </p>
-                  <p className="text-xs text-synvora-text-secondary">Manual offset</p>
-                </div>
+                )}
               </div>
             </div>
           ))}
