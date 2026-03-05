@@ -1,4 +1,5 @@
 import { formatCurrency, formatDateTime, cn } from "@/lib/utils";
+import { PLATFORM_FEE_MULTIPLIER } from "@/lib/constants";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { OrderDto } from "@/types/orders";
 import { Edit, Copy, Trash2, MoreVertical } from "lucide-react";
@@ -143,7 +144,7 @@ export function OrderTable({
             const payoutBase =
               typeof order.originalAmount === "number" && order.originalAmount >= 0 && typeof order.exchangeRate === "number" && order.exchangeRate > 0
                 ? order.originalAmount / order.exchangeRate
-                : order.totalAmount / 1.035;
+                : order.totalAmount / PLATFORM_FEE_MULTIPLIER;
             const payoutValue = Number.isFinite(payoutBase)
               ? Number(payoutBase.toFixed(2))
               : 0;

@@ -1,117 +1,80 @@
-"use client";
-
-import { UserPlus, Link2, Rocket, TrendingUp } from "lucide-react";
-
 const steps = [
   {
     number: "01",
-    icon: UserPlus,
-    title: "Sign Up",
-    description: "Create your Synvora account in minutes. No credit card required to get started.",
-    image: "gradient-1"
+    title: "Connect your Shopify store",
+    description:
+      "Add your store domain and Shopify API credentials. Synvora supports multiple stores — connect as many as you need. Credentials are encrypted and never exposed.",
+    detail: "Settings → Shopify Stores → Add Store",
   },
   {
     number: "02",
-    icon: Link2,
-    title: "Set Up Your Store",
-    description: "Configure your online store with our intuitive setup wizard and start adding products.",
-    image: "gradient-2"
+    title: "Set your product prices in EGP",
+    description:
+      "Map each product with a local EGP price. Synvora uses these prices — not Shopify's USD prices — to calculate the correct Egyptian Pound amount for every order.",
+    detail: "Products → Add Product → Set EGP price",
   },
   {
     number: "03",
-    icon: Rocket,
-    title: "Start Selling",
-    description: "Begin accepting orders and payments through our white-labeled platform.",
-    image: "gradient-3"
+    title: "Orders sync into your queue",
+    description:
+      "New Shopify orders appear in your import queue automatically. Review each order, check the calculated EGP value, and approve what should enter your system.",
+    detail: "Orders → Pending Imports → Review & Approve",
   },
   {
     number: "04",
-    icon: TrendingUp,
-    title: "Grow Your Business",
-    description: "Scale effortlessly with our analytics, automation, and support.",
-    image: "gradient-4"
-  }
+    title: "Manage across all venues",
+    description:
+      "Imported orders are assigned to a venue and tracked in a unified dashboard. Filter by status, store, amount, or date — everything in one place.",
+    detail: "Orders → All Orders → Filter & Track",
+  },
 ];
 
 export function HowItWorks() {
   return (
-    <section className="relative py-20 sm:py-32 bg-gradient-to-b from-white to-synvora.surface">
+    <section id="how-it-works" className="py-24 sm:py-32 bg-slate-950">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        {/* Section header */}
-        <div className="mx-auto max-w-2xl text-center animate-fade-in-up">
-          <h2 className="text-base font-semibold text-synvora-primary">Simple process</h2>
-          <p className="mt-2 text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
-            How Synvora works
+        {/* Header */}
+        <div className="mx-auto max-w-2xl text-center">
+          <p className="text-sm font-semibold uppercase tracking-widest text-[#1D9BF0]">
+            How it works
           </p>
-          <p className="mt-6 text-lg text-slate-600">
-            Get started in four simple steps and start selling globally with confidence.
+          <h2 className="mt-3 text-4xl font-bold tracking-tight text-white sm:text-5xl">
+            From Shopify to EGP in four steps
+          </h2>
+          <p className="mt-5 text-lg text-slate-400">
+            No complex setup. No ongoing manual work. Once configured, Synvora handles the sync automatically.
           </p>
         </div>
 
         {/* Steps */}
-        <div className="mx-auto mt-16 max-w-5xl sm:mt-20 lg:mt-24">
-          <div className="space-y-16">
-            {steps.map((step, index) => {
-              const Icon = step.icon;
-              const isEven = index % 2 === 0;
+        <div className="mx-auto mt-16 max-w-4xl">
+          <div className="relative">
+            {/* Connector line */}
+            <div className="absolute left-[23px] top-8 bottom-8 w-px bg-gradient-to-b from-[#0A5AFF] via-[#0A5AFF]/30 to-transparent hidden sm:block" />
 
-              return (
-                <div
-                  key={step.number}
-                  className="relative animate-fade-in-up"
-                  style={{ animationDelay: `${index * 150}ms` }}
-                >
-                  <div className={`grid gap-8 lg:grid-cols-2 lg:gap-16 items-center ${isEven ? '' : 'lg:flex-row-reverse'}`}>
-                    {/* Content */}
-                    <div className={`${isEven ? '' : 'lg:order-2'} relative`}>
-                      <div className="space-y-4">
-                        {/* Step number badge */}
-                        <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-white border-4 border-synvora-primary/20 shadow-lg">
-                          <span className="text-2xl font-bold bg-gradient-to-br from-synvora-primary to-synvora-accent bg-clip-text text-transparent">
-                            {step.number}
-                          </span>
-                        </div>
-
-                        <div className="inline-flex rounded-xl bg-gradient-to-br from-synvora-primary to-synvora-accent p-3 shadow-lg">
-                          <Icon className="h-6 w-6 text-white" />
-                        </div>
-
-                        <h3 className="text-2xl font-bold text-slate-900">
-                          {step.title}
-                        </h3>
-                        <p className="text-lg text-slate-600 leading-relaxed">
-                          {step.description}
-                        </p>
-                      </div>
+            <div className="space-y-10">
+              {steps.map((step, index) => (
+                <div key={step.number} className="relative flex gap-8">
+                  {/* Step number */}
+                  <div className="relative flex-shrink-0">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full border border-[#0A5AFF]/30 bg-[#0A5AFF]/10 text-sm font-bold text-[#1D9BF0] font-mono">
+                      {step.number}
                     </div>
+                  </div>
 
-                    {/* Visual */}
-                    <div className={`${isEven ? '' : 'lg:order-1'}`}>
-                      <div className="relative rounded-2xl bg-gradient-to-br from-synvora-primary/10 via-synvora-accent/10 to-transparent p-8 shadow-xl border border-synvora-primary/20 overflow-hidden group">
-                        {/* Animated background */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-synvora-primary/5 to-synvora-accent/5 animate-pulse" />
-
-                        <div className="relative h-48 flex items-center justify-center">
-                          {/* Placeholder for images - you can replace with actual images */}
-                          <div className={`h-32 w-32 rounded-full bg-gradient-to-br ${
-                            index === 0 ? 'from-blue-400 to-cyan-400' :
-                            index === 1 ? 'from-purple-400 to-pink-400' :
-                            index === 2 ? 'from-green-400 to-emerald-400' :
-                            'from-orange-400 to-red-400'
-                          } shadow-2xl animate-float`}
-                          style={{ animationDelay: `${index * 200}ms` }}
-                          >
-                            <div className="h-full w-full flex items-center justify-center">
-                              <Icon className="h-16 w-16 text-white" />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                  {/* Content */}
+                  <div className="pb-2 pt-1.5">
+                    <h3 className="text-xl font-semibold text-white">{step.title}</h3>
+                    <p className="mt-2 text-base text-slate-400 leading-relaxed max-w-xl">
+                      {step.description}
+                    </p>
+                    <div className="mt-3 inline-flex items-center gap-2 rounded-lg bg-white/5 border border-white/10 px-3 py-1.5">
+                      <code className="text-xs font-mono text-slate-400">{step.detail}</code>
                     </div>
                   </div>
                 </div>
-              );
-            })}
+              ))}
+            </div>
           </div>
         </div>
       </div>

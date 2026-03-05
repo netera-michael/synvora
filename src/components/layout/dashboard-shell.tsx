@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { Session } from "next-auth";
 import { TopBar } from "@/components/navigation/top-bar";
 import { SideNav } from "@/components/navigation/side-nav";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { cn } from "@/lib/utils";
 
 type DashboardShellProps = {
@@ -34,7 +35,9 @@ export function DashboardShell({ session, children }: DashboardShellProps) {
             onClick={() => setSidebarOpen(false)}
           />
         )}
-        <main className="flex-1 px-4 py-6 lg:px-8">{children}</main>
+        <main className="flex-1 px-4 py-6 lg:px-8">
+          <ErrorBoundary>{children}</ErrorBoundary>
+        </main>
       </div>
     </div>
   );

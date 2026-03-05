@@ -4,6 +4,7 @@ import { Fragment, useState } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { X, ChevronDown, ChevronRight, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
 import { formatEGP } from "@/lib/product-pricing";
+import { PLATFORM_FEE_MULTIPLIER } from "@/lib/constants";
 import { toast } from "sonner";
 
 type TransformedOrder = {
@@ -171,7 +172,7 @@ export function OrderReviewDialog({
           }, 0);
 
           const baseUSDFromAED = aedOverride * aedToUsdRate;
-          const totalUSDFromAED = baseUSDFromAED * 1.035;
+          const totalUSDFromAED = baseUSDFromAED * PLATFORM_FEE_MULTIPLIER;
 
           // Proportional distribution based on (potentially overridden) EGP
           const currentEGP = override?.originalAmount ?? order.originalAmount ?? 0;
@@ -461,7 +462,7 @@ export function OrderReviewDialog({
                                         const current = prev[order.externalId] || {};
                                         const nextEGP = val;
                                         // Auto-calculate USD if EGP changes and no explicit USD override exists
-                                        const nextUSD = nextEGP !== undefined ? Number(((nextEGP / exchangeRate) * 1.035).toFixed(2)) : undefined;
+                                        const nextUSD = nextEGP !== undefined ? Number(((nextEGP / exchangeRate) * PLATFORM_FEE_MULTIPLIER).toFixed(2)) : undefined;
 
                                         return {
                                           ...prev,
@@ -606,7 +607,7 @@ export function OrderReviewDialog({
 
                           const aedOverride = aedOverrides[group.date];
                           const baseUSD = aedOverride && aedToUsdRate ? aedOverride * aedToUsdRate : null;
-                          const derivedUSD = aedOverride && aedToUsdRate ? baseUSD! * 1.035 : dailyUSD;
+                          const derivedUSD = aedOverride && aedToUsdRate ? baseUSD! * PLATFORM_FEE_MULTIPLIER : dailyUSD;
                           const dailyEGPForRate = group.orders
                             .filter(o => selectedOrders.has(o.externalId))
                             .reduce((sum, o) => {

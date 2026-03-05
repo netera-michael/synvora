@@ -6,6 +6,7 @@ import { authOptions } from "@/lib/auth";
 import { decrypt } from "@/lib/encryption";
 import { fetchShopifyOrders, transformShopifyOrders } from "@/lib/shopify";
 import { getCurrentExchangeRate } from "@/lib/exchange-rate";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 const schema = z.object({
   storeId: z.number().nullable().optional(),
@@ -15,6 +16,13 @@ const schema = z.object({
 });
 
 export async function POST(request: Request) {
+  // Rate limit: 10 Shopify fetches per minute per IP
+  const ip = getClientIp(request);
+  const rl = rateLimit(`shopify-fetch:${ip}`, { limit: 10, windowSeconds: 60 });
+  if (!rl.success) {
+    return NextResponse.json({ message: "Too many requests. Please wait before retrying." }, { status: 429 });
+  }
+
   const session = await getServerSession(authOptions);
 
   if (!session) {

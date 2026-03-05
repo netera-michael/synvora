@@ -1,137 +1,80 @@
-"use client";
+import { ShoppingBag, Banknote, ArrowLeftRight } from "lucide-react";
 
-import { Star } from "lucide-react";
-
-const testimonials = [
+const integrations = [
   {
-    content: "Synvora transformed how we manage our e-commerce business. The platform is seamless, and we can finally accept payments in our region without limitations.",
-    author: "Sarah Johnson",
-    role: "CEO, Fashion Forward",
-    avatar: "gradient-1",
-    rating: 5
+    name: "Shopify",
+    description: "Connect any Shopify store. Synvora uses the Shopify Admin API to pull orders, products, and customer data on demand.",
+    icon: ShoppingBag,
+    color: "bg-[#96BF48]/10 text-[#5a8a00] border-[#96BF48]/20",
+    badge: "Connected",
   },
   {
-    content: "The white-label solution was exactly what we needed. Our customers think it's our own platform, while we leverage enterprise-grade infrastructure behind the scenes.",
-    author: "Michael Chen",
-    role: "Founder, Tech Gadgets Hub",
-    avatar: "gradient-2",
-    rating: 5
+    name: "Mercury Bank",
+    description: "Match bank transactions from Mercury directly against your imported orders for reconciliation and payout tracking.",
+    icon: Banknote,
+    color: "bg-violet-50 text-violet-700 border-violet-200",
+    badge: "Connected",
   },
   {
-    content: "Outstanding support and reliability. We've processed thousands of orders through Synvora, and the analytics help us make smarter business decisions every day.",
-    author: "Aisha Rahman",
-    role: "Operations Manager, Global Artisans",
-    avatar: "gradient-3",
-    rating: 5
-  }
-];
-
-const stats = [
-  { value: "1000+", label: "Active Merchants" },
-  { value: "$50M+", label: "Orders Processed" },
-  { value: "99.9%", label: "Uptime" },
-  { value: "24/7", label: "Support" }
+    name: "Exchange Rate API",
+    description: "Live USD/EGP and AED/EGP exchange rates fetched automatically and cached — so your EGP amounts are always accurate.",
+    icon: ArrowLeftRight,
+    color: "bg-sky-50 text-sky-700 border-sky-200",
+    badge: "Auto-updated",
+  },
 ];
 
 export function Testimonials() {
   return (
-    <section className="relative py-20 sm:py-32 bg-white">
+    <section id="integrations" className="py-24 sm:py-32 bg-white">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        {/* Stats bar */}
-        <div className="mx-auto max-w-5xl animate-fade-in-up">
-          <div className="rounded-2xl bg-gradient-to-br from-synvora-primary to-synvora-accent p-8 shadow-2xl shadow-synvora-primary/20">
-            <div className="grid grid-cols-2 gap-8 lg:grid-cols-4">
-              {stats.map((stat, index) => (
-                <div
-                  key={stat.label}
-                  className="text-center animate-fade-in"
-                  style={{ animationDelay: `${index * 100}ms` }}
-                >
-                  <div className="text-4xl font-bold text-white sm:text-5xl">
-                    {stat.value}
-                  </div>
-                  <div className="mt-2 text-sm text-white/80 font-medium">
-                    {stat.label}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Section header */}
-        <div className="mx-auto max-w-2xl text-center mt-20 animate-fade-in-up">
-          <h2 className="text-base font-semibold text-synvora-primary">Testimonials</h2>
-          <p className="mt-2 text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
-            Loved by merchants worldwide
+        {/* Header */}
+        <div className="mx-auto max-w-2xl text-center">
+          <p className="text-sm font-semibold uppercase tracking-widest text-[#0A5AFF]">
+            Integrations
           </p>
-          <p className="mt-6 text-lg text-slate-600">
-            See what our customers have to say about their experience with Synvora.
+          <h2 className="mt-3 text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+            Connects to the tools you already use
+          </h2>
+          <p className="mt-5 text-lg text-slate-500">
+            Synvora doesn't replace your stack — it sits on top of it, pulling in data so you don't have to.
           </p>
         </div>
 
-        {/* Testimonials grid */}
-        <div className="mx-auto mt-16 max-w-7xl sm:mt-20">
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-            {testimonials.map((testimonial, index) => (
+        {/* Integration cards */}
+        <div className="mx-auto mt-16 grid max-w-5xl grid-cols-1 gap-6 sm:grid-cols-3">
+          {integrations.map((item) => {
+            const Icon = item.icon;
+            return (
               <div
-                key={testimonial.author}
-                className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-8 shadow-sm transition-all hover:shadow-xl hover:shadow-slate-900/5 hover:-translate-y-1 animate-fade-in-up"
-                style={{ animationDelay: `${index * 150}ms` }}
+                key={item.name}
+                className="flex flex-col gap-5 rounded-2xl border border-slate-100 bg-slate-50/50 p-8"
               >
-                {/* Quote mark */}
-                <div className="absolute -top-4 -right-4 text-8xl text-synvora-primary/5 font-serif">
-                  &ldquo;
+                <div className="flex items-start justify-between">
+                  <div className={`inline-flex h-11 w-11 items-center justify-center rounded-xl border ${item.color}`}>
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    {item.badge}
+                  </span>
                 </div>
-
-                <div className="relative">
-                  {/* Rating */}
-                  <div className="flex gap-1 mb-4">
-                    {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                    ))}
-                  </div>
-
-                  {/* Content */}
-                  <p className="text-base text-slate-700 leading-relaxed">
-                    &ldquo;{testimonial.content}&rdquo;
-                  </p>
-
-                  {/* Author */}
-                  <div className="mt-6 flex items-center gap-3">
-                    <div className={`h-12 w-12 rounded-full bg-gradient-to-br ${
-                      index === 0 ? 'from-blue-500 to-cyan-500' :
-                      index === 1 ? 'from-purple-500 to-pink-500' :
-                      'from-green-500 to-emerald-500'
-                    } flex items-center justify-center text-white font-bold text-lg`}>
-                      {testimonial.author.charAt(0)}
-                    </div>
-                    <div>
-                      <div className="font-semibold text-slate-900">
-                        {testimonial.author}
-                      </div>
-                      <div className="text-sm text-slate-600">
-                        {testimonial.role}
-                      </div>
-                    </div>
-                  </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900">{item.name}</h3>
+                  <p className="mt-2 text-sm text-slate-500 leading-relaxed">{item.description}</p>
                 </div>
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
 
-        {/* Trust badges */}
-        <div className="mt-16 flex flex-wrap items-center justify-center gap-8 opacity-60 animate-fade-in-up">
-          {["Stripe", "PayPal", "AWS", "Cloudflare"].map((brand) => (
-            <div
-              key={brand}
-              className="text-xl font-bold text-slate-400"
-            >
-              {brand}
-            </div>
-          ))}
-        </div>
+        {/* Bottom note */}
+        <p className="mt-10 text-center text-sm text-slate-400">
+          More integrations in progress. Have a specific request?{" "}
+          <a href="mailto:hello@synvora.us" className="font-medium text-[#0A5AFF] hover:underline">
+            Let us know.
+          </a>
+        </p>
       </div>
     </section>
   );
