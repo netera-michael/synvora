@@ -66,7 +66,7 @@ export const authOptions: NextAuthOptions = {
         return {
           id: String(user.id),
           email: user.email,
-          name: user.name ?? "Synvora Admin",
+          name: user.name ?? undefined,
           role: user.role,
           venueIds: user.venues.map((venue) => venue.id)
         };

@@ -45,7 +45,13 @@ const NAV_GROUPS: NavGroup[] = [
   }
 ];
 
-const ADMIN_ONLY_PATHS = new Set<Route>(["/admin/settings", "/admin/settings/import", "/admin/settings/shopify-stores"]);
+const ADMIN_ONLY_PATHS = new Set<Route>([
+  "/admin/orders/pending",
+  "/admin/products",
+  "/admin/settings",
+  "/admin/settings/import",
+  "/admin/settings/shopify-stores"
+]);
 
 type SideNavProps = {
   session: Session;
@@ -72,7 +78,7 @@ export function SideNav({ session }: SideNavProps) {
         </div>
         <div>
           <p className="text-sm font-semibold text-synvora-text leading-none">Synvora</p>
-          <p className="mt-0.5 text-xs text-synvora-text-secondary leading-none">Admin</p>
+          <p className="mt-0.5 text-xs text-synvora-text-secondary leading-none">{isAdmin ? "Admin" : "Client Portal"}</p>
         </div>
       </div>
 

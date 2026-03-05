@@ -68,15 +68,6 @@ export function TopBar({ session, onToggleSidebar }: TopBarProps) {
         >
           <Menu className="h-5 w-5" />
         </button>
-        <div className="hidden items-center gap-3 lg:flex">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-synvora-primary text-sm font-semibold text-white shadow-sm">
-            S
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-synvora-text">Synvora</p>
-            <p className="text-xs text-synvora-text-secondary">Admin</p>
-          </div>
-        </div>
       </div>
 
       <div className="flex max-w-md flex-1 items-center gap-3 px-4">
