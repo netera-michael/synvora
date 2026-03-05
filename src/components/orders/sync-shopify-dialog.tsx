@@ -31,7 +31,7 @@ type TransformedOrder = {
   fulfillmentStatus: string | null;
   totalAmount: number;
   originalAmount: number | null;
-  exchangeRate: number;
+  shopifyUSD: number;
   currency: string;
   processedAt: string;
   shippingCity: string | null;
@@ -59,7 +59,6 @@ export function SyncShopifyDialog({ open, onClose, onSyncComplete }: SyncShopify
   });
 
   const [fetchedOrders, setFetchedOrders] = useState<TransformedOrder[]>([]);
-  const [exchangeRate, setExchangeRate] = useState<number>(48.5);
   const [selectedStore, setSelectedStore] = useState<ShopifyStore | null>(null);
   const [showReview, setShowReview] = useState(false);
 
@@ -211,7 +210,6 @@ export function SyncShopifyDialog({ open, onClose, onSyncComplete }: SyncShopify
 
     // Store the fetched orders and show review dialog
     setFetchedOrders(payload.orders);
-    setExchangeRate(payload.exchangeRate);
     setSelectedStore(payload.store);
     setShowReview(true);
 
@@ -415,7 +413,6 @@ export function SyncShopifyDialog({ open, onClose, onSyncComplete }: SyncShopify
           open={showReview}
           onClose={handleReviewClose}
           orders={fetchedOrders}
-          exchangeRate={exchangeRate}
           store={selectedStore}
           onImportComplete={handleImportComplete}
         />

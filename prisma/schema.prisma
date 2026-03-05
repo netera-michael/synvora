@@ -40,6 +40,7 @@ model Order {
   tags              String        @default("")
   originalAmount    Float?
   exchangeRate      Float          @default(48.5)
+  aedEgpRate        Float?
   notes             String?
   source            String          @default("synvora")
   createdAt         DateTime        @default(now())
@@ -117,6 +118,7 @@ model Venue {
   payouts       Payout[]
   shopifyStores ShopifyStore[]
   products      Product[]
+  dailyRates    DailyRate[]
 }
 
 model Product {
@@ -172,6 +174,20 @@ model MercurySettings {
   updatedAt   DateTime @updatedAt
 
   @@unique([id])
+}
+
+model DailyRate {
+  id         Int      @id @default(autoincrement())
+  venueId    Int
+  date       DateTime @db.Date
+  aedEgpRate Float
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  venue Venue @relation(fields: [venueId], references: [id])
+
+  @@unique([venueId, date])
+  @@index([venueId])
 }
 
 model ExchangeRate {

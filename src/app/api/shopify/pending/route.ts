@@ -4,7 +4,6 @@ import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
 import { z } from "zod";
 import { transformShopifyOrders } from "@/lib/shopify";
-import { getCurrentExchangeRate } from "@/lib/exchange-rate";
 
 // Schema for filtering pending orders
 const getParamsSchema = z.object({
@@ -81,12 +80,6 @@ export async function POST(request: Request) {
         }
 
         // 2. Transform them using existing logic
-        // We need to group by store to handle store-specific logic if needed, 
-        // but primarily we need the raw shopify objects.
-        const exchangeRate = await getCurrentExchangeRate();
-
-        // We also need the store IDs. The queue has storeDomain. 
-        // We need to map domain to storeId to link the Order correctly.
         const domains = [...new Set(queuedOrders.map(o => o.storeDomain))];
         const stores = await prisma.shopifyStore.findMany({
             where: { storeDomain: { in: domains } }
@@ -112,7 +105,7 @@ export async function POST(request: Request) {
                 const rawOrder = queueItem.orderData as any;
 
                 // Transform single order
-                const [transformed] = await transformShopifyOrders([rawOrder], exchangeRate, venueId);
+                const [transformed] = await transformShopifyOrders([rawOrder], venueId);
 
                 if (transformed) {
                     // Create the Order in DB

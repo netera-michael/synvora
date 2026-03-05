@@ -93,7 +93,7 @@ export async function fetchShopifyOrders({
   return allOrders;
 }
 
-export async function transformShopifyOrders(orders: ShopifyOrder[], exchangeRate: number, venueId: number, shopifyStoreId?: number) {
+export async function transformShopifyOrders(orders: ShopifyOrder[], venueId: number, shopifyStoreId?: number) {
   return Promise.all(
     orders.map(async (order) => {
       const customerName = order.customer
@@ -116,16 +116,16 @@ export async function transformShopifyOrders(orders: ShopifyOrder[], exchangeRat
         productName: item.name,
         quantity: item.quantity,
         sku: item.sku ?? undefined,
-        // CRITICAL: We now use variant_id as shopifyProductId for more precise matching
         shopifyProductId: item.variant_id ? String(item.variant_id) : (item.product_id ? String(item.product_id) : undefined),
         price: Number(item.price ?? 0),
         total: Number(item.price ?? 0) * item.quantity
       }));
 
-      // Calculate EGP amounts based on product prices
+      // At fetch time the daily AED/EGP rate is not yet known.
+      // We resolve EGP from the product catalog; USD/AED amounts are calculated
+      // in the import review dialog once the admin enters the daily rate.
       const amounts = await calculateOrderAmounts(
         lineItems,
-        exchangeRate,
         venueId,
         Number(order.total_price || 0)
       );
@@ -140,7 +140,7 @@ export async function transformShopifyOrders(orders: ShopifyOrder[], exchangeRat
         fulfillmentStatus: order.fulfillment_status ? titleCase(order.fulfillment_status) : null,
         totalAmount: amounts.totalAmount,
         originalAmount: amounts.originalAmount,
-        exchangeRate: exchangeRate,
+        shopifyUSD: Number(order.total_price || 0),
         currency: order.currency ?? "USD",
         processedAt: new Date(order.processed_at ?? Date.now()),
         shippingCity,

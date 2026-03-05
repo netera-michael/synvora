@@ -1,7 +1,23 @@
 import { prisma } from "@/lib/prisma";
-import { PLATFORM_FEE_MULTIPLIER } from "@/lib/constants";
+import { PLATFORM_FEE_MULTIPLIER, CLIENT_COMMISSION_RATE, AED_USD_PEG } from "@/lib/constants";
 
-export { PLATFORM_FEE_MULTIPLIER };
+export { PLATFORM_FEE_MULTIPLIER, CLIENT_COMMISSION_RATE, AED_USD_PEG };
+
+/**
+ * Core payout formula:
+ *   aedBase    = EGP / aedEgpRate
+ *   revenueUSD = (aedBase / AED_USD_PEG) * 1.035   — shown in Synvora as "Total order value"
+ *   payoutAED  = aedBase * 0.9825                   — what the client receives
+ */
+export function calculateAmountsFromEGP(
+  egpAmount: number,
+  aedEgpRate: number
+): { revenueUSD: number; payoutAED: number; aedBase: number } {
+  const aedBase = egpAmount / aedEgpRate;
+  const revenueUSD = Number(((aedBase / AED_USD_PEG) * PLATFORM_FEE_MULTIPLIER).toFixed(2));
+  const payoutAED = Number((aedBase * (1 - CLIENT_COMMISSION_RATE)).toFixed(2));
+  return { revenueUSD, payoutAED, aedBase };
+}
 
 export const formatEGP = (amount: number): string => {
   return new Intl.NumberFormat("en-US", {
@@ -90,12 +106,15 @@ export async function calculateEGPFromLineItems(
 }
 
 /**
- * Calculate order amounts from line items
- * @param lineItems - Array of order line items
- * @param exchangeRate - Current USD/EGP exchange rate
- * @param venueId - The venue ID to fetch products for
- * @param shopifyTotal - The native total_price from Shopify (USD)
- * @returns Object with originalAmount (EGP), baseAmount (USD), and totalAmount (USD with fee)
+ * Calculate order amounts from line items.
+ * When aedEgpRate is provided (set during import review), full calculation is performed.
+ * When not provided (fetch preview before rate is known), only EGP is resolved.
+ *
+ * @param lineItems     - Order line items
+ * @param venueId       - Venue to look up product EGP prices for
+ * @param shopifyUSD    - The total_price from Shopify in USD (used as custom-sale fallback)
+ * @param aedEgpRate    - Daily AED/EGP rate set by admin (optional at fetch time)
+ * @returns originalAmount (EGP), totalAmount (USD revenue), aedEgpRate used
  */
 export async function calculateOrderAmounts(
   lineItems: Array<{
@@ -104,44 +123,33 @@ export async function calculateOrderAmounts(
     sku?: string | null;
     shopifyProductId?: string | null;
   }>,
-  exchangeRate: number,
   venueId: number,
-  shopifyTotal: number
+  shopifyUSD: number,
+  aedEgpRate?: number
 ): Promise<{
   originalAmount: number | null;
-  baseAmount: number | null;
   totalAmount: number;
 }> {
   const egpAmount = await calculateEGPFromLineItems(lineItems, venueId);
 
-  // If matching failed (egpAmount is null), use Shopify total as fallback
-  if (egpAmount === null) {
-    if (exchangeRate <= 0) {
-      return {
-        originalAmount: null,
-        baseAmount: null,
-        totalAmount: 0
-      };
+  // EGP resolved from product catalog
+  if (egpAmount !== null) {
+    if (!aedEgpRate) {
+      // Rate not yet known (fetch preview) — return EGP only, amounts calculated in dialog
+      return { originalAmount: egpAmount, totalAmount: 0 };
     }
-
-    // Fallback: Deriving EGP from Shopify Total (USD)
-    const fallbackEGP = shopifyTotal * exchangeRate;
-    const fallbackBaseUSD = shopifyTotal;
-    const fallbackTotalUSD = Number((fallbackBaseUSD * PLATFORM_FEE_MULTIPLIER).toFixed(2));
-
-    return {
-      originalAmount: fallbackEGP,
-      baseAmount: fallbackBaseUSD,
-      totalAmount: fallbackTotalUSD
-    };
+    const { revenueUSD } = calculateAmountsFromEGP(egpAmount, aedEgpRate);
+    return { originalAmount: egpAmount, totalAmount: revenueUSD };
   }
 
-  const baseAmount = egpAmount / exchangeRate;
-  const totalAmount = Number((baseAmount * PLATFORM_FEE_MULTIPLIER).toFixed(2)); // 3.5% platform fee
+  // Custom sale — no product match
+  if (!aedEgpRate) {
+    // Rate not yet known — mark as needing manual EGP entry
+    return { originalAmount: null, totalAmount: 0 };
+  }
 
-  return {
-    originalAmount: egpAmount,
-    baseAmount,
-    totalAmount
-  };
+  // Derive EGP from Shopify USD: USD → AED (peg) → EGP (daily rate)
+  const derivedEGP = Number((shopifyUSD * AED_USD_PEG * aedEgpRate).toFixed(2));
+  const { revenueUSD } = calculateAmountsFromEGP(derivedEGP, aedEgpRate);
+  return { originalAmount: derivedEGP, totalAmount: revenueUSD };
 }
