@@ -49,10 +49,12 @@ const NAV_GROUPS: NavGroup[] = [
 const ADMIN_ONLY_PATHS = new Set<Route>([
   "/admin/orders/pending",
   "/admin/products",
+  "/admin/customers",
+  "/admin/analytics",
   "/admin/settings",
   "/admin/settings/import",
   "/admin/settings/shopify-stores"
-]);
+] as Route[]);
 
 type SideNavProps = {
   session: Session;

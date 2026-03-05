@@ -4,9 +4,10 @@ import useSWR from "swr";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Route } from "next";
-import { Plus, Printer, CloudDownload, Edit, X, Trash2, Copy, Download, MoreVertical, Search } from "lucide-react";
+import { Plus, Printer, CloudDownload, Edit, X, Trash2, Copy, Download, MoreVertical, Search, Wallet } from "lucide-react";
 import { Menu, Transition } from "@headlessui/react";
 import { Fragment } from "react";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import type { OrderDto } from "@/types/orders";
@@ -112,6 +113,10 @@ export default function OrdersPage() {
   const { data, error, mutate, isLoading } = useSWR<OrdersResponse>(`/api/orders${queryString ? `?${queryString}` : ""}`, fetcher);
   const { data: session } = useSession();
   const isAdmin = session?.user.role === "ADMIN";
+  const { data: balanceData } = useSWR<{ venues: Array<{ id: number; name: string; pendingBalance: number }> }>(
+    session && !isAdmin ? "/api/balance" : null,
+    fetcher
+  );
   const [printMode, setPrintMode] = useState(false);
   const [printOrders, setPrintOrders] = useState<OrderDto[] | null>(null);
   const [printMetrics, setPrintMetrics] = useState<OrdersResponse["metrics"] | null>(null);
@@ -708,6 +713,24 @@ export default function OrdersPage() {
           )}
         </div>
       </div>
+
+      {!isAdmin && balanceData?.venues?.[0] && (
+        <div className="flex items-center gap-3 rounded-xl border border-synvora-border bg-white px-5 py-3.5 shadow-sm">
+          <Wallet className="h-5 w-5 flex-none text-synvora-primary" />
+          <div className="min-w-0 flex-1">
+            <span className="text-sm text-synvora-text-secondary">Pending Balance</span>
+            <span className={`ml-2 text-sm font-semibold ${balanceData.venues[0].pendingBalance >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+              {formatCurrencyValue(balanceData.venues[0].pendingBalance)}
+            </span>
+          </div>
+          <Link
+            href="/admin/finance/payouts"
+            className="flex-none text-xs font-medium text-synvora-primary transition hover:underline"
+          >
+            View payouts →
+          </Link>
+        </div>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-xl border border-synvora-border bg-white p-5 shadow-sm">

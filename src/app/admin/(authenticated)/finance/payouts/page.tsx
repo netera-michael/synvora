@@ -4,9 +4,10 @@ import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useSession } from "next-auth/react";
-import { Plus, CloudDownload, TrendingDown, TrendingUp, Wallet, Settings2, Receipt } from "lucide-react";
+import { Plus, CloudDownload, TrendingDown, TrendingUp, Wallet, Settings2, Receipt, CreditCard } from "lucide-react";
 import type { PayoutDto, VenueBalance } from "@/types/payouts";
 import { SyncMercuryDialog } from "@/components/mercury/sync-mercury-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -51,6 +52,7 @@ export default function PayoutsPage() {
   const [isSyncMercuryOpen, setIsSyncMercuryOpen] = useState(false);
   const [isAdjustOpen, setAdjustOpen] = useState(false);
   const [adjustVenue, setAdjustVenue] = useState<VenueBalance | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
 
   const openCreate = () => {
     setEditingPayout(null);
@@ -63,12 +65,15 @@ export default function PayoutsPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Delete this payout?")) return;
     const res = await fetch(`/api/payouts/${id}`, { method: "DELETE" });
     if (res.ok) {
       mutate();
       mutateBalance();
+      toast.success("Payout deleted.");
+    } else {
+      toast.error("Failed to delete payout.");
     }
+    setDeleteConfirmId(null);
   };
 
   const handleSaved = () => {
@@ -155,8 +160,8 @@ export default function PayoutsPage() {
                 )}
               </div>
 
-              <div className="mt-5 grid grid-cols-3 divide-x divide-synvora-border">
-                <div className="pr-4">
+              <div className="mt-5 grid grid-cols-1 divide-y divide-synvora-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+                <div className="pb-4 sm:pb-0 sm:pr-4">
                   <div className="flex items-center gap-1.5 text-xs font-medium text-synvora-text-secondary">
                     <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
                     Total Earned
@@ -166,7 +171,7 @@ export default function PayoutsPage() {
                   </p>
                   <p className="text-xs text-synvora-text-secondary">From all orders</p>
                 </div>
-                <div className="px-4">
+                <div className="py-4 sm:py-0 sm:px-4">
                   <div className="flex items-center gap-1.5 text-xs font-medium text-synvora-text-secondary">
                     <TrendingDown className="h-3.5 w-3.5 text-rose-500" />
                     Total Paid Out
@@ -177,7 +182,7 @@ export default function PayoutsPage() {
                   <p className="text-xs text-synvora-text-secondary">Payouts sent</p>
                 </div>
                 {isAdmin ? (
-                  <div className="pl-4">
+                  <div className="pt-4 sm:pt-0 sm:pl-4">
                     <div className="flex items-center gap-1.5 text-xs font-medium text-synvora-text-secondary">
                       <Settings2 className="h-3.5 w-3.5 text-blue-400" />
                       Adjustment
@@ -188,7 +193,7 @@ export default function PayoutsPage() {
                     <p className="text-xs text-synvora-text-secondary">Manual offset</p>
                   </div>
                 ) : (
-                  <div className="pl-4">
+                  <div className="pt-4 sm:pt-0 sm:pl-4">
                     <div className="flex items-center gap-1.5 text-xs font-medium text-synvora-text-secondary">
                       <Receipt className="h-3.5 w-3.5 text-synvora-primary" />
                       Payments
@@ -229,11 +234,16 @@ export default function PayoutsPage() {
               </thead>
               <tbody className="divide-y divide-synvora-border/60">
                 {isLoading ? (
-                  <tr>
-                    <td colSpan={isAdmin ? 6 : 4} className="px-5 py-8 text-center text-synvora-text-secondary">
-                      Loading…
-                    </td>
-                  </tr>
+                  Array.from({ length: 4 }).map((_, i) => (
+                    <tr key={i}>
+                      <td className="px-5 py-3.5"><Skeleton className="h-4 w-24" /></td>
+                      <td className="px-5 py-3.5"><Skeleton className="h-4 w-28" /></td>
+                      {isAdmin && <td className="px-5 py-3.5"><Skeleton className="h-4 w-20" /></td>}
+                      <td className="px-5 py-3.5 text-right"><Skeleton className="ml-auto h-4 w-16" /></td>
+                      <td className="px-5 py-3.5"><Skeleton className="h-4 w-32" /></td>
+                      {isAdmin && <td className="px-5 py-3.5"><Skeleton className="ml-auto h-7 w-28" /></td>}
+                    </tr>
+                  ))
                 ) : data?.payouts.length ? (
                   data.payouts.map((payout) => (
                     <tr key={payout.id} className="hover:bg-synvora-surface-active/40">
@@ -254,28 +264,58 @@ export default function PayoutsPage() {
                       </td>
                       {isAdmin && (
                         <td className="px-5 py-3.5 text-right">
-                          <button
-                            type="button"
-                            onClick={() => openEdit(payout)}
-                            className="mr-2 rounded-lg border border-synvora-border px-3 py-1 text-xs font-medium text-synvora-text-secondary transition hover:border-synvora-primary hover:text-synvora-primary"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(payout.id)}
-                            className="rounded-lg border border-rose-200 px-3 py-1 text-xs font-medium text-rose-600 transition hover:bg-rose-50"
-                          >
-                            Delete
-                          </button>
+                          {deleteConfirmId === payout.id ? (
+                            <div className="flex items-center justify-end gap-2">
+                              <span className="text-xs text-synvora-text-secondary">Delete?</span>
+                              <button
+                                type="button"
+                                onClick={() => handleDelete(payout.id)}
+                                className="rounded-lg bg-rose-600 px-3 py-1 text-xs font-medium text-white transition hover:bg-rose-700"
+                              >
+                                Confirm
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setDeleteConfirmId(null)}
+                                className="rounded-lg border border-synvora-border px-3 py-1 text-xs font-medium text-synvora-text-secondary transition hover:bg-synvora-surface-hover"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => openEdit(payout)}
+                                className="mr-2 rounded-lg border border-synvora-border px-3 py-1 text-xs font-medium text-synvora-text-secondary transition hover:border-synvora-primary hover:text-synvora-primary"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setDeleteConfirmId(payout.id)}
+                                className="rounded-lg border border-rose-200 px-3 py-1 text-xs font-medium text-rose-600 transition hover:bg-rose-50"
+                              >
+                                Delete
+                              </button>
+                            </>
+                          )}
                         </td>
                       )}
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={isAdmin ? 6 : 4} className="px-5 py-10 text-center text-synvora-text-secondary">
-                      No payouts recorded yet.
+                    <td colSpan={isAdmin ? 6 : 4}>
+                      <div className="flex flex-col items-center gap-3 px-6 py-12 text-center">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-synvora-surface-active">
+                          <CreditCard className="h-6 w-6 text-synvora-text-secondary" />
+                        </div>
+                        <p className="text-sm font-medium text-synvora-text">No payouts yet</p>
+                        <p className="text-xs text-synvora-text-secondary">
+                          {isAdmin ? "Record your first payout using the button above." : "Payouts will appear here once they've been processed."}
+                        </p>
+                      </div>
                     </td>
                   </tr>
                 )}
