@@ -176,7 +176,7 @@ export async function GET(request: Request) {
   const rows = orders.map((order) => {
     const payoutAmount = calculatePayoutFromOrder({
       originalAmount: order.originalAmount,
-      exchangeRate: order.exchangeRate,
+      aedEgpRate: order.aedEgpRate,
       totalAmount: order.totalAmount
     });
 

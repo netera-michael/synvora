@@ -1,5 +1,5 @@
 import { prisma } from "./prisma";
-import { PLATFORM_FEE_MULTIPLIER, CLIENT_COMMISSION_RATE } from "./constants";
+import { PLATFORM_FEE_MULTIPLIER, CLIENT_COMMISSION_RATE, AED_USD_PEG } from "./constants";
 
 export const DEFAULT_EXCHANGE_RATE = 48.5;
 
@@ -23,7 +23,7 @@ export const calculateFromOriginalAmount = (
   };
 };
 
-// Returns payout in AED using: EGP × (1 - commission) / aedEgpRate
+// Returns payout in USD: EGP × (1 - commission) / aedEgpRate / AED_USD_PEG
 export const calculatePayoutFromOrder = (order: {
   originalAmount?: number | null;
   aedEgpRate?: number | null;
@@ -35,7 +35,7 @@ export const calculatePayoutFromOrder = (order: {
     typeof order.aedEgpRate === "number" &&
     order.aedEgpRate > 0
   ) {
-    return order.originalAmount * (1 - CLIENT_COMMISSION_RATE) / order.aedEgpRate;
+    return order.originalAmount * (1 - CLIENT_COMMISSION_RATE) / order.aedEgpRate / AED_USD_PEG;
   }
 
   // Fallback for orders without rate data: return 0
