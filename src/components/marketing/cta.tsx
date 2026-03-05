@@ -13,7 +13,7 @@ export function CTA() {
           Ready to simplify your order operations?
         </h2>
         <p className="mt-5 text-lg text-white/80 leading-relaxed max-w-2xl mx-auto">
-          Synvora is currently available by invitation. Reach out and we'll get you set up — usually within 24 hours.
+          Synvora is currently available by invitation. Reach out and we&apos;ll get you set up — usually within 24 hours.
         </p>
 
         <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
@@ -34,7 +34,7 @@ export function CTA() {
         </div>
 
         <p className="mt-8 text-sm text-white/50">
-          No commitment required. We'll walk you through setup personally.
+          No commitment required. We&apos;ll walk you through setup personally.
         </p>
       </div>
     </section>

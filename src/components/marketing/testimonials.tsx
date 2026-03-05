@@ -37,7 +37,7 @@ export function Testimonials() {
             Connects to the tools you already use
           </h2>
           <p className="mt-5 text-lg text-slate-500">
-            Synvora doesn't replace your stack — it sits on top of it, pulling in data so you don't have to.
+            Synvora doesn&apos;t replace your stack — it sits on top of it, pulling in data so you don&apos;t have to.
           </p>
         </div>
 
