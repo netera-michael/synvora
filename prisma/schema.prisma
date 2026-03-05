@@ -107,11 +107,12 @@ model ShopifyImportQueue {
 }
 
 model Venue {
-  id        Int      @id @default(autoincrement())
-  name      String
-  slug      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                Int      @id @default(autoincrement())
+  name              String
+  slug              String   @unique
+  balanceAdjustment Float    @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   orders        Order[]
   users         User[]          @relation("UserVenues")
@@ -151,6 +152,7 @@ model Payout {
   status            String    @default("Posted")
   description       String    @default("Payout")
   account           String    @default("Payouts")
+  period            String?
   processedAt       DateTime
   notes             String?
   venueId           Int

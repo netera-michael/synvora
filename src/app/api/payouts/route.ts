@@ -16,6 +16,7 @@ const payoutSchema = z.object({
   status: z.string().default("Posted"),
   description: z.string().default("Payout"),
   account: z.string().default("Payouts"),
+  period: z.string().optional().nullable(),
   processedAt: z.union([z.string(), z.date()]),
   notes: z.string().optional().nullable(),
   venueId: z.number().int()
@@ -28,6 +29,7 @@ const serialize = (payout: any) => ({
   status: payout.status,
   description: payout.description,
   account: payout.account,
+  period: payout.period ?? null,
   processedAt: payout.processedAt.toISOString(),
   notes: payout.notes,
   venueId: payout.venueId,
@@ -151,6 +153,7 @@ export async function POST(request: Request) {
       description: parsed.data.description ?? "Payout",
       account: parsed.data.account ?? "Payouts",
       processedAt: parsed.data.processedAt instanceof Date ? parsed.data.processedAt : new Date(parsed.data.processedAt),
+      period: parsed.data.period ?? null,
       notes: parsed.data.notes ?? null,
       venueId: parsed.data.venueId,
       createdById: Number(session.user.id)

@@ -6,7 +6,8 @@ import { authOptions } from "@/lib/auth";
 import { slugify } from "@/lib/order-utils";
 
 const venueSchema = z.object({
-  name: z.string().min(1, "Name is required").max(100, "Name is too long")
+  name: z.string().min(1, "Name is required").max(100, "Name is too long").optional(),
+  balanceAdjustment: z.number().optional()
 });
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
@@ -27,20 +28,30 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     return NextResponse.json({ message: "Invalid payload", issues: parsed.error.flatten() }, { status: 400 });
   }
 
-  const name = parsed.data.name.trim();
-  const slug = slugify(name);
+  const updateData: any = {};
 
-  const existingSlug = await prisma.venue.findUnique({ where: { slug } });
-  if (existingSlug && existingSlug.id !== venueId) {
-    return NextResponse.json({ message: "Another venue already uses this name" }, { status: 409 });
+  if (parsed.data.name !== undefined) {
+    const name = parsed.data.name.trim();
+    const slug = slugify(name);
+    const existingSlug = await prisma.venue.findUnique({ where: { slug } });
+    if (existingSlug && existingSlug.id !== venueId) {
+      return NextResponse.json({ message: "Another venue already uses this name" }, { status: 409 });
+    }
+    updateData.name = name;
+    updateData.slug = slug;
+  }
+
+  if (parsed.data.balanceAdjustment !== undefined) {
+    updateData.balanceAdjustment = parsed.data.balanceAdjustment;
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    return NextResponse.json({ message: "No fields to update" }, { status: 400 });
   }
 
   const updated = await prisma.venue.update({
     where: { id: venueId },
-    data: {
-      name,
-      slug
-    },
+    data: updateData,
     include: {
       _count: {
         select: {
