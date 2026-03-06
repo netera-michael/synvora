@@ -484,6 +484,13 @@ export function OrderDrawer({
                       <p className="mt-1 text-3xl font-bold text-synvora-primary">
                         {viewPayout != null ? formatCurrency(viewPayout, "USD") : "—"}
                       </p>
+                      {isAdmin && order.originalAmount != null && order.exchangeRate != null && (
+                        <p className="mt-1.5 text-xs text-synvora-primary/60">
+                          EGP {order.originalAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                          {" "}÷ {order.exchangeRate} × {((1 - CLIENT_COMMISSION_RATE) * 100).toFixed(2)}%
+                          {" "}= {viewPayout != null ? formatCurrency(viewPayout, "USD") : "—"}
+                        </p>
+                      )}
                     </div>
                   </div>
 
