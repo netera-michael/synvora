@@ -9,17 +9,31 @@ datasource db {
 }
 
 model User {
-  id        Int            @id @default(autoincrement())
-  email     String         @unique
-  password  String
-  name      String?
-  role      Role           @default(ADMIN)
-  orders    Order[]        @relation("UserOrders")
-  venues    Venue[]        @relation("UserVenues")
-  stores    ShopifyStore[]
-  payouts   Payout[]       @relation("UserPayouts")
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
+  id           Int                  @id @default(autoincrement())
+  email        String               @unique
+  password     String
+  name         String?
+  role         Role                 @default(ADMIN)
+  orders       Order[]              @relation("UserOrders")
+  venues       Venue[]              @relation("UserVenues")
+  stores       ShopifyStore[]
+  payouts      Payout[]             @relation("UserPayouts")
+  resetTokens  PasswordResetToken[]
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+}
+
+model PasswordResetToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
 }
 
 model Order {

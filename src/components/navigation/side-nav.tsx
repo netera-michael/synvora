@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import type { ComponentType } from "react";
 import { cn } from "@/lib/utils";
-import { ClipboardList, Clock, Package, BarChart3, Users, Settings, Upload, Store, CreditCard, UserCircle, LogOut } from "lucide-react";
+import { ClipboardList, Clock, Package, BarChart3, Users, Settings, Store, CreditCard, UserCircle, LogOut } from "lucide-react";
 import type { Route } from "next";
 import type { Session } from "next-auth";
 
@@ -40,7 +40,6 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/admin/settings", label: "Admin Settings", icon: Settings },
       { href: "/admin/settings/shopify-stores", label: "Shopify Stores", icon: Store },
-      { href: "/admin/settings/import", label: "Import CSV", icon: Upload },
       { href: "/admin/settings/user", label: "My Account", icon: UserCircle },
     ]
   }
@@ -50,9 +49,7 @@ const ADMIN_ONLY_PATHS = new Set<Route>([
   "/admin/orders/pending",
   "/admin/products",
   "/admin/customers",
-  "/admin/analytics",
   "/admin/settings",
-  "/admin/settings/import",
   "/admin/settings/shopify-stores"
 ] as Route[]);
 
@@ -95,10 +92,12 @@ export function SideNav({ session }: SideNavProps) {
               {group.title}
             </p>
             {group.items.map((item) => {
-              const isActive =
-                item.href === "/admin/orders"
-                  ? pathname === "/admin/orders"
-                  : pathname.startsWith(item.href);
+              // Exact-match for top-level routes that have children to avoid
+              // both parent and child being highlighted simultaneously
+              const exactMatchRoutes = new Set(["/admin/orders", "/admin/settings"]);
+              const isActive = exactMatchRoutes.has(item.href as string)
+                ? pathname === item.href
+                : pathname === item.href || pathname.startsWith(`${item.href}/`);
               const Icon = item.icon;
               return (
                 <Link
