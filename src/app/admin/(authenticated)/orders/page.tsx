@@ -132,6 +132,13 @@ export default function OrdersPage() {
     setSearchInput(searchParams.get("search") ?? "");
   }, [searchParams]);
 
+  // Local state for date inputs — only applied on blur or Enter
+  const [localStartDate, setLocalStartDate] = useState(startDateInputValue);
+  const [localEndDate, setLocalEndDate] = useState(endDateInputValue);
+
+  useEffect(() => { setLocalStartDate(startDateInputValue); }, [startDateInputValue]);
+  useEffect(() => { setLocalEndDate(endDateInputValue); }, [endDateInputValue]);
+
   const applySearch = (value: string) => {
     const params = new URLSearchParams(searchParams.toString());
     if (value.trim()) {
@@ -163,10 +170,24 @@ export default function OrdersPage() {
       const params = new URLSearchParams(searchParams.toString());
       params.set("tzOffset", String(tzOffset));
       const qs = params.toString();
-      router.replace(qs ? (`/orders?${qs}` as Route) : ("/orders" as Route));
+      router.replace(qs ? (`/admin/orders?${qs}` as Route) : ("/admin/orders" as Route));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tzOffset]); // Only depend on tzOffset to avoid re-triggering on every searchParams change
+
+  // Default clients to current month when no filter is active
+  useEffect(() => {
+    if (!session || isAdmin) return;
+    const hasFilter = searchParams.get("month") || searchParams.get("startDate") || searchParams.get("endDate");
+    if (hasFilter) return;
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("month", currentMonth);
+    params.set("tzOffset", String(tzOffset));
+    router.replace(`/admin/orders?${params.toString()}` as Route);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session]);
 
   const months = useMemo(() => {
     const now = new Date();
@@ -221,8 +242,7 @@ export default function OrdersPage() {
     params.delete("page");
 
     const qs = params.toString();
-    const target = qs ? `/orders?${qs}` : "/orders";
-    router.replace(target as Route);
+    router.replace((qs ? `/admin/orders?${qs}` : "/admin/orders") as Route);
   };
 
   const handleDateChange = (key: "startDate" | "endDate", value: string) => {
@@ -238,16 +258,12 @@ export default function OrdersPage() {
       }
     }
 
-    if (key === "startDate" || key === "endDate") {
-      params.delete("month");
-    }
-
+    params.delete("month");
     params.set("tzOffset", String(tzOffset));
     params.delete("page");
 
     const qs = params.toString();
-    const target = qs ? `/orders?${qs}` : "/orders";
-    router.replace(target as Route);
+    router.replace((qs ? `/admin/orders?${qs}` : "/admin/orders") as Route);
   };
 
   const handleClearRange = () => {
@@ -257,8 +273,7 @@ export default function OrdersPage() {
     params.set("tzOffset", String(tzOffset));
     params.delete("page");
     const qs = params.toString();
-    const target = qs ? `/orders?${qs}` : "/orders";
-    router.replace(target as Route);
+    router.replace((qs ? `/admin/orders?${qs}` : "/admin/orders") as Route);
   };
 
   const openDrawer = (order: OrderDto) => {
@@ -563,8 +578,10 @@ export default function OrdersPage() {
               From
               <input
                 type="date"
-                value={startDateInputValue}
-                onChange={(event) => handleDateChange("startDate", event.target.value)}
+                value={localStartDate}
+                onChange={(e) => setLocalStartDate(e.target.value)}
+                onBlur={(e) => handleDateChange("startDate", e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleDateChange("startDate", localStartDate)}
                 className="rounded-lg border border-synvora-border bg-white px-3 py-2 text-sm font-medium text-synvora-text shadow-sm focus:border-synvora-primary focus:outline-none focus:ring-1 focus:ring-synvora-primary"
               />
             </label>
@@ -572,8 +589,10 @@ export default function OrdersPage() {
               To
               <input
                 type="date"
-                value={endDateInputValue}
-                onChange={(event) => handleDateChange("endDate", event.target.value)}
+                value={localEndDate}
+                onChange={(e) => setLocalEndDate(e.target.value)}
+                onBlur={(e) => handleDateChange("endDate", e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleDateChange("endDate", localEndDate)}
                 className="rounded-lg border border-synvora-border bg-white px-3 py-2 text-sm font-medium text-synvora-text shadow-sm focus:border-synvora-primary focus:outline-none focus:ring-1 focus:ring-synvora-primary"
               />
             </label>
