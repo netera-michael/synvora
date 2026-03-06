@@ -175,9 +175,9 @@ export default function OrdersPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tzOffset]); // Only depend on tzOffset to avoid re-triggering on every searchParams change
 
-  // Default clients to current month when no filter is active
+  // Default to current month when no filter is active
   useEffect(() => {
-    if (!session || isAdmin) return;
+    if (!session) return;
     const hasFilter = searchParams.get("month") || searchParams.get("startDate") || searchParams.get("endDate");
     if (hasFilter) return;
     const now = new Date();
