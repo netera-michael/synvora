@@ -240,7 +240,7 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
                     <p className="text-sm text-synvora-text-secondary">
                       {formatDateTime(order.processedAt)} • {order.customerName || "No Customer"}
                       {isAdmin && order.shopifyOrderNumber && (
-                        <span className="ml-2 text-xs font-medium text-slate-400">
+                        <span className="ml-2 text-xs font-medium text-synvora-text-secondary/60">
                           Shopify: {order.shopifyOrderNumber}
                         </span>
                       )}
@@ -290,16 +290,18 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
                   >
                     Overview
                   </Tab>
-                  <Tab
-                    className={({ selected }) =>
-                      cn(
-                        "px-3 py-2 text-sm font-semibold outline-none",
-                        selected ? "text-synvora-primary border-b-2 border-synvora-primary" : "text-synvora-text-secondary hover:text-synvora-text"
-                      )
-                    }
-                  >
-                    Timeline
-                  </Tab>
+                  {isAdmin && (
+                    <Tab
+                      className={({ selected }) =>
+                        cn(
+                          "px-3 py-2 text-sm font-semibold outline-none",
+                          selected ? "text-synvora-primary border-b-2 border-synvora-primary" : "text-synvora-text-secondary hover:text-synvora-text"
+                        )
+                      }
+                    >
+                      Timeline
+                    </Tab>
+                  )}
                 </Tab.List>
                 <Tab.Panels className="flex-1 overflow-y-auto px-6 py-6">
                   <Tab.Panel className="space-y-6">
@@ -529,19 +531,21 @@ export function OrderDrawer({ open, order, onClose, onOrderUpdated, onOrderDelet
                     )}
                   </Tab.Panel>
 
-                  <Tab.Panel>
-                    <div className="space-y-4 text-sm text-synvora-text-secondary">
-                      <p>The order event timeline will appear here once activity is recorded.</p>
-                      <ul className="space-y-2">
-                        <li className="rounded-lg border border-synvora-border px-4 py-3">
-                          <p className="text-sm font-semibold text-synvora-text">Created in Synvora</p>
-                          <p className="text-xs text-synvora-text-secondary/70">
-                            {formatDateTime(order.processedAt)} • {order.customerName}
-                          </p>
-                        </li>
-                      </ul>
-                    </div>
-                  </Tab.Panel>
+                  {isAdmin && (
+                    <Tab.Panel>
+                      <div className="space-y-4 text-sm text-synvora-text-secondary">
+                        <p>The order event timeline will appear here once activity is recorded.</p>
+                        <ul className="space-y-2">
+                          <li className="rounded-lg border border-synvora-border px-4 py-3">
+                            <p className="text-sm font-semibold text-synvora-text">Created in Synvora</p>
+                            <p className="text-xs text-synvora-text-secondary/70">
+                              {formatDateTime(order.processedAt)} • {order.customerName}
+                            </p>
+                          </li>
+                        </ul>
+                      </div>
+                    </Tab.Panel>
+                  )}
                 </Tab.Panels>
               </Tab.Group>
             </Dialog.Panel>

@@ -781,14 +781,14 @@ export default function OrdersPage() {
           <p className="mt-3 text-2xl font-semibold text-synvora-text">
             {metrics ? formatCurrencyValue(metrics.totalPayout) : isLoading ? "…" : "$0.00"}
           </p>
-          <p className="mt-1 text-sm text-synvora-text-secondary">Expected client payout (USD)</p>
+          <p className="mt-1 text-sm text-synvora-text-secondary">{isAdmin ? "Expected client payout (USD)" : "Your earnings (USD)"}</p>
         </div>
         <div className="rounded-xl border border-synvora-border bg-white p-5 shadow-sm">
           <p className="text-xs font-medium uppercase tracking-wide text-synvora-text-secondary">Tickets value (EGP)</p>
           <p className="mt-3 text-2xl font-semibold text-synvora-text">
             {metrics ? `EGP ${formatNumber(metrics.totalTicketsValue)}` : isLoading ? "…" : "EGP 0.00"}
           </p>
-          <p className="mt-1 text-sm text-synvora-text-secondary">Sum of original amounts</p>
+          <p className="mt-1 text-sm text-synvora-text-secondary">{isAdmin ? "Sum of original amounts" : "Gross sales in EGP"}</p>
         </div>
       </div>
 
