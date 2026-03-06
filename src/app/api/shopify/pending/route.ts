@@ -42,10 +42,28 @@ export async function GET(request: Request) {
             whereClause.currency = currency;
         }
 
+        // Exclude any queue items whose shopifyOrderId already exists in the Order table
+        const existingExternalIds = (
+            await prisma.order.findMany({
+                select: { externalId: true },
+                where: { externalId: { not: null } },
+            })
+        ).map((o) => o.externalId as string);
+
         const pendingOrders = await prisma.shopifyImportQueue.findMany({
-            where: whereClause,
+            where: {
+                ...whereClause,
+                shopifyOrderId: { notIn: existingExternalIds },
+            },
             orderBy: { createdAt: "desc" },
         });
+
+        // Clean up any stale queue entries that were already imported (best-effort)
+        if (existingExternalIds.length > 0) {
+            await prisma.shopifyImportQueue.deleteMany({
+                where: { shopifyOrderId: { in: existingExternalIds } },
+            }).catch(() => {}); // non-blocking, ignore if it fails
+        }
 
         return NextResponse.json({ orders: pendingOrders });
     } catch (error) {

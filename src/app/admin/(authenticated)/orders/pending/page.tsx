@@ -23,6 +23,7 @@ export default function PendingImportsPage() {
     const [selectedOrders, setSelectedOrders] = useState<Set<number>>(new Set());
     const [isProcessing, setIsProcessing] = useState(false);
     const [isSyncOpen, setIsSyncOpen] = useState(false);
+    const [confirmIgnore, setConfirmIgnore] = useState(false);
     const [selectedVenueId, setSelectedVenueId] = useState<number | null>(null);
 
     // Fetch available venues
@@ -98,8 +99,8 @@ export default function PendingImportsPage() {
 
     const handleIgnore = async () => {
         if (selectedOrders.size === 0) return;
-        if (!confirm("Are you sure you want to ignore/delete these orders?")) return;
-
+        if (!confirmIgnore) { setConfirmIgnore(true); return; }
+        setConfirmIgnore(false);
         setIsProcessing(true);
         try {
             const res = await fetch("/api/shopify/pending", {
@@ -137,14 +138,33 @@ export default function PendingImportsPage() {
                         <CloudDownload className="h-4 w-4" />
                         Fetch from Shopify
                     </button>
-                    <button
-                        onClick={handleIgnore}
-                        disabled={selectedOrders.size === 0 || isProcessing}
-                        className="inline-flex items-center justify-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 hover:bg-rose-100 disabled:opacity-50"
-                    >
-                        <XCircle className="h-4 w-4" />
-                        Ignore Selected
-                    </button>
+                    {confirmIgnore ? (
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm text-synvora-text-secondary">Remove {selectedOrders.size} order{selectedOrders.size !== 1 ? "s" : ""}?</span>
+                            <button
+                                onClick={handleIgnore}
+                                disabled={isProcessing}
+                                className="inline-flex items-center justify-center gap-1 rounded-lg bg-rose-600 px-3 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+                            >
+                                Confirm
+                            </button>
+                            <button
+                                onClick={() => setConfirmIgnore(false)}
+                                className="inline-flex items-center justify-center rounded-lg border border-synvora-border px-3 py-2 text-sm font-medium text-synvora-text-secondary hover:bg-synvora-surface-hover"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={handleIgnore}
+                            disabled={selectedOrders.size === 0 || isProcessing}
+                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 hover:bg-rose-100 disabled:opacity-50"
+                        >
+                            <XCircle className="h-4 w-4" />
+                            Ignore Selected
+                        </button>
+                    )}
                     <button
                         onClick={handleImport}
                         disabled={selectedOrders.size === 0 || isProcessing || !effectiveVenueId}
