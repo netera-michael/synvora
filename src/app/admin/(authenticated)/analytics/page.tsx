@@ -14,7 +14,7 @@ const fmt = (n: number, currency = "USD") =>
 const fmtPct = (n: number) => `${n > 0 ? "+" : ""}${n.toFixed(1)}%`;
 
 type AnalyticsData = {
-  months: { month: string; label: string; orders: number; revenue: number; payout: number }[];
+  months: { month: string; label: string; orders: number; revenue: number; payout: number; aedTotal: number }[];
   totals: { totalOrders: number; totalRevenue: number; totalPayout: number; avgOrderValue: number };
   breakdown: Record<string, number>;
   momPayoutChange: number | null;
@@ -205,6 +205,7 @@ export default function AnalyticsPage() {
               <th className="px-6 py-3">Month</th>
               <th className="px-6 py-3 text-right">Orders</th>
               <th className="px-6 py-3 text-right">Gross (USD)</th>
+              {isAdmin && <th className="px-6 py-3 text-right">Total (AED)</th>}
               <th className="px-6 py-3 text-right">{isAdmin ? "Payout" : "Earnings"} (USD)</th>
             </tr>
           </thead>
@@ -212,7 +213,7 @@ export default function AnalyticsPage() {
             {isLoading
               ? Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i}>
-                    {Array.from({ length: 4 }).map((_, j) => (
+                    {Array.from({ length: isAdmin ? 5 : 4 }).map((_, j) => (
                       <td key={j} className="px-6 py-3"><Skeleton className="h-4 w-20" /></td>
                     ))}
                   </tr>
@@ -231,6 +232,13 @@ export default function AnalyticsPage() {
                       </td>
                       <td className="px-6 py-3 text-right text-synvora-text-secondary">{m.orders}</td>
                       <td className="px-6 py-3 text-right text-synvora-text">{fmt(m.revenue)}</td>
+                      {isAdmin && (
+                        <td className="px-6 py-3 text-right text-synvora-text-secondary">
+                          {m.aedTotal > 0
+                            ? new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(m.aedTotal)
+                            : "—"}
+                        </td>
+                      )}
                       <td className="px-6 py-3 text-right font-semibold text-synvora-text">{fmt(m.payout)}</td>
                     </tr>
                   );

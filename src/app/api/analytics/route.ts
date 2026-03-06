@@ -31,14 +31,15 @@ export async function GET() {
       exchangeRate: true,
       aedEgpRate: true,
       financialStatus: true,
-      currency: true
+      currency: true,
+      orderNumber: true
     },
     orderBy: { processedAt: "asc" }
   });
 
   // Build monthly aggregates for last 12 months
   const now = new Date();
-  const months: { month: string; label: string; orders: number; revenue: number; payout: number }[] = [];
+  const months: { month: string; label: string; orders: number; revenue: number; payout: number; aedTotal: number }[] = [];
 
   for (let i = 11; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
@@ -50,7 +51,14 @@ export async function GET() {
     });
     const revenue = monthOrders.reduce((s, o) => s + o.totalAmount, 0);
     const payout = monthOrders.reduce((s, o) => s + calculatePayoutFromOrder(o), 0);
-    months.push({ month: key, label, orders: monthOrders.length, revenue, payout });
+    const aedTotal = monthOrders.reduce((s, o) => {
+      if (typeof o.originalAmount === "number" && o.originalAmount > 0 &&
+          typeof o.aedEgpRate === "number" && o.aedEgpRate > 0) {
+        return s + o.originalAmount / o.aedEgpRate;
+      }
+      return s;
+    }, 0);
+    months.push({ month: key, label, orders: monthOrders.length, revenue, payout, aedTotal });
   }
 
   // Totals
