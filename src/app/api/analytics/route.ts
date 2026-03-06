@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
 import { calculatePayoutFromOrder } from "@/lib/order-utils";
+import { BUSINESS_MONTH_START_DAY } from "@/lib/constants";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -45,9 +46,15 @@ export async function GET() {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     const label = d.toLocaleString("en-US", { month: "short", year: "2-digit" });
+
+    // Business month: starts on day 2 of month d, ends on day 1 of the next month
+    // (matches orders route logic — post-midnight transactions land on next calendar day)
+    const bizStart = new Date(Date.UTC(d.getFullYear(), d.getMonth(), BUSINESS_MONTH_START_DAY));
+    const bizEnd = new Date(Date.UTC(d.getFullYear(), d.getMonth() + 1, BUSINESS_MONTH_START_DAY - 1, 23, 59, 59, 999));
+
     const monthOrders = orders.filter((o) => {
       const pd = new Date(o.processedAt);
-      return pd.getFullYear() === d.getFullYear() && pd.getMonth() === d.getMonth();
+      return pd >= bizStart && pd <= bizEnd;
     });
     const revenue = monthOrders.reduce((s, o) => s + o.totalAmount, 0);
     const payout = monthOrders.reduce((s, o) => s + calculatePayoutFromOrder(o), 0);
