@@ -14,7 +14,7 @@ const fmt = (n: number, currency = "USD") =>
 const fmtPct = (n: number) => `${n > 0 ? "+" : ""}${n.toFixed(1)}%`;
 
 type AnalyticsData = {
-  months: { month: string; label: string; orders: number; revenue: number; payout: number; aedTotal: number }[];
+  months: { month: string; label: string; orders: number; egpTotal: number; aedTotal: number; revenue: number; payout: number }[];
   totals: { totalOrders: number; totalRevenue: number; totalPayout: number; avgOrderValue: number };
   breakdown: Record<string, number>;
   momPayoutChange: number | null;
@@ -204,22 +204,25 @@ export default function AnalyticsPage() {
             <tr>
               <th className="px-6 py-3">Month</th>
               <th className="px-6 py-3 text-right">Orders</th>
-              <th className="px-6 py-3 text-right">Gross (USD)</th>
-              {isAdmin && <th className="px-6 py-3 text-right">Total (AED)</th>}
-              <th className="px-6 py-3 text-right">{isAdmin ? "Payout" : "Earnings"} (USD)</th>
+              {isAdmin && <th className="px-6 py-3 text-right">Total EGP</th>}
+              {isAdmin && <th className="px-6 py-3 text-right">Total AED</th>}
+              <th className="px-6 py-3 text-right">Gross USD</th>
+              <th className="px-6 py-3 text-right">Payout USD</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 bg-white">
             {isLoading
               ? Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i}>
-                    {Array.from({ length: isAdmin ? 5 : 4 }).map((_, j) => (
+                    {Array.from({ length: isAdmin ? 6 : 4 }).map((_, j) => (
                       <td key={j} className="px-6 py-3"><Skeleton className="h-4 w-20" /></td>
                     ))}
                   </tr>
                 ))
               : [...months].reverse().map((m) => {
                   const isCurrentMonth = m.month === new Date().toISOString().slice(0, 7);
+                  const fmtNum = (n: number) =>
+                    n > 0 ? new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n) : "—";
                   return (
                     <tr key={m.month} className={isCurrentMonth ? "bg-synvora-primary/5" : "hover:bg-synvora-surface-active/50"}>
                       <td className="px-6 py-3 font-medium text-synvora-text">
@@ -231,14 +234,9 @@ export default function AnalyticsPage() {
                         )}
                       </td>
                       <td className="px-6 py-3 text-right text-synvora-text-secondary">{m.orders}</td>
+                      {isAdmin && <td className="px-6 py-3 text-right text-synvora-text-secondary">{fmtNum(m.egpTotal)}</td>}
+                      {isAdmin && <td className="px-6 py-3 text-right text-synvora-text-secondary">{fmtNum(m.aedTotal)}</td>}
                       <td className="px-6 py-3 text-right text-synvora-text">{fmt(m.revenue)}</td>
-                      {isAdmin && (
-                        <td className="px-6 py-3 text-right text-synvora-text-secondary">
-                          {m.aedTotal > 0
-                            ? new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(m.aedTotal)
-                            : "—"}
-                        </td>
-                      )}
                       <td className="px-6 py-3 text-right font-semibold text-synvora-text">{fmt(m.payout)}</td>
                     </tr>
                   );
