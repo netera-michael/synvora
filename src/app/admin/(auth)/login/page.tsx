@@ -135,7 +135,7 @@ function LoginForm() {
             <div>
               <p className="font-semibold text-synvora-text">Check your email</p>
               <p className="mt-1 text-sm text-synvora-text-secondary">
-                If an account exists for <strong>{forgotState.email}</strong>, we've sent a reset link. It expires in 1 hour.
+                If an account exists for <strong>{forgotState.email}</strong>, we&apos;ve sent a reset link. It expires in 1 hour.
               </p>
             </div>
             <button

@@ -3,9 +3,8 @@ import { randomBytes } from "crypto";
 import { Resend } from "resend";
 import { prisma } from "@/lib/prisma";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export async function POST(request: Request) {
+  const resend = new Resend(process.env.RESEND_API_KEY ?? "");
   const { email } = await request.json().catch(() => ({ email: null }));
 
   // Always return the same response to avoid leaking whether an email exists
