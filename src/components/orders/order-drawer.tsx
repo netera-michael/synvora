@@ -284,16 +284,6 @@ export function OrderDrawer({
                               {order.financialStatus}
                             </span>
                           )}
-                          <span
-                            className={cn(
-                              "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
-                              order.source === "shopify"
-                                ? "bg-emerald-50 text-emerald-700"
-                                : "bg-synvora-primary/10 text-synvora-primary"
-                            )}
-                          >
-                            {order.source === "shopify" ? "Shopify" : "Manual"}
-                          </span>
                         </div>
                         <p className="mt-1 text-sm text-synvora-text-secondary">
                           {formatDateTime(order.processedAt)}
@@ -494,12 +484,6 @@ export function OrderDrawer({
                       <p className="mt-1 text-3xl font-bold text-synvora-primary">
                         {viewPayout != null ? formatCurrency(viewPayout, "USD") : "—"}
                       </p>
-                      {order.originalAmount != null && order.exchangeRate != null && (
-                        <p className="mt-1.5 text-xs text-synvora-text-secondary">
-                          EGP {order.originalAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                          {" "}÷ {order.exchangeRate} × {((1 - CLIENT_COMMISSION_RATE) * 100).toFixed(2)}%
-                        </p>
-                      )}
                     </div>
                   </div>
 
