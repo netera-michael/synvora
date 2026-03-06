@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
+import { SynvoraLogo } from "@/components/ui/logo";
 
 type View = "login" | "forgot";
 
@@ -59,9 +60,7 @@ function LoginForm() {
       <div className="flex w-full max-w-sm flex-col gap-8 rounded-2xl border border-synvora-border bg-white p-8 shadow-sm">
         {/* Brand */}
         <div className="flex flex-col items-center gap-3 text-center">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-synvora-primary text-lg font-bold text-white shadow-sm">
-            S
-          </div>
+          <SynvoraLogo size={44} showWordmark={false} />
           <div>
             <p className="text-xl font-semibold text-synvora-text">Synvora</p>
             <p className="mt-0.5 text-sm text-synvora-text-secondary">

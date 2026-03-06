@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { SynvoraLogo } from "@/components/ui/logo";
 
 export default function ResetPasswordPage() {
   return (
@@ -97,9 +98,7 @@ function ResetPasswordForm() {
     <div className="flex min-h-screen items-center justify-center bg-synvora-surface px-4 py-12">
       <div className="flex w-full max-w-sm flex-col gap-8 rounded-2xl border border-synvora-border bg-white p-8 shadow-sm">
         <div className="flex flex-col items-center gap-3 text-center">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-synvora-primary text-lg font-bold text-white shadow-sm">
-            S
-          </div>
+          <SynvoraLogo size={44} showWordmark={false} />
           <div>
             <p className="text-xl font-semibold text-synvora-text">Set new password</p>
             <p className="mt-0.5 text-sm text-synvora-text-secondary">Choose a strong password for your account.</p>

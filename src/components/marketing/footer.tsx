@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { Mail } from "lucide-react";
+import { SynvoraLogo } from "@/components/ui/logo";
 
 const links = {
   product: [
-    { name: "Features", href: "#features" },
+    { name: "Why Synvora", href: "#features" },
     { name: "How it Works", href: "#how-it-works" },
-    { name: "Integrations", href: "#integrations" },
+    { name: "Request access", href: "mailto:hello@synvora.us" },
   ],
   account: [
     { name: "Sign in", href: "/admin/login" },
@@ -20,14 +21,11 @@ export function Footer() {
         <div className="grid grid-cols-1 gap-10 md:grid-cols-4">
           {/* Brand */}
           <div className="md:col-span-2 space-y-5">
-            <Link href="/" className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0A5AFF] text-white font-bold text-sm">
-                S
-              </div>
-              <span className="text-base font-semibold text-white tracking-tight">Synvora</span>
+            <Link href="/">
+              <SynvoraLogo size={32} dark />
             </Link>
             <p className="text-sm text-slate-400 max-w-xs leading-relaxed">
-              Order management platform for Shopify merchants in MENA — built around local currency, multi-venue operations, and real-time sync.
+              The platform for businesses that sell globally and get paid in hard currency — with full transparency and no surprises.
             </p>
             <a
               href="mailto:hello@synvora.us"

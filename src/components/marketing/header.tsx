@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
+import { SynvoraLogo } from "@/components/ui/logo";
 
 const navigation = [
-  { name: "Features", href: "#features" },
+  { name: "Why Synvora", href: "#features" },
   { name: "How it Works", href: "#how-it-works" },
-  { name: "Integrations", href: "#integrations" },
+  { name: "Get access", href: "mailto:hello@synvora.us" },
 ];
 
 export function Header() {
@@ -18,11 +19,8 @@ export function Header() {
       <nav className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0A5AFF] text-white font-bold text-sm">
-              S
-            </div>
-            <span className="text-lg font-semibold text-slate-900 tracking-tight">Synvora</span>
+          <Link href="/">
+            <SynvoraLogo size={32} />
           </Link>
 
           {/* Desktop navigation */}

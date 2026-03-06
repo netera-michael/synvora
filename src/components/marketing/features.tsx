@@ -1,48 +1,41 @@
-import {
-  RefreshCw,
-  Building2,
-  DollarSign,
-  ClipboardCheck,
-  Lock,
-  BarChart2,
-} from "lucide-react";
+import { DollarSign, Globe, CalendarCheck, LayoutDashboard, Eye, HeadphonesIcon } from "lucide-react";
 
 const features = [
   {
-    icon: RefreshCw,
-    title: "Shopify Order Sync",
-    description:
-      "Connect multiple Shopify stores and pull orders automatically. New orders land in your review queue — no manual exports or CSV imports.",
-  },
-  {
     icon: DollarSign,
-    title: "Automatic EGP Pricing",
+    title: "Get paid in USD or AED",
     description:
-      "Set your product prices in Egyptian Pounds. Synvora fetches live USD/EGP and AED/EGP exchange rates and calculates each order's EGP value automatically.",
+      "Receive hard-currency payouts directly — regardless of local banking restrictions. No currency headaches, no manual conversions.",
   },
   {
-    icon: ClipboardCheck,
-    title: "Import Queue",
+    icon: Globe,
+    title: "Unlock international markets",
     description:
-      "Every incoming Shopify order passes through a review queue before it enters your system. Approve or ignore — you stay in control of what gets imported.",
+      "Open your business to buyers worldwide. Accept payments from customers in any country and stop being limited by geography.",
   },
   {
-    icon: Building2,
-    title: "Multi-Venue Management",
+    icon: CalendarCheck,
+    title: "2 free payouts per month",
     description:
-      "Run multiple venues or locations from one account. Assign stores and orders to specific venues, with separate product catalogs and pricing per venue.",
+      "Two scheduled payouts are included every month at no extra cost. Know exactly when to expect your money — no chasing, no surprises.",
   },
   {
-    icon: Lock,
-    title: "Encrypted Credentials",
+    icon: Eye,
+    title: "Full transparency",
     description:
-      "Shopify API tokens are encrypted at rest using AES-256. Your credentials are never stored in plaintext — security is built into the data layer, not bolted on.",
+      "Every order that contributes to your balance is fully itemized. See what came in, what was deducted, and what you are owed — at any time.",
   },
   {
-    icon: BarChart2,
-    title: "Order Tracking",
+    icon: LayoutDashboard,
+    title: "Dedicated client portal",
     description:
-      "Track order status, financial status, and fulfillment across all stores and venues in a single unified dashboard with filtering and search.",
+      "Your private dashboard shows your live balance, full payout history, and order records in one clean place — accessible 24/7.",
+  },
+  {
+    icon: HeadphonesIcon,
+    title: "Hands-on onboarding",
+    description:
+      "We set everything up for you personally. No self-service forms, no lengthy docs — just a short onboarding call and you are live.",
   },
 ];
 
@@ -50,20 +43,18 @@ export function Features() {
   return (
     <section id="features" className="py-24 sm:py-32 bg-white">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        {/* Header */}
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-sm font-semibold uppercase tracking-widest text-[#0A5AFF]">
-            Platform features
+            Why Synvora
           </p>
           <h2 className="mt-3 text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
-            Everything you need to manage Shopify orders locally
+            Everything you need to get paid globally
           </h2>
           <p className="mt-5 text-lg text-slate-500">
-            Purpose-built for merchants in MENA who sell through Shopify but need to operate in local currency.
+            Built for businesses that sell internationally and need reliable, transparent payouts in hard currency.
           </p>
         </div>
 
-        {/* Grid */}
         <div className="mx-auto mt-16 grid max-w-5xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {features.map((feature) => {
             const Icon = feature.icon;

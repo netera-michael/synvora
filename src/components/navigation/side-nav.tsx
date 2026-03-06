@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { ClipboardList, Clock, Package, BarChart3, Users, Settings, Store, CreditCard, UserCircle, LogOut } from "lucide-react";
 import type { Route } from "next";
 import type { Session } from "next-auth";
+import { SynvoraLogo } from "@/components/ui/logo";
 
 type NavItem = {
   href: Route;
@@ -75,13 +76,8 @@ export function SideNav({ session }: SideNavProps) {
     <aside className="flex h-full w-64 flex-none flex-col border-r border-synvora-border bg-white">
       {/* Brand header */}
       <div className="flex h-16 flex-none items-center gap-3 border-b border-synvora-border px-5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-synvora-primary text-sm font-bold text-white shadow-sm">
-          S
-        </div>
-        <div>
-          <p className="text-sm font-semibold text-synvora-text leading-none">Synvora</p>
-          <p className="mt-0.5 text-xs text-synvora-text-secondary leading-none">{isAdmin ? "Admin" : "Client Portal"}</p>
-        </div>
+        <SynvoraLogo size={28} />
+        <p className="text-xs text-synvora-text-secondary leading-none">{isAdmin ? "Admin" : "Client Portal"}</p>
       </div>
 
       {/* Nav groups */}
