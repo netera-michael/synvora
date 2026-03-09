@@ -113,8 +113,8 @@ export async function GET() {
 
   // --- All-time accordion (month → days) for drill-down UI ---
   const allMonthMap = new Map<string, {
-    label: string; ordersCount: number; egpTotal: number; aedTotal: number; revenue: number;
-    days: Map<string, { label: string; ordersCount: number; egpTotal: number; aedTotal: number; revenue: number }>;
+    label: string; ordersCount: number; egpTotal: number; aedTotal: number; revenue: number; payout: number;
+    days: Map<string, { label: string; ordersCount: number; egpTotal: number; aedTotal: number; revenue: number; payout: number }>;
   }>();
 
   for (const o of orders) {
@@ -128,12 +128,13 @@ export async function GET() {
     if (!allMonthMap.has(monthKey)) {
       allMonthMap.set(monthKey, {
         label: `${MONTH_NAMES[mo]} ${yr}`,
-        ordersCount: 0, egpTotal: 0, aedTotal: 0, revenue: 0, days: new Map()
+        ordersCount: 0, egpTotal: 0, aedTotal: 0, revenue: 0, payout: 0, days: new Map()
       });
     }
     const m = allMonthMap.get(monthKey)!;
     m.ordersCount++;
     m.revenue += o.totalAmount;
+    m.payout += calculatePayoutFromOrder(o);
     if (typeof o.originalAmount === "number" && o.originalAmount > 0) m.egpTotal += o.originalAmount;
     const rate = getAedRate(o);
     if (typeof o.originalAmount === "number" && o.originalAmount > 0 && rate && rate > 0)
@@ -142,12 +143,13 @@ export async function GET() {
     if (!m.days.has(dateKey)) {
       m.days.set(dateKey, {
         label: `${MONTH_SHORT[mo]} ${dy}`,
-        ordersCount: 0, egpTotal: 0, aedTotal: 0, revenue: 0
+        ordersCount: 0, egpTotal: 0, aedTotal: 0, revenue: 0, payout: 0
       });
     }
     const day = m.days.get(dateKey)!;
     day.ordersCount++;
     day.revenue += o.totalAmount;
+    day.payout += calculatePayoutFromOrder(o);
     if (typeof o.originalAmount === "number" && o.originalAmount > 0) day.egpTotal += o.originalAmount;
     if (typeof o.originalAmount === "number" && o.originalAmount > 0 && rate && rate > 0)
       day.aedTotal += o.originalAmount / rate;
@@ -162,6 +164,7 @@ export async function GET() {
       egpTotal: data.egpTotal,
       aedTotal: data.aedTotal,
       revenue: data.revenue,
+      payout: data.payout,
       days: Array.from(data.days.entries())
         .map(([date, d]) => ({ date, ...d }))
         .sort((a, b) => a.date.localeCompare(b.date))
