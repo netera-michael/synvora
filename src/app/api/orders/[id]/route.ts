@@ -60,6 +60,7 @@ const serializeOrder = (order: any) => ({
   notes: order.notes,
   source: order.source,
   exchangeRate: order.exchangeRate,
+  aedEgpRate: order.aedEgpRate,
   originalAmount: order.originalAmount,
   shopifyStoreId: order.shopifyStoreId
 });

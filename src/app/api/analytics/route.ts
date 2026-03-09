@@ -48,6 +48,16 @@ export async function GET(request: Request) {
     orderBy: { processedAt: "asc" }
   });
 
+  const deductions = await prisma.dailyDeduction.findMany({
+    where: { venueId: { in: venueIds } },
+    select: {
+      venueId: true,
+      date: true,
+      amount: true
+    },
+    orderBy: { date: "asc" }
+  });
+
   // Helper: resolve AED/EGP rate from order (aedEgpRate if set, else exchangeRate if it looks like AED rate ≤20)
   const getAedRate = (o: { aedEgpRate?: number | null; exchangeRate?: number | null }) =>
     o.aedEgpRate ?? (o.exchangeRate && o.exchangeRate <= 20 ? o.exchangeRate : null);
@@ -83,6 +93,10 @@ export async function GET(request: Request) {
   const getBusinessMonthMeta = (value: Date) => {
     const { year, monthIndex, day } = getLocalDateParts(value);
 
+    return getBusinessMonthMetaFromParts(year, monthIndex, day);
+  };
+
+  const getBusinessMonthMetaFromParts = (year: number, monthIndex: number, day: number) => {
     let businessYear = year;
     let businessMonthIndex = monthIndex;
 
@@ -101,6 +115,27 @@ export async function GET(request: Request) {
       label: `${MONTH_NAMES[businessMonthIndex]} ${businessYear}`
     };
   };
+
+  const getStoredDateParts = (value: Date) => ({
+    year: value.getUTCFullYear(),
+    monthIndex: value.getUTCMonth(),
+    day: value.getUTCDate()
+  });
+
+  const deductionMonthTotals = new Map<string, number>();
+  const deductionDayTotals = new Map<string, number>();
+
+  for (const deduction of deductions) {
+    const { year, monthIndex, day } = getStoredDateParts(deduction.date);
+    const monthMeta = getBusinessMonthMetaFromParts(year, monthIndex, day);
+    deductionMonthTotals.set(
+      monthMeta.key,
+      (deductionMonthTotals.get(monthMeta.key) ?? 0) + deduction.amount
+    );
+
+    const dateKey = `${year}-${String(monthIndex + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    deductionDayTotals.set(dateKey, (deductionDayTotals.get(dateKey) ?? 0) + deduction.amount);
+  }
 
   // --- Last 12 months (for KPI cards + bar chart) ---
   const localNow = new Date(Date.now() - tzOffsetMs);
@@ -130,7 +165,15 @@ export async function GET(request: Request) {
       typeof o.originalAmount === "number" && o.originalAmount > 0 ? s + o.originalAmount : s, 0);
     const aedTotal = mo.reduce((s, o) => s + calculateNetAedPayout(o), 0);
 
-    months.push({ month: key, label, orders: mo.length, egpTotal, aedTotal, revenue, payout });
+    months.push({
+      month: key,
+      label,
+      orders: mo.length,
+      egpTotal,
+      aedTotal: aedTotal - (deductionMonthTotals.get(key) ?? 0),
+      revenue,
+      payout
+    });
   }
 
   // --- All-time totals ---
@@ -140,7 +183,9 @@ export async function GET(request: Request) {
   const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
   const allTimeEGP = orders.reduce((s, o) =>
     typeof o.originalAmount === "number" && o.originalAmount > 0 ? s + o.originalAmount : s, 0);
-  const allTimeAED = orders.reduce((s, o) => s + calculateNetAedPayout(o), 0);
+  const allTimeAED =
+    orders.reduce((s, o) => s + calculateNetAedPayout(o), 0) -
+    deductions.reduce((s, deduction) => s + deduction.amount, 0);
 
   // --- Payment status breakdown ---
   const breakdown: Record<string, number> = {};
@@ -163,37 +208,71 @@ export async function GET(request: Request) {
     days: Map<string, { label: string; ordersCount: number; egpTotal: number; aedTotal: number; revenue: number; payout: number }>;
   }>();
 
+  const ensureMonthEntry = (monthKey: string, monthLabel: string) => {
+    if (!allMonthMap.has(monthKey)) {
+      allMonthMap.set(monthKey, {
+        label: monthLabel,
+        ordersCount: 0,
+        egpTotal: 0,
+        aedTotal: 0,
+        revenue: 0,
+        payout: 0,
+        days: new Map()
+      });
+    }
+    return allMonthMap.get(monthKey)!;
+  };
+
+  const ensureDayEntry = (
+    monthEntry: {
+      label: string; ordersCount: number; egpTotal: number; aedTotal: number; revenue: number; payout: number;
+      days: Map<string, { label: string; ordersCount: number; egpTotal: number; aedTotal: number; revenue: number; payout: number }>;
+    },
+    dateKey: string,
+    label: string
+  ) => {
+    if (!monthEntry.days.has(dateKey)) {
+      monthEntry.days.set(dateKey, {
+        label,
+        ordersCount: 0,
+        egpTotal: 0,
+        aedTotal: 0,
+        revenue: 0,
+        payout: 0
+      });
+    }
+    return monthEntry.days.get(dateKey)!;
+  };
+
   for (const o of orders) {
     const processedAt = new Date(o.processedAt);
     const { key: monthKey, label: monthLabel } = getBusinessMonthMeta(processedAt);
     const { year: localYear, monthIndex: localMonthIndex, day: localDay } = getLocalDateParts(processedAt);
     const dateKey = `${localYear}-${String(localMonthIndex + 1).padStart(2, "0")}-${String(localDay).padStart(2, "0")}`;
-
-    if (!allMonthMap.has(monthKey)) {
-      allMonthMap.set(monthKey, {
-        label: monthLabel,
-        ordersCount: 0, egpTotal: 0, aedTotal: 0, revenue: 0, payout: 0, days: new Map()
-      });
-    }
-    const m = allMonthMap.get(monthKey)!;
+    const dayLabel = `${MONTH_SHORT[localMonthIndex]} ${localDay}`;
+    const m = ensureMonthEntry(monthKey, monthLabel);
     m.ordersCount++;
     m.revenue += o.totalAmount;
     m.payout += calculatePayoutFromOrder(o);
     if (typeof o.originalAmount === "number" && o.originalAmount > 0) m.egpTotal += o.originalAmount;
     m.aedTotal += calculateNetAedPayout(o);
-
-    if (!m.days.has(dateKey)) {
-      m.days.set(dateKey, {
-        label: `${MONTH_SHORT[localMonthIndex]} ${localDay}`,
-        ordersCount: 0, egpTotal: 0, aedTotal: 0, revenue: 0, payout: 0
-      });
-    }
-    const day = m.days.get(dateKey)!;
+    const day = ensureDayEntry(m, dateKey, dayLabel);
     day.ordersCount++;
     day.revenue += o.totalAmount;
     day.payout += calculatePayoutFromOrder(o);
     if (typeof o.originalAmount === "number" && o.originalAmount > 0) day.egpTotal += o.originalAmount;
     day.aedTotal += calculateNetAedPayout(o);
+  }
+
+  for (const deduction of deductions) {
+    const { year, monthIndex, day } = getStoredDateParts(deduction.date);
+    const monthMeta = getBusinessMonthMetaFromParts(year, monthIndex, day);
+    const dateKey = `${year}-${String(monthIndex + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const monthEntry = ensureMonthEntry(monthMeta.key, monthMeta.label);
+    monthEntry.aedTotal -= deduction.amount;
+
+    const dayEntry = ensureDayEntry(monthEntry, dateKey, `${MONTH_SHORT[monthIndex]} ${day}`);
+    dayEntry.aedTotal -= deduction.amount;
   }
 
   const allMonths = Array.from(allMonthMap.entries())

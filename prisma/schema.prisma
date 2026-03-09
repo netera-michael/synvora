@@ -134,6 +134,7 @@ model Venue {
   shopifyStores ShopifyStore[]
   products      Product[]
   dailyRates    DailyRate[]
+  dailyDeductions DailyDeduction[]
 }
 
 model Product {
@@ -201,6 +202,21 @@ model DailyRate {
   updatedAt  DateTime @updatedAt
 
   venue Venue @relation(fields: [venueId], references: [id])
+
+  @@unique([venueId, date])
+  @@index([venueId])
+}
+
+model DailyDeduction {
+  id        Int      @id @default(autoincrement())
+  venueId    Int
+  date      DateTime @db.Date
+  amount    Float
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
 
   @@unique([venueId, date])
   @@index([venueId])
