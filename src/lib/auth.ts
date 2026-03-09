@@ -25,7 +25,9 @@ export const authOptions: NextAuthOptions = {
       if (session.user && token) {
         session.user.id = token.id as string;
         session.user.email = token.email as string;
-        session.user.name = token.name as string | undefined;
+        // Strip the old hardcoded "Synvora Admin" fallback from cached tokens
+        const rawName = token.name as string | undefined;
+        session.user.name = rawName && rawName !== "Synvora Admin" ? rawName : undefined;
         session.user.role = (token.role as "ADMIN" | "USER") ?? "USER";
         session.user.venueIds = (token.venueIds as number[]) ?? [];
       }
@@ -66,7 +68,7 @@ export const authOptions: NextAuthOptions = {
         return {
           id: String(user.id),
           email: user.email,
-          name: user.name ?? "Synvora Admin",
+          name: user.name ?? undefined,
           role: user.role,
           venueIds: user.venues.map((venue) => venue.id)
         };

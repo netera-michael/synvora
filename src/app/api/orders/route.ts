@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
+import { BUSINESS_MONTH_START_DAY } from "@/lib/constants";
 import {
   calculateFromOriginalAmount,
   calculatePayoutFromOrder,
@@ -193,12 +194,11 @@ export async function GET(request: Request) {
     rangeEnd = endDate;
   } else if (parseResult.data.month) {
     const [year, month] = parseResult.data.month.split('-').map((value) => Number(value));
-    // Calculate start of month: first day at 00:00:00 in user's timezone
-    // Convert to UTC by adding the timezone offset (tzOffset is positive for timezones behind UTC)
-    const startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0) + tzOffsetMs);
-    // Calculate end of month: last day at 23:59:59.999 in user's timezone
-    // Use month (not month+1) because Date constructor with day 0 gives last day of previous month
-    const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999) + tzOffsetMs);
+    // Business month starts on BUSINESS_MONTH_START_DAY (2nd) because the club
+    // operates past midnight — post-midnight orders land on the next calendar day.
+    // "January 2026" = Jan 2 00:00 → Feb 1 23:59 in Shopify timestamps.
+    const startDate = new Date(Date.UTC(year, month - 1, BUSINESS_MONTH_START_DAY, 0, 0, 0, 0) + tzOffsetMs);
+    const endDate = new Date(Date.UTC(year, month, BUSINESS_MONTH_START_DAY - 1, 23, 59, 59, 999) + tzOffsetMs);
     rangeStart = startDate;
     rangeEnd = endDate;
   }
@@ -291,7 +291,7 @@ export async function GET(request: Request) {
     select: {
       totalAmount: true,
       originalAmount: true,
-      exchangeRate: true,
+      aedEgpRate: true,
       fulfillmentStatus: true
     }
   });

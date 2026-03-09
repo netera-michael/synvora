@@ -1,148 +1,79 @@
-"use client";
-
 import Link from "next/link";
-import { Github, Twitter, Linkedin, Mail } from "lucide-react";
+import { Mail } from "lucide-react";
+import { SynvoraLogo } from "@/components/ui/logo";
 
-const navigation = {
+const links = {
   product: [
-    { name: "Features", href: "#features" },
-    { name: "Pricing", href: "#pricing" },
-    { name: "Documentation", href: "#docs" },
-    { name: "API Reference", href: "#api" }
+    { name: "Why Synvora", href: "#features" },
+    { name: "How it Works", href: "#how-it-works" },
+    { name: "Request access", href: "mailto:hello@synvora.us" },
   ],
-  company: [
-    { name: "About", href: "#about" },
-    { name: "Blog", href: "#blog" },
-    { name: "Careers", href: "#careers" },
-    { name: "Contact", href: "#contact" }
+  account: [
+    { name: "Sign in", href: "/admin/login" },
+    { name: "Contact us", href: "mailto:hello@synvora.us" },
   ],
-  legal: [
-    { name: "Privacy Policy", href: "#privacy" },
-    { name: "Terms of Service", href: "#terms" },
-    { name: "Cookie Policy", href: "#cookies" },
-    { name: "Security", href: "#security" }
-  ],
-  social: [
-    { name: "Twitter", href: "#", icon: Twitter },
-    { name: "GitHub", href: "#", icon: Github },
-    { name: "LinkedIn", href: "#", icon: Linkedin },
-    { name: "Email", href: "mailto:hello@synvora.us", icon: Mail }
-  ]
 };
 
 export function Footer() {
   return (
-    <footer className="bg-slate-900 border-t border-slate-800">
+    <footer className="bg-slate-950 border-t border-white/5">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
-        <div className="xl:grid xl:grid-cols-3 xl:gap-8">
-          {/* Brand column */}
-          <div className="space-y-8">
-            <div className="flex items-center gap-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-synvora-primary to-synvora-accent text-white font-bold">
-                S
-              </div>
-              <span className="text-xl font-bold text-white">Synvora</span>
-            </div>
-            <p className="text-base text-slate-400 max-w-xs">
-              E-commerce platform enabling global commerce in regions without traditional payment support.
+        <div className="grid grid-cols-1 gap-10 md:grid-cols-4">
+          {/* Brand */}
+          <div className="md:col-span-2 space-y-5">
+            <Link href="/">
+              <SynvoraLogo size={32} dark />
+            </Link>
+            <p className="text-sm text-slate-400 max-w-xs leading-relaxed">
+              The platform for businesses that sell globally and get paid in hard currency — with full transparency and no surprises.
             </p>
-            <div className="flex gap-4">
-              {navigation.social.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <a
-                    key={item.name}
-                    href={item.href}
-                    className="text-slate-400 hover:text-white transition-colors"
-                  >
-                    <span className="sr-only">{item.name}</span>
-                    <Icon className="h-6 w-6" />
-                  </a>
-                );
-              })}
-            </div>
+            <a
+              href="mailto:hello@synvora.us"
+              className="inline-flex items-center gap-2 text-sm font-medium text-[#1D9BF0] hover:text-[#1D9BF0]/80 transition-colors"
+            >
+              <Mail className="h-4 w-4" />
+              hello@synvora.us
+            </a>
           </div>
 
-          {/* Links columns */}
-          <div className="mt-12 grid grid-cols-2 gap-8 xl:col-span-2 xl:mt-0">
-            <div className="md:grid md:grid-cols-2 md:gap-8">
-              <div>
-                <h3 className="text-sm font-semibold text-white uppercase tracking-wide">
-                  Product
-                </h3>
-                <ul className="mt-4 space-y-3">
-                  {navigation.product.map((item) => (
-                    <li key={item.name}>
-                      <a
-                        href={item.href}
-                        className="text-base text-slate-400 hover:text-white transition-colors"
-                      >
-                        {item.name}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="mt-12 md:mt-0">
-                <h3 className="text-sm font-semibold text-white uppercase tracking-wide">
-                  Company
-                </h3>
-                <ul className="mt-4 space-y-3">
-                  {navigation.company.map((item) => (
-                    <li key={item.name}>
-                      <a
-                        href={item.href}
-                        className="text-base text-slate-400 hover:text-white transition-colors"
-                      >
-                        {item.name}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-            <div className="md:grid md:grid-cols-1">
-              <div>
-                <h3 className="text-sm font-semibold text-white uppercase tracking-wide">
-                  Legal
-                </h3>
-                <ul className="mt-4 space-y-3">
-                  {navigation.legal.map((item) => (
-                    <li key={item.name}>
-                      <a
-                        href={item.href}
-                        className="text-base text-slate-400 hover:text-white transition-colors"
-                      >
-                        {item.name}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+          {/* Product */}
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">Product</h3>
+            <ul className="mt-4 space-y-3">
+              {links.product.map((item) => (
+                <li key={item.name}>
+                  <a href={item.href} className="text-sm text-slate-500 hover:text-white transition-colors">
+                    {item.name}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Account */}
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">Account</h3>
+            <ul className="mt-4 space-y-3">
+              {links.account.map((item) => (
+                <li key={item.name}>
+                  <a href={item.href} className="text-sm text-slate-500 hover:text-white transition-colors">
+                    {item.name}
+                  </a>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
 
-        {/* Bottom section */}
-        <div className="mt-12 border-t border-slate-800 pt-8">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <p className="text-sm text-slate-400">
-              &copy; {new Date().getFullYear()} Synvora. All rights reserved.
-            </p>
-            <div className="flex items-center gap-6">
-              <Link
-                href="/admin/login"
-                className="text-sm font-semibold text-synvora-accent hover:text-synvora-accent/80 transition-colors"
-              >
-                Admin Login
-              </Link>
-              <a
-                href="#"
-                className="text-sm text-slate-400 hover:text-white transition-colors"
-              >
-                Status
-              </a>
-            </div>
+        {/* Bottom */}
+        <div className="mt-12 border-t border-white/5 pt-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <p className="text-xs text-slate-600">
+            &copy; {new Date().getFullYear()} Synvora. All rights reserved.
+          </p>
+          <div className="flex items-center gap-6">
+            <a href="mailto:hello@synvora.us" className="text-xs text-slate-600 hover:text-slate-400 transition-colors">
+              Privacy & Terms
+            </a>
           </div>
         </div>
       </div>

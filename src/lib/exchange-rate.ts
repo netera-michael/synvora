@@ -1,4 +1,5 @@
 import { prisma } from "./prisma";
+import { AED_USD_PEG } from "./constants";
 
 export const DEFAULT_EXCHANGE_RATE = 48.5;
 const CACHE_DURATION_HOURS = 24;
@@ -122,8 +123,8 @@ export async function getCurrentExchangeRate(
 ): Promise<number> {
   // Special case: AED/USD has a fixed peg of 3.6725
   // We check this first to bypass any potential stale cache
-  if (from === "AED" && to === "USD") return 1 / 3.6725;
-  if (from === "USD" && to === "AED") return 3.6725;
+  if (from === "AED" && to === "USD") return 1 / AED_USD_PEG;
+  if (from === "USD" && to === "AED") return AED_USD_PEG;
 
   // Check cache first
   const cached = await getCachedRate(from, to);

@@ -3,30 +3,25 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
+import { SynvoraLogo } from "@/components/ui/logo";
 
 const navigation = [
-  { name: "Features", href: "#features" },
+  { name: "Why Synvora", href: "#features" },
   { name: "How it Works", href: "#how-it-works" },
-  { name: "Testimonials", href: "#testimonials" },
-  { name: "Pricing", href: "#pricing" }
+  { name: "Get access", href: "mailto:hello@synvora.us" },
 ];
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200/50 shadow-sm">
+    <header className="sticky top-0 z-50 border-b border-slate-100 bg-white/95 backdrop-blur-sm">
       <nav className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <div className="flex items-center gap-2">
-            <Link href="/" className="flex items-center gap-2 group">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-synvora-primary to-synvora-accent text-white font-bold transition-transform group-hover:scale-110">
-                S
-              </div>
-              <span className="text-xl font-bold text-slate-900">Synvora</span>
-            </Link>
-          </div>
+          <Link href="/">
+            <SynvoraLogo size={32} />
+          </Link>
 
           {/* Desktop navigation */}
           <div className="hidden md:flex md:items-center md:gap-8">
@@ -34,53 +29,48 @@ export function Header() {
               <a
                 key={item.name}
                 href={item.href}
-                className="text-sm font-medium text-slate-700 hover:text-synvora-primary transition-colors"
+                className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
               >
                 {item.name}
               </a>
             ))}
           </div>
 
-          {/* CTA buttons */}
-          <div className="flex items-center gap-4">
+          {/* CTA */}
+          <div className="flex items-center gap-3">
             <Link
               href="/admin/login"
-              className="hidden sm:inline-flex text-sm font-medium text-slate-700 hover:text-synvora-primary transition-colors"
+              className="hidden sm:inline-flex text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
             >
-              Sign In
+              Sign in
             </Link>
             <Link
-              href="/admin/login"
-              className="inline-flex items-center justify-center rounded-lg bg-synvora-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-synvora-primary/90 hover:shadow-md"
+              href="mailto:hello@synvora.us"
+              className="inline-flex items-center justify-center rounded-lg bg-[#0A5AFF] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[#0847cc]"
             >
-              Get Started
+              Request access
             </Link>
 
-            {/* Mobile menu button */}
             <button
               type="button"
-              className="md:hidden inline-flex items-center justify-center rounded-lg p-2 text-slate-700 hover:bg-slate-100"
+              className="md:hidden rounded-lg p-2 text-slate-600 hover:bg-slate-100"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               <span className="sr-only">Open menu</span>
-              {mobileMenuOpen ? (
-                <X className="h-6 w-6" />
-              ) : (
-                <Menu className="h-6 w-6" />
-              )}
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
           </div>
         </div>
 
         {/* Mobile menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-slate-200 mt-2 animate-fade-in">
+          <div className="md:hidden border-t border-slate-100 py-4">
             <div className="space-y-1">
               {navigation.map((item) => (
                 <a
                   key={item.name}
                   href={item.href}
-                  className="block rounded-lg px-3 py-2 text-base font-medium text-slate-700 hover:bg-slate-100 hover:text-synvora-primary transition-colors"
+                  className="block rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   {item.name}
@@ -88,10 +78,10 @@ export function Header() {
               ))}
               <Link
                 href="/admin/login"
-                className="block rounded-lg px-3 py-2 text-base font-medium text-slate-700 hover:bg-slate-100 hover:text-synvora-primary transition-colors"
+                className="block rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Sign In
+                Sign in
               </Link>
             </div>
           </div>

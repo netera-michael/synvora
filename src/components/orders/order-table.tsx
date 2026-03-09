@@ -1,4 +1,5 @@
 import { formatCurrency, formatDateTime, cn } from "@/lib/utils";
+import { PLATFORM_FEE_MULTIPLIER } from "@/lib/constants";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { OrderDto } from "@/types/orders";
 import { Edit, Copy, Trash2, MoreVertical } from "lucide-react";
@@ -61,7 +62,7 @@ export function OrderTable({
               <th scope="col" className="px-6 py-4">Payment</th>
               <th scope="col" className="px-6 py-4">Payout amount</th>
               <th scope="col" className="px-6 py-4">Tickets value</th>
-              <th scope="col" className="px-6 py-4 text-right">Actions</th>
+              {canManage && <th scope="col" className="px-6 py-4 text-right">Actions</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 bg-white">
@@ -80,7 +81,7 @@ export function OrderTable({
                 <td className="px-6 py-4"><Skeleton className="h-6 w-20 rounded-full" /></td>
                 <td className="px-6 py-4"><Skeleton className="h-5 w-16" /></td>
                 <td className="px-6 py-4"><Skeleton className="h-5 w-16" /></td>
-                <td className="px-6 py-4"><Skeleton className="ml-auto h-8 w-8" /></td>
+                {canManage && <td className="px-6 py-4"><Skeleton className="ml-auto h-8 w-8" /></td>}
               </tr>
             ))}
           </tbody>
@@ -133,9 +134,11 @@ export function OrderTable({
             <th scope="col" className="px-6 py-4">
               Tickets value
             </th>
-            <th scope="col" className="px-6 py-4 text-right print:hidden">
-              Actions
-            </th>
+            {canManage && (
+              <th scope="col" className="px-6 py-4 text-right print:hidden">
+                Actions
+              </th>
+            )}
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100 bg-white [&_tr:last-child_td:first-child]:rounded-bl-2xl [&_tr:last-child_td:last-child]:rounded-br-2xl">
@@ -143,7 +146,7 @@ export function OrderTable({
             const payoutBase =
               typeof order.originalAmount === "number" && order.originalAmount >= 0 && typeof order.exchangeRate === "number" && order.exchangeRate > 0
                 ? order.originalAmount / order.exchangeRate
-                : order.totalAmount / 1.035;
+                : order.totalAmount / PLATFORM_FEE_MULTIPLIER;
             const payoutValue = Number.isFinite(payoutBase)
               ? Number(payoutBase.toFixed(2))
               : 0;
@@ -225,8 +228,9 @@ export function OrderTable({
                       : "—"}
                   </span>
                 </td>
+                {canManage && (
                 <td className="whitespace-nowrap px-6 py-4 text-right print:hidden" onClick={(e) => e.stopPropagation()}>
-                  {!editMode && canManage && (
+                  {!editMode && (
                     <Menu as="div" className="relative inline-block text-left">
                       <div>
                         <Menu.Button className="inline-flex items-center gap-1 rounded-lg border border-synvora-border px-3 py-1.5 text-xs font-semibold text-synvora-text-secondary transition hover:border-synvora-primary hover:text-synvora-primary">
@@ -299,6 +303,7 @@ export function OrderTable({
                     </Menu>
                   )}
                 </td>
+                )}
               </tr>
             );
           })}

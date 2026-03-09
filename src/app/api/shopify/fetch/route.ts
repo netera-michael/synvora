@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
 import { decrypt } from "@/lib/encryption";
 import { fetchShopifyOrders, transformShopifyOrders } from "@/lib/shopify";
-import { getCurrentExchangeRate } from "@/lib/exchange-rate";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 const schema = z.object({
   storeId: z.number().nullable().optional(),
@@ -15,6 +15,13 @@ const schema = z.object({
 });
 
 export async function POST(request: Request) {
+  // Rate limit: 10 Shopify fetches per minute per IP
+  const ip = getClientIp(request);
+  const rl = rateLimit(`shopify-fetch:${ip}`, { limit: 10, windowSeconds: 60 });
+  if (!rl.success) {
+    return NextResponse.json({ message: "Too many requests. Please wait before retrying." }, { status: 429 });
+  }
+
   const session = await getServerSession(authOptions);
 
   if (!session) {
@@ -57,9 +64,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "No stores found to fetch from" }, { status: 404 });
     }
 
-    // Get current exchange rate
-    const exchangeRate = await getCurrentExchangeRate();
-
     // Fetch from all stores in parallel
     const allResults = await Promise.all(storesToFetch.map(async (store) => {
       try {
@@ -81,8 +85,8 @@ export async function POST(request: Request) {
         const newShopifyOrders = shopifyOrders.filter(o => !existingExternalIds.has(String(o.id)));
         const existingCount = shopifyOrders.length - newShopifyOrders.length;
 
-        // Transform ONLY the new orders
-        const transformedNewOrders = await transformShopifyOrders(newShopifyOrders, exchangeRate, store.venueId, store.id);
+        // Transform ONLY the new orders (daily rate entered later in review dialog)
+        const transformedNewOrders = await transformShopifyOrders(newShopifyOrders, store.venueId, store.id);
 
         // Add storeName to each order for display in review
         const ordersWithStoreName = transformedNewOrders.map(order => ({
@@ -97,12 +101,14 @@ export async function POST(request: Request) {
           storeName: store.nickname || store.storeDomain
         };
       } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err);
         console.error(`Failed to fetch orders for ${store.storeDomain}:`, err);
         return {
           orders: [],
           totalFetched: 0,
           alreadyImported: 0,
           error: true,
+          errorMessage: errMsg,
           storeName: store.nickname || store.storeDomain
         };
       }
@@ -112,15 +118,16 @@ export async function POST(request: Request) {
     const aggregatedOrders = allResults.flatMap(r => r.orders);
     const totalFetched = allResults.reduce((sum, r) => sum + r.totalFetched, 0);
     const alreadyImported = allResults.reduce((sum, r) => sum + r.alreadyImported, 0);
-    const hasErrors = allResults.some(r => r.error);
+    const failedStores = allResults.filter(r => r.error).map(r => `${r.storeName}: ${(r as any).errorMessage}`);
+    const hasErrors = failedStores.length > 0;
 
     return NextResponse.json({
       orders: aggregatedOrders,
-      exchangeRate,
       count: aggregatedOrders.length,
       totalFetched,
       alreadyImported,
       hasErrors,
+      storeErrors: failedStores,
       store: storeId ? {
         id: storesToFetch[0].id,
         domain: storesToFetch[0].storeDomain,

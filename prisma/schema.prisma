@@ -3,22 +3,37 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_DIRECT")
 }
 
 model User {
-  id        Int            @id @default(autoincrement())
-  email     String         @unique
-  password  String
-  name      String?
-  role      Role           @default(ADMIN)
-  orders    Order[]        @relation("UserOrders")
-  venues    Venue[]        @relation("UserVenues")
-  stores    ShopifyStore[]
-  payouts   Payout[]       @relation("UserPayouts")
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
+  id           Int                  @id @default(autoincrement())
+  email        String               @unique
+  password     String
+  name         String?
+  role         Role                 @default(ADMIN)
+  orders       Order[]              @relation("UserOrders")
+  venues       Venue[]              @relation("UserVenues")
+  stores       ShopifyStore[]
+  payouts      Payout[]             @relation("UserPayouts")
+  resetTokens  PasswordResetToken[]
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+}
+
+model PasswordResetToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
 }
 
 model Order {
@@ -39,6 +54,7 @@ model Order {
   tags              String        @default("")
   originalAmount    Float?
   exchangeRate      Float          @default(48.5)
+  aedEgpRate        Float?
   notes             String?
   source            String          @default("synvora")
   createdAt         DateTime        @default(now())
@@ -105,17 +121,19 @@ model ShopifyImportQueue {
 }
 
 model Venue {
-  id        Int      @id @default(autoincrement())
-  name      String
-  slug      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                Int      @id @default(autoincrement())
+  name              String
+  slug              String   @unique
+  balanceAdjustment Float    @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   orders        Order[]
   users         User[]          @relation("UserVenues")
   payouts       Payout[]
   shopifyStores ShopifyStore[]
   products      Product[]
+  dailyRates    DailyRate[]
 }
 
 model Product {
@@ -148,6 +166,7 @@ model Payout {
   status            String    @default("Posted")
   description       String    @default("Payout")
   account           String    @default("Payouts")
+  period            String?
   processedAt       DateTime
   notes             String?
   venueId           Int
@@ -171,6 +190,20 @@ model MercurySettings {
   updatedAt   DateTime @updatedAt
 
   @@unique([id])
+}
+
+model DailyRate {
+  id         Int      @id @default(autoincrement())
+  venueId    Int
+  date       DateTime @db.Date
+  aedEgpRate Float
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  venue Venue @relation(fields: [venueId], references: [id])
+
+  @@unique([venueId, date])
+  @@index([venueId])
 }
 
 model ExchangeRate {

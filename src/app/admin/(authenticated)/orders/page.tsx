@@ -4,9 +4,10 @@ import useSWR from "swr";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Route } from "next";
-import { Plus, Printer, CloudDownload, Edit, X, Trash2, Copy, Download, MoreVertical } from "lucide-react";
+import { Plus, Printer, CloudDownload, Edit, X, Trash2, Copy, Download, MoreVertical, Search, Wallet } from "lucide-react";
 import { Menu, Transition } from "@headlessui/react";
 import { Fragment } from "react";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import type { OrderDto } from "@/types/orders";
@@ -112,6 +113,10 @@ export default function OrdersPage() {
   const { data, error, mutate, isLoading } = useSWR<OrdersResponse>(`/api/orders${queryString ? `?${queryString}` : ""}`, fetcher);
   const { data: session } = useSession();
   const isAdmin = session?.user.role === "ADMIN";
+  const { data: balanceData } = useSWR<{ venues: Array<{ id: number; name: string; pendingBalance: number }> }>(
+    session && !isAdmin ? "/api/balance" : null,
+    fetcher
+  );
   const [printMode, setPrintMode] = useState(false);
   const [printOrders, setPrintOrders] = useState<OrderDto[] | null>(null);
   const [printMetrics, setPrintMetrics] = useState<OrdersResponse["metrics"] | null>(null);
@@ -119,6 +124,34 @@ export default function OrdersPage() {
   const metrics = printMode && printMetrics ? printMetrics : data?.metrics;
   const ordersList = printMode && printOrders ? printOrders : data?.orders ?? [];
   const pagination = printMode ? undefined : data?.pagination;
+
+  const searchFilter = searchParams.get("search") ?? "";
+  const [searchInput, setSearchInput] = useState(searchFilter);
+
+  useEffect(() => {
+    setSearchInput(searchParams.get("search") ?? "");
+  }, [searchParams]);
+
+  // Local state for date inputs — only applied on blur or Enter
+  const [localStartDate, setLocalStartDate] = useState(startDateInputValue);
+  const [localEndDate, setLocalEndDate] = useState(endDateInputValue);
+
+  useEffect(() => { setLocalStartDate(startDateInputValue); }, [startDateInputValue]);
+  useEffect(() => { setLocalEndDate(endDateInputValue); }, [endDateInputValue]);
+
+  const applySearch = (value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value.trim()) {
+      params.set("search", value.trim());
+      params.delete("page");
+    } else {
+      params.delete("search");
+      params.delete("page");
+    }
+    params.set("tzOffset", String(tzOffset));
+    const qs = params.toString();
+    router.replace((qs ? `/admin/orders?${qs}` : "/admin/orders") as Route);
+  };
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isSyncOpen, setIsSyncOpen] = useState(false);
@@ -137,10 +170,24 @@ export default function OrdersPage() {
       const params = new URLSearchParams(searchParams.toString());
       params.set("tzOffset", String(tzOffset));
       const qs = params.toString();
-      router.replace(qs ? (`/orders?${qs}` as Route) : ("/orders" as Route));
+      router.replace(qs ? (`/admin/orders?${qs}` as Route) : ("/admin/orders" as Route));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tzOffset]); // Only depend on tzOffset to avoid re-triggering on every searchParams change
+
+  // Default to current month when no filter is active
+  useEffect(() => {
+    if (!session) return;
+    const hasFilter = searchParams.get("month") || searchParams.get("startDate") || searchParams.get("endDate");
+    if (hasFilter) return;
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("month", currentMonth);
+    params.set("tzOffset", String(tzOffset));
+    router.replace(`/admin/orders?${params.toString()}` as Route);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session]);
 
   const months = useMemo(() => {
     const now = new Date();
@@ -195,8 +242,7 @@ export default function OrdersPage() {
     params.delete("page");
 
     const qs = params.toString();
-    const target = qs ? `/orders?${qs}` : "/orders";
-    router.replace(target as Route);
+    router.replace((qs ? `/admin/orders?${qs}` : "/admin/orders") as Route);
   };
 
   const handleDateChange = (key: "startDate" | "endDate", value: string) => {
@@ -212,16 +258,12 @@ export default function OrdersPage() {
       }
     }
 
-    if (key === "startDate" || key === "endDate") {
-      params.delete("month");
-    }
-
+    params.delete("month");
     params.set("tzOffset", String(tzOffset));
     params.delete("page");
 
     const qs = params.toString();
-    const target = qs ? `/orders?${qs}` : "/orders";
-    router.replace(target as Route);
+    router.replace((qs ? `/admin/orders?${qs}` : "/admin/orders") as Route);
   };
 
   const handleClearRange = () => {
@@ -231,8 +273,7 @@ export default function OrdersPage() {
     params.set("tzOffset", String(tzOffset));
     params.delete("page");
     const qs = params.toString();
-    const target = qs ? `/orders?${qs}` : "/orders";
-    router.replace(target as Route);
+    router.replace((qs ? `/admin/orders?${qs}` : "/admin/orders") as Route);
   };
 
   const openDrawer = (order: OrderDto) => {
@@ -498,21 +539,167 @@ export default function OrdersPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+    <div className="space-y-4">
+      {/* Page header */}
+      <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-synvora-text">Orders</h1>
-          <p className="mt-2 text-sm text-synvora-text-secondary print:hidden">
+          <p className="mt-1 text-sm text-synvora-text-secondary print:hidden">
             {isAdmin
               ? "Monitor and manage your Synvora and Shopify orders in a single command center."
               : "Review the latest activity across the venues you have access to."}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
+
+        {/* Action buttons */}
+        <div className="flex flex-none items-center gap-2 print:hidden">
+          {editMode ? (
+            <>
+              <button
+                type="button"
+                onClick={handleMassDuplicate}
+                disabled={selectedOrders.size === 0}
+                className="inline-flex items-center gap-2 rounded-lg border border-synvora-border bg-white px-3 py-2 text-sm font-medium text-synvora-text-secondary shadow-sm transition hover:bg-synvora-surface-hover hover:text-synvora-text disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Copy className="h-4 w-4" />
+                <span className="hidden sm:inline">Duplicate</span>
+                {selectedOrders.size > 0 && <span className="text-xs">({selectedOrders.size})</span>}
+              </button>
+              <button
+                type="button"
+                onClick={handleMassDelete}
+                disabled={selectedOrders.size === 0}
+                className="inline-flex items-center gap-2 rounded-lg border border-rose-200 bg-white px-3 py-2 text-sm font-medium text-rose-600 shadow-sm transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span className="hidden sm:inline">Delete</span>
+                {selectedOrders.size > 0 && <span className="text-xs">({selectedOrders.size})</span>}
+              </button>
+              <button
+                type="button"
+                onClick={toggleEditMode}
+                className="inline-flex items-center gap-2 rounded-lg border border-synvora-border bg-white px-3 py-2 text-sm font-medium text-synvora-text-secondary shadow-sm transition hover:bg-synvora-surface-hover"
+              >
+                <X className="h-4 w-4" />
+                <span className="hidden sm:inline">Cancel</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <Menu as="div" className="relative inline-block text-left">
+                <Menu.Button className="inline-flex items-center gap-2 rounded-lg border border-synvora-border bg-white px-3 py-2 text-sm font-medium text-synvora-text-secondary shadow-sm transition hover:border-synvora-primary hover:text-synvora-primary">
+                  <MoreVertical className="h-4 w-4" />
+                  <span className="hidden sm:inline">Actions</span>
+                </Menu.Button>
+                <Transition
+                  as={Fragment}
+                  enter="transition ease-out duration-100"
+                  enterFrom="transform opacity-0 scale-95"
+                  enterTo="transform opacity-100 scale-100"
+                  leave="transition ease-in duration-75"
+                  leaveFrom="transform opacity-100 scale-100"
+                  leaveTo="transform opacity-0 scale-95"
+                >
+                  <Menu.Items className="absolute right-0 z-10 mt-2 w-52 origin-top-right rounded-lg border border-synvora-border bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                    <div className="py-1">
+                      <Menu.Item>
+                        {({ active }) => (
+                          <button
+                            type="button"
+                            onClick={handlePrint}
+                            disabled={isPrinting}
+                            className={`${active ? "bg-synvora-surface-active text-synvora-text" : "text-synvora-text-secondary"} flex w-full items-center gap-2 px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50`}
+                          >
+                            <Printer className="h-4 w-4" />
+                            {isPrinting ? "Preparing…" : "Print"}
+                          </button>
+                        )}
+                      </Menu.Item>
+                      <Menu.Item>
+                        {({ active }) => (
+                          <button
+                            type="button"
+                            onClick={handleExportCSV}
+                            className={`${active ? "bg-synvora-surface-active text-synvora-text" : "text-synvora-text-secondary"} flex w-full items-center gap-2 px-4 py-2 text-sm font-medium`}
+                          >
+                            <Download className="h-4 w-4" />
+                            Export CSV
+                          </button>
+                        )}
+                      </Menu.Item>
+                      {isAdmin && (
+                        <>
+                          <div className="my-1 border-t border-synvora-border" />
+                          <Menu.Item>
+                            {({ active }) => (
+                              <button
+                                type="button"
+                                onClick={toggleEditMode}
+                                className={`${active ? "bg-synvora-surface-active text-synvora-text" : "text-synvora-text-secondary"} flex w-full items-center gap-2 px-4 py-2 text-sm font-medium`}
+                              >
+                                <Edit className="h-4 w-4" />
+                                Edit mode
+                              </button>
+                            )}
+                          </Menu.Item>
+                          <Menu.Item>
+                            {({ active }) => (
+                              <button
+                                type="button"
+                                onClick={() => setIsSyncOpen(true)}
+                                className={`${active ? "bg-synvora-surface-active text-synvora-text" : "text-synvora-text-secondary"} flex w-full items-center gap-2 px-4 py-2 text-sm font-medium`}
+                              >
+                                <CloudDownload className="h-4 w-4" />
+                                Sync Shopify
+                              </button>
+                            )}
+                          </Menu.Item>
+                        </>
+                      )}
+                    </div>
+                  </Menu.Items>
+                </Transition>
+              </Menu>
+
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => setIsCreateOpen(true)}
+                  className="inline-flex items-center gap-2 rounded-lg bg-synvora-primary px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-synvora-primary/90"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden sm:inline">New Order</span>
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Filter bar */}
+      <div className="flex flex-wrap items-center rounded-xl border border-synvora-border bg-white shadow-sm print:hidden">
+        {/* Search */}
+        <div className="relative flex min-w-[160px] flex-1 items-center">
+          <Search className="pointer-events-none absolute left-4 h-4 w-4 text-synvora-text-secondary" />
+          <input
+            type="text"
+            placeholder="Search orders…"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && applySearch(searchInput)}
+            onBlur={() => applySearch(searchInput)}
+            className="w-full bg-transparent py-3 pl-10 pr-4 text-sm text-synvora-text placeholder:text-synvora-text-secondary focus:outline-none"
+          />
+        </div>
+
+        <div className="h-8 w-px flex-none bg-synvora-border" />
+
+        {/* Month preset */}
+        <div className="flex items-center px-4 py-3">
           <select
             value={monthFilter}
-            onChange={(event) => handleMonthChange(event.target.value)}
-            className="rounded-lg border border-synvora-border bg-white px-3 py-2 text-sm font-medium text-synvora-text shadow-sm focus:border-synvora-primary focus:outline-none focus:ring-1 focus:ring-synvora-primary"
+            onChange={(e) => handleMonthChange(e.target.value)}
+            className="bg-transparent text-sm font-medium text-synvora-text focus:outline-none cursor-pointer"
           >
             {months.map((month) => (
               <option key={month.value} value={month.value}>
@@ -520,161 +707,59 @@ export default function OrdersPage() {
               </option>
             ))}
           </select>
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-synvora-text-secondary">
-              From
-              <input
-                type="date"
-                value={startDateInputValue}
-                onChange={(event) => handleDateChange("startDate", event.target.value)}
-                className="rounded-lg border border-synvora-border bg-white px-3 py-2 text-sm font-medium text-synvora-text shadow-sm focus:border-synvora-primary focus:outline-none focus:ring-1 focus:ring-synvora-primary"
-              />
-            </label>
-            <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-synvora-text-secondary">
-              To
-              <input
-                type="date"
-                value={endDateInputValue}
-                onChange={(event) => handleDateChange("endDate", event.target.value)}
-                className="rounded-lg border border-synvora-border bg-white px-3 py-2 text-sm font-medium text-synvora-text shadow-sm focus:border-synvora-primary focus:outline-none focus:ring-1 focus:ring-synvora-primary"
-              />
-            </label>
-            {(startDateFilter || endDateFilter) && (
-              <button
-                type="button"
-                onClick={handleClearRange}
-                className="text-xs font-medium text-synvora-text-secondary hover:text-synvora-primary transition"
-              >
-                Clear range
-              </button>
-            )}
-          </div>
-          {editMode ? (
-            <>
-              <button
-                type="button"
-                onClick={handleMassDuplicate}
-                disabled={selectedOrders.size === 0}
-                className="inline-flex items-center gap-2 rounded-lg border border-synvora-border bg-white px-4 py-2 text-sm font-medium text-synvora-text-secondary shadow-sm transition hover:bg-synvora-surface-hover hover:text-synvora-text disabled:cursor-not-allowed disabled:bg-synvora-surface-disabled disabled:text-synvora-text-secondary"
-              >
-                <Copy className="h-4 w-4" />
-                Duplicate ({selectedOrders.size})
-              </button>
-              <button
-                type="button"
-                onClick={handleMassDelete}
-                disabled={selectedOrders.size === 0}
-                className="inline-flex items-center gap-2 rounded-lg border border-rose-200 bg-white px-4 py-2 text-sm font-medium text-rose-600 shadow-sm transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <Trash2 className="h-4 w-4" />
-                Delete ({selectedOrders.size})
-              </button>
-              <button
-                type="button"
-                onClick={toggleEditMode}
-                className="inline-flex items-center gap-2 rounded-lg border border-synvora-border bg-white px-4 py-2 text-sm font-medium text-synvora-text-secondary shadow-sm transition hover:bg-synvora-surface-hover hover:text-synvora-text"
-              >
-                <X className="h-4 w-4" />
-                Cancel
-              </button>
-            </>
-          ) : (
-            <Menu as="div" className="relative inline-block text-left">
-              <div>
-                <Menu.Button className="inline-flex items-center gap-2 rounded-lg border border-synvora-border bg-white px-4 py-2 text-sm font-medium text-synvora-text-secondary shadow-sm transition hover:border-synvora-primary hover:text-synvora-primary">
-                  <MoreVertical className="h-4 w-4" />
-                  Actions
-                </Menu.Button>
-              </div>
-              <Transition
-                as={Fragment}
-                enter="transition ease-out duration-100"
-                enterFrom="transform opacity-0 scale-95"
-                enterTo="transform opacity-100 scale-100"
-                leave="transition ease-in duration-75"
-                leaveFrom="transform opacity-100 scale-100"
-                leaveTo="transform opacity-0 scale-95"
-              >
-                <Menu.Items className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-lg border border-synvora-border bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                  <div className="py-1">
-                    <Menu.Item>
-                      {({ active }) => (
-                        <button
-                          type="button"
-                          onClick={handlePrint}
-                          disabled={isPrinting}
-                          className={`${active ? "bg-synvora-surface-active text-synvora-text" : "text-synvora-text-secondary"
-                            } flex w-full items-center gap-2 px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50`}
-                        >
-                          <Printer className="h-4 w-4" />
-                          {isPrinting ? "Preparing…" : "Print"}
-                        </button>
-                      )}
-                    </Menu.Item>
-                    <Menu.Item>
-                      {({ active }) => (
-                        <button
-                          type="button"
-                          onClick={handleExportCSV}
-                          className={`${active ? "bg-synvora-surface-active text-synvora-text" : "text-synvora-text-secondary"
-                            } flex w-full items-center gap-2 px-4 py-2 text-sm font-medium`}
-                        >
-                          <Download className="h-4 w-4" />
-                          Export CSV
-                        </button>
-                      )}
-                    </Menu.Item>
-                    {isAdmin && (
-                      <>
-                        <div className="my-1 border-t border-synvora-border" />
-                        <Menu.Item>
-                          {({ active }) => (
-                            <button
-                              type="button"
-                              onClick={toggleEditMode}
-                              className={`${active ? "bg-synvora-surface-active text-synvora-text" : "text-synvora-text-secondary"
-                                } flex w-full items-center gap-2 px-4 py-2 text-sm font-medium`}
-                            >
-                              <Edit className="h-4 w-4" />
-                              Edit
-                            </button>
-                          )}
-                        </Menu.Item>
-                        <Menu.Item>
-                          {({ active }) => (
-                            <button
-                              type="button"
-                              onClick={() => setIsSyncOpen(true)}
-                              className={`${active ? "bg-synvora-surface-active text-synvora-text" : "text-synvora-text-secondary"
-                                } flex w-full items-center gap-2 px-4 py-2 text-sm font-medium`}
-                            >
-                              <CloudDownload className="h-4 w-4" />
-                              Sync Shopify
-                            </button>
-                          )}
-                        </Menu.Item>
-                        <Menu.Item>
-                          {({ active }) => (
-                            <button
-                              type="button"
-                              onClick={() => setIsCreateOpen(true)}
-                              className={`${active ? "bg-synvora-primary/10 text-synvora-primary" : "text-synvora-primary hover:bg-synvora-primary/5"
-                                } flex w-full items-center gap-2 px-4 py-2 text-sm font-medium`}
-                            >
-                              <Plus className="h-4 w-4" />
-                              Create order
-                            </button>
-                          )}
-                        </Menu.Item>
-                      </>
-                    )}
-                  </div>
-                </Menu.Items>
-              </Transition>
-            </Menu>
+        </div>
+
+        <div className="h-8 w-px flex-none bg-synvora-border" />
+
+        {/* Custom date range */}
+        <div className="flex flex-wrap items-center gap-2 px-4 py-3">
+          <input
+            type="date"
+            value={localStartDate}
+            onChange={(e) => setLocalStartDate(e.target.value)}
+            onBlur={(e) => handleDateChange("startDate", e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleDateChange("startDate", localStartDate)}
+            className="bg-transparent text-sm text-synvora-text focus:outline-none cursor-pointer"
+          />
+          <span className="text-xs text-synvora-text-secondary">→</span>
+          <input
+            type="date"
+            value={localEndDate}
+            onChange={(e) => setLocalEndDate(e.target.value)}
+            onBlur={(e) => handleDateChange("endDate", e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleDateChange("endDate", localEndDate)}
+            className="bg-transparent text-sm text-synvora-text focus:outline-none cursor-pointer"
+          />
+          {(startDateFilter || endDateFilter) && (
+            <button
+              type="button"
+              onClick={handleClearRange}
+              className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium text-synvora-text-secondary transition hover:bg-synvora-surface-hover hover:text-synvora-text"
+            >
+              <X className="h-3 w-3" />
+              Clear
+            </button>
           )}
         </div>
       </div>
+
+      {!isAdmin && balanceData?.venues?.[0] && (
+        <div className="flex items-center gap-3 rounded-xl border border-synvora-border bg-white px-5 py-3.5 shadow-sm">
+          <Wallet className="h-5 w-5 flex-none text-synvora-primary" />
+          <div className="min-w-0 flex-1">
+            <span className="text-sm text-synvora-text-secondary">Pending Balance</span>
+            <span className={`ml-2 text-sm font-semibold ${balanceData.venues[0].pendingBalance >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+              {formatCurrencyValue(balanceData.venues[0].pendingBalance)}
+            </span>
+          </div>
+          <Link
+            href="/admin/finance/payouts"
+            className="flex-none text-xs font-medium text-synvora-primary transition hover:underline"
+          >
+            View payouts →
+          </Link>
+        </div>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-xl border border-synvora-border bg-white p-5 shadow-sm">
@@ -696,14 +781,14 @@ export default function OrdersPage() {
           <p className="mt-3 text-2xl font-semibold text-synvora-text">
             {metrics ? formatCurrencyValue(metrics.totalPayout) : isLoading ? "…" : "$0.00"}
           </p>
-          <p className="mt-1 text-sm text-synvora-text-secondary">Expected net amount</p>
+          <p className="mt-1 text-sm text-synvora-text-secondary">{isAdmin ? "Expected client payout (USD)" : "Your earnings (USD)"}</p>
         </div>
         <div className="rounded-xl border border-synvora-border bg-white p-5 shadow-sm">
           <p className="text-xs font-medium uppercase tracking-wide text-synvora-text-secondary">Tickets value (EGP)</p>
           <p className="mt-3 text-2xl font-semibold text-synvora-text">
             {metrics ? `EGP ${formatNumber(metrics.totalTicketsValue)}` : isLoading ? "…" : "EGP 0.00"}
           </p>
-          <p className="mt-1 text-sm text-synvora-text-secondary">Sum of original amounts</p>
+          <p className="mt-1 text-sm text-synvora-text-secondary">{isAdmin ? "Sum of original amounts" : "Gross sales in EGP"}</p>
         </div>
       </div>
 

@@ -7,11 +7,31 @@ import { Loader2, CheckCircle2, XCircle, Filter, CloudDownload } from "lucide-re
 import { toast } from "sonner";
 import { SyncShopifyDialog } from "@/components/orders/sync-shopify-dialog";
 
+type Venue = {
+    id: number;
+    name: string;
+};
+
+const fetcher = async (url: string) => {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Failed to fetch");
+    return res.json();
+};
+
 export default function PendingImportsPage() {
     const [amountFilter, setAmountFilter] = useState("");
     const [selectedOrders, setSelectedOrders] = useState<Set<number>>(new Set());
     const [isProcessing, setIsProcessing] = useState(false);
     const [isSyncOpen, setIsSyncOpen] = useState(false);
+    const [confirmIgnore, setConfirmIgnore] = useState(false);
+    const [selectedVenueId, setSelectedVenueId] = useState<number | null>(null);
+
+    // Fetch available venues
+    const { data: venuesData } = useSWR<{ venues: Venue[] }>("/api/venues", fetcher);
+    const venues = venuesData?.venues ?? [];
+
+    // Auto-select the first venue once loaded
+    const effectiveVenueId = selectedVenueId ?? venues[0]?.id ?? null;
 
     // Fetch pending orders with filters
     const { data, error, mutate } = useSWR(
@@ -46,6 +66,12 @@ export default function PendingImportsPage() {
 
     const handleImport = async () => {
         if (selectedOrders.size === 0) return;
+
+        if (!effectiveVenueId) {
+            toast.error("Please select a venue before importing");
+            return;
+        }
+
         setIsProcessing(true);
         try {
             const res = await fetch("/api/shopify/pending", {
@@ -53,8 +79,7 @@ export default function PendingImportsPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     orderIds: Array.from(selectedOrders),
-                    // TODO: Add venue selector mechanism or default venue
-                    venueId: 1,
+                    venueId: effectiveVenueId,
                 }),
             });
 
@@ -74,8 +99,8 @@ export default function PendingImportsPage() {
 
     const handleIgnore = async () => {
         if (selectedOrders.size === 0) return;
-        if (!confirm("Are you sure you want to ignore/delete these orders?")) return;
-
+        if (!confirmIgnore) { setConfirmIgnore(true); return; }
+        setConfirmIgnore(false);
         setIsProcessing(true);
         try {
             const res = await fetch("/api/shopify/pending", {
@@ -113,17 +138,36 @@ export default function PendingImportsPage() {
                         <CloudDownload className="h-4 w-4" />
                         Fetch from Shopify
                     </button>
-                    <button
-                        onClick={handleIgnore}
-                        disabled={selectedOrders.size === 0 || isProcessing}
-                        className="inline-flex items-center justify-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 hover:bg-rose-100 disabled:opacity-50"
-                    >
-                        <XCircle className="h-4 w-4" />
-                        Ignore Selected
-                    </button>
+                    {confirmIgnore ? (
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm text-synvora-text-secondary">Remove {selectedOrders.size} order{selectedOrders.size !== 1 ? "s" : ""}?</span>
+                            <button
+                                onClick={handleIgnore}
+                                disabled={isProcessing}
+                                className="inline-flex items-center justify-center gap-1 rounded-lg bg-rose-600 px-3 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-50"
+                            >
+                                Confirm
+                            </button>
+                            <button
+                                onClick={() => setConfirmIgnore(false)}
+                                className="inline-flex items-center justify-center rounded-lg border border-synvora-border px-3 py-2 text-sm font-medium text-synvora-text-secondary hover:bg-synvora-surface-hover"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={handleIgnore}
+                            disabled={selectedOrders.size === 0 || isProcessing}
+                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 hover:bg-rose-100 disabled:opacity-50"
+                        >
+                            <XCircle className="h-4 w-4" />
+                            Ignore Selected
+                        </button>
+                    )}
                     <button
                         onClick={handleImport}
-                        disabled={selectedOrders.size === 0 || isProcessing}
+                        disabled={selectedOrders.size === 0 || isProcessing || !effectiveVenueId}
                         className="inline-flex items-center justify-center gap-2 rounded-lg bg-synvora-primary px-4 py-2 text-sm font-medium text-white hover:bg-synvora-primary/90 disabled:opacity-50"
                     >
                         {isProcessing ? (
@@ -137,18 +181,42 @@ export default function PendingImportsPage() {
             </div>
 
             {/* Filters */}
-            <div className="flex items-center gap-4 rounded-xl border border-synvora-border bg-white p-4 shadow-sm">
+            <div className="flex flex-wrap items-center gap-4 rounded-xl border border-synvora-border bg-white p-4 shadow-sm">
                 <div className="flex items-center gap-2 text-synvora-text-secondary">
                     <Filter className="h-4 w-4" />
-                    <span className="text-sm font-medium">Filter by Amount:</span>
+                    <span className="text-sm font-medium">Filters:</span>
                 </div>
-                <input
-                    type="number"
-                    placeholder="e.g. 1000"
-                    value={amountFilter}
-                    onChange={(e) => setAmountFilter(e.target.value)}
-                    className="rounded-lg border border-synvora-border px-3 py-1.5 text-sm focus:border-synvora-primary focus:outline-none focus:ring-1 focus:ring-synvora-primary"
-                />
+                <div className="flex items-center gap-2">
+                    <label className="text-sm text-synvora-text-secondary">Amount:</label>
+                    <input
+                        type="number"
+                        placeholder="e.g. 1000"
+                        value={amountFilter}
+                        onChange={(e) => setAmountFilter(e.target.value)}
+                        className="rounded-lg border border-synvora-border px-3 py-1.5 text-sm focus:border-synvora-primary focus:outline-none focus:ring-1 focus:ring-synvora-primary"
+                    />
+                </div>
+                {venues.length > 1 && (
+                    <div className="flex items-center gap-2">
+                        <label className="text-sm text-synvora-text-secondary">Import to Venue:</label>
+                        <select
+                            value={effectiveVenueId ?? ""}
+                            onChange={(e) => setSelectedVenueId(Number(e.target.value))}
+                            className="rounded-lg border border-synvora-border px-3 py-1.5 text-sm focus:border-synvora-primary focus:outline-none focus:ring-1 focus:ring-synvora-primary"
+                        >
+                            {venues.map((v) => (
+                                <option key={v.id} value={v.id}>
+                                    {v.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                )}
+                {venues.length === 1 && effectiveVenueId && (
+                    <div className="text-sm text-synvora-text-secondary">
+                        Importing to: <span className="font-medium text-synvora-text">{venues[0].name}</span>
+                    </div>
+                )}
             </div>
 
             {/* Table */}
