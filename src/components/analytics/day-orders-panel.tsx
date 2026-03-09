@@ -39,13 +39,14 @@ function fmtUSD(n: number) {
 export function DayOrdersPanel({ open, date, dateLabel, onClose }: DayOrdersPanelProps) {
   const { data: session } = useSession();
   const isAdmin = session?.user.role === "ADMIN";
+  const tzOffset = new Date().getTimezoneOffset();
 
   const [selectedOrder, setSelectedOrder] = useState<OrderDto | null>(null);
   const [orderDrawerOpen, setOrderDrawerOpen] = useState(false);
 
   const param = date ? toDayParam(date) : null;
   const { data, isLoading } = useSWR<OrdersResponse>(
-    open && param ? `/api/orders?startDate=${param}&endDate=${param}&page=all` : null,
+    open && param ? `/api/orders?startDate=${param}&endDate=${param}&page=all&tzOffset=${tzOffset}` : null,
     fetcher
   );
 

@@ -60,7 +60,8 @@ const BADGE_COLORS: Record<string, string> = {
 export default function AnalyticsPage() {
   const { data: session } = useSession();
   const isAdmin = session?.user.role === "ADMIN";
-  const { data, isLoading } = useSWR<AnalyticsData>("/api/analytics", fetcher);
+  const tzOffset = new Date().getTimezoneOffset();
+  const { data, isLoading } = useSWR<AnalyticsData>(`/api/analytics?tzOffset=${tzOffset}`, fetcher);
 
   const [expandedMonths, setExpandedMonths] = useState<Set<string>>(new Set());
   const [selectedDay, setSelectedDay] = useState<{ date: string; label: string } | null>(null);

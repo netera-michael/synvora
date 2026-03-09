@@ -12,9 +12,13 @@ const MONTH_NAMES = [
 const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+
+  const url = new URL(request.url);
+  const tzOffsetMinutes = Number(url.searchParams.get("tzOffset") ?? "0");
+  const tzOffsetMs = Number.isFinite(tzOffsetMinutes) ? tzOffsetMinutes * 60 * 1000 : 0;
 
   const isAdmin = session.user.role === "ADMIN";
   const accessibleVenueIds = (session.user.venueIds ?? []).map(Number).filter((n) => !Number.isNaN(n));
@@ -48,20 +52,60 @@ export async function GET() {
   const getAedRate = (o: { aedEgpRate?: number | null; exchangeRate?: number | null }) =>
     o.aedEgpRate ?? (o.exchangeRate && o.exchangeRate <= 20 ? o.exchangeRate : null);
 
+  const getLocalDateParts = (value: Date) => {
+    const localDate = new Date(value.getTime() - tzOffsetMs);
+
+    return {
+      year: localDate.getUTCFullYear(),
+      monthIndex: localDate.getUTCMonth(),
+      day: localDate.getUTCDate()
+    };
+  };
+
+  const getBusinessMonthStart = (year: number, monthIndex: number) =>
+    new Date(Date.UTC(year, monthIndex, BUSINESS_MONTH_START_DAY, 0, 0, 0, 0) + tzOffsetMs);
+
+  const getBusinessMonthEnd = (year: number, monthIndex: number) =>
+    new Date(Date.UTC(year, monthIndex + 1, BUSINESS_MONTH_START_DAY - 1, 23, 59, 59, 999) + tzOffsetMs);
+
+  const getBusinessMonthMeta = (value: Date) => {
+    const { year, monthIndex, day } = getLocalDateParts(value);
+
+    let businessYear = year;
+    let businessMonthIndex = monthIndex;
+
+    if (day < BUSINESS_MONTH_START_DAY) {
+      businessMonthIndex -= 1;
+      if (businessMonthIndex < 0) {
+        businessMonthIndex = 11;
+        businessYear -= 1;
+      }
+    }
+
+    return {
+      year: businessYear,
+      monthIndex: businessMonthIndex,
+      key: `${businessYear}-${String(businessMonthIndex + 1).padStart(2, "0")}`,
+      label: `${MONTH_NAMES[businessMonthIndex]} ${businessYear}`
+    };
+  };
+
   // --- Last 12 months (for KPI cards + bar chart) ---
-  const now = new Date();
+  const localNow = new Date(Date.now() - tzOffsetMs);
+  const currentLocalYear = localNow.getUTCFullYear();
+  const currentLocalMonthIndex = localNow.getUTCMonth();
   const months: {
     month: string; label: string; orders: number; egpTotal: number;
     aedTotal: number; revenue: number; payout: number;
   }[] = [];
 
   for (let i = 11; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    const label = d.toLocaleString("en-US", { month: "short", year: "2-digit" });
+    const d = new Date(Date.UTC(currentLocalYear, currentLocalMonthIndex - i, 1));
+    const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+    const label = `${MONTH_SHORT[d.getUTCMonth()]} ${String(d.getUTCFullYear()).slice(-2)}`;
 
-    const bizStart = new Date(Date.UTC(d.getFullYear(), d.getMonth(), BUSINESS_MONTH_START_DAY));
-    const bizEnd = new Date(Date.UTC(d.getFullYear(), d.getMonth() + 1, BUSINESS_MONTH_START_DAY - 1, 23, 59, 59, 999));
+    const bizStart = getBusinessMonthStart(d.getUTCFullYear(), d.getUTCMonth());
+    const bizEnd = getBusinessMonthEnd(d.getUTCFullYear(), d.getUTCMonth());
 
     const mo = orders.filter((o) => {
       const pd = new Date(o.processedAt);
@@ -118,16 +162,14 @@ export async function GET() {
   }>();
 
   for (const o of orders) {
-    const pd = new Date(o.processedAt);
-    const yr = pd.getUTCFullYear();
-    const mo = pd.getUTCMonth();
-    const dy = pd.getUTCDate();
-    const monthKey = `${yr}-${String(mo + 1).padStart(2, "0")}`;
-    const dateKey = `${yr}-${String(mo + 1).padStart(2, "0")}-${String(dy).padStart(2, "0")}`;
+    const processedAt = new Date(o.processedAt);
+    const { key: monthKey, label: monthLabel } = getBusinessMonthMeta(processedAt);
+    const { year: localYear, monthIndex: localMonthIndex, day: localDay } = getLocalDateParts(processedAt);
+    const dateKey = `${localYear}-${String(localMonthIndex + 1).padStart(2, "0")}-${String(localDay).padStart(2, "0")}`;
 
     if (!allMonthMap.has(monthKey)) {
       allMonthMap.set(monthKey, {
-        label: `${MONTH_NAMES[mo]} ${yr}`,
+        label: monthLabel,
         ordersCount: 0, egpTotal: 0, aedTotal: 0, revenue: 0, payout: 0, days: new Map()
       });
     }
@@ -142,7 +184,7 @@ export async function GET() {
 
     if (!m.days.has(dateKey)) {
       m.days.set(dateKey, {
-        label: `${MONTH_SHORT[mo]} ${dy}`,
+        label: `${MONTH_SHORT[localMonthIndex]} ${localDay}`,
         ordersCount: 0, egpTotal: 0, aedTotal: 0, revenue: 0, payout: 0
       });
     }
