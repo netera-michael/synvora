@@ -34,6 +34,7 @@ export type OrderDto = {
   source: string;
   originalAmount?: number | null;
   exchangeRate?: number | null;
+  aedEgpRate?: number | null;
   lineItems: OrderLineItemDto[];
   shopifyStoreId?: number | null;
 };

@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
 import { calculatePayoutFromOrder } from "@/lib/order-utils";
-import { BUSINESS_MONTH_START_DAY } from "@/lib/constants";
+import { BUSINESS_MONTH_START_DAY, CLIENT_COMMISSION_RATE } from "@/lib/constants";
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
@@ -51,6 +51,18 @@ export async function GET(request: Request) {
   // Helper: resolve AED/EGP rate from order (aedEgpRate if set, else exchangeRate if it looks like AED rate ≤20)
   const getAedRate = (o: { aedEgpRate?: number | null; exchangeRate?: number | null }) =>
     o.aedEgpRate ?? (o.exchangeRate && o.exchangeRate <= 20 ? o.exchangeRate : null);
+
+  const calculateNetAedPayout = (o: {
+    originalAmount?: number | null;
+    aedEgpRate?: number | null;
+    exchangeRate?: number | null;
+  }) => {
+    const rate = getAedRate(o);
+    if (typeof o.originalAmount === "number" && o.originalAmount > 0 && rate && rate > 0) {
+      return o.originalAmount * (1 - CLIENT_COMMISSION_RATE) / rate;
+    }
+    return 0;
+  };
 
   const getLocalDateParts = (value: Date) => {
     const localDate = new Date(value.getTime() - tzOffsetMs);
@@ -116,12 +128,7 @@ export async function GET(request: Request) {
     const payout = mo.reduce((s, o) => s + calculatePayoutFromOrder(o), 0);
     const egpTotal = mo.reduce((s, o) =>
       typeof o.originalAmount === "number" && o.originalAmount > 0 ? s + o.originalAmount : s, 0);
-    const aedTotal = mo.reduce((s, o) => {
-      const rate = getAedRate(o);
-      if (typeof o.originalAmount === "number" && o.originalAmount > 0 && rate && rate > 0)
-        return s + o.originalAmount / rate;
-      return s;
-    }, 0);
+    const aedTotal = mo.reduce((s, o) => s + calculateNetAedPayout(o), 0);
 
     months.push({ month: key, label, orders: mo.length, egpTotal, aedTotal, revenue, payout });
   }
@@ -133,12 +140,7 @@ export async function GET(request: Request) {
   const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
   const allTimeEGP = orders.reduce((s, o) =>
     typeof o.originalAmount === "number" && o.originalAmount > 0 ? s + o.originalAmount : s, 0);
-  const allTimeAED = orders.reduce((s, o) => {
-    const rate = getAedRate(o);
-    if (typeof o.originalAmount === "number" && o.originalAmount > 0 && rate && rate > 0)
-      return s + o.originalAmount / rate;
-    return s;
-  }, 0);
+  const allTimeAED = orders.reduce((s, o) => s + calculateNetAedPayout(o), 0);
 
   // --- Payment status breakdown ---
   const breakdown: Record<string, number> = {};
@@ -178,9 +180,7 @@ export async function GET(request: Request) {
     m.revenue += o.totalAmount;
     m.payout += calculatePayoutFromOrder(o);
     if (typeof o.originalAmount === "number" && o.originalAmount > 0) m.egpTotal += o.originalAmount;
-    const rate = getAedRate(o);
-    if (typeof o.originalAmount === "number" && o.originalAmount > 0 && rate && rate > 0)
-      m.aedTotal += o.originalAmount / rate;
+    m.aedTotal += calculateNetAedPayout(o);
 
     if (!m.days.has(dateKey)) {
       m.days.set(dateKey, {
@@ -193,8 +193,7 @@ export async function GET(request: Request) {
     day.revenue += o.totalAmount;
     day.payout += calculatePayoutFromOrder(o);
     if (typeof o.originalAmount === "number" && o.originalAmount > 0) day.egpTotal += o.originalAmount;
-    if (typeof o.originalAmount === "number" && o.originalAmount > 0 && rate && rate > 0)
-      day.aedTotal += o.originalAmount / rate;
+    day.aedTotal += calculateNetAedPayout(o);
   }
 
   const allMonths = Array.from(allMonthMap.entries())

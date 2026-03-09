@@ -6,6 +6,7 @@ import { X, ChevronRight } from "lucide-react";
 import { useSession } from "next-auth/react";
 import useSWR from "swr";
 import { OrderDrawer } from "@/components/orders/order-drawer";
+import { CLIENT_COMMISSION_RATE } from "@/lib/constants";
 import type { OrderDto } from "@/types/orders";
 
 type OrdersResponse = { orders: OrderDto[] };
@@ -36,6 +37,26 @@ function fmtUSD(n: number) {
   }).format(n);
 }
 
+function getOrderAedRate(order: OrderDto) {
+  if (typeof order.aedEgpRate === "number" && order.aedEgpRate > 0) {
+    return order.aedEgpRate;
+  }
+
+  if (typeof order.exchangeRate === "number" && order.exchangeRate > 0 && order.exchangeRate <= 20) {
+    return order.exchangeRate;
+  }
+
+  return null;
+}
+
+function calculateNetAedPayout(order: OrderDto) {
+  const rate = getOrderAedRate(order);
+  if (typeof order.originalAmount === "number" && order.originalAmount > 0 && rate) {
+    return order.originalAmount * (1 - CLIENT_COMMISSION_RATE) / rate;
+  }
+  return 0;
+}
+
 export function DayOrdersPanel({ open, date, dateLabel, onClose }: DayOrdersPanelProps) {
   const { data: session } = useSession();
   const isAdmin = session?.user.role === "ADMIN";
@@ -53,6 +74,7 @@ export function DayOrdersPanel({ open, date, dateLabel, onClose }: DayOrdersPane
   const orders: OrderDto[] = data?.orders ?? [];
   const totalEGP = orders.reduce((s, o) => s + (o.originalAmount ?? 0), 0);
   const totalUSD = orders.reduce((s, o) => s + o.totalAmount, 0);
+  const totalAED = orders.reduce((s, o) => s + calculateNetAedPayout(o), 0);
 
   const handleOrderClick = (order: OrderDto) => {
     setSelectedOrder(order);
@@ -205,7 +227,7 @@ export function DayOrdersPanel({ open, date, dateLabel, onClose }: DayOrdersPane
                       <p className="text-xs text-synvora-text-secondary tabular-nums">
                         {fmtUSD(totalUSD)}{" "}
                         <span className="text-synvora-border">·</span>{" "}
-                        {fmt(totalUSD * 3.67)} AED
+                        {fmt(totalAED)} AED
                       </p>
                     </div>
                   </div>
