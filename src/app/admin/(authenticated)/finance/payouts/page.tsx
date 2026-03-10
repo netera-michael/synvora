@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useSession } from "next-auth/react";
-import { Plus, CloudDownload, TrendingDown, TrendingUp, Wallet, Settings2, Receipt, CreditCard } from "lucide-react";
+import { Plus, CloudDownload, TrendingDown, TrendingUp, Wallet, Settings2, Receipt, CreditCard, ChevronLeft, ChevronRight } from "lucide-react";
 import type { PayoutDto, VenueBalance } from "@/types/payouts";
 import { SyncMercuryDialog } from "@/components/mercury/sync-mercury-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -36,8 +36,9 @@ const fmt = (n: number) =>
 export default function PayoutsPage() {
   const { data: session } = useSession();
   const isAdmin = session?.user.role === "ADMIN";
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const { data, error, isLoading, mutate } = useSWR<PayoutsResponse>("/api/payouts", fetcher);
+  const { data, error, isLoading, mutate } = useSWR<PayoutsResponse>(`/api/payouts?page=${currentPage}`, fetcher);
   const { data: venuesData, isLoading: venuesLoading } = useSWR<VenuesResponse>(
     isAdmin ? "/api/venues" : null,
     fetcher
@@ -85,6 +86,13 @@ export default function PayoutsPage() {
     setAdjustVenue(venue);
     setAdjustOpen(true);
   };
+
+  useEffect(() => {
+    const serverPage = data?.pagination.page;
+    if (serverPage && serverPage !== currentPage) {
+      setCurrentPage(serverPage);
+    }
+  }, [currentPage, data?.pagination.page]);
 
   return (
     <div className="space-y-6">
@@ -331,7 +339,10 @@ export default function PayoutsPage() {
       </div>
 
       {data && data.pagination.totalCount > data.pagination.pageSize && (
-        <PaginationControls pagination={data.pagination} />
+        <PaginationControls
+          pagination={data.pagination}
+          onPageChange={setCurrentPage}
+        />
       )}
 
       {isAdmin && (
@@ -629,19 +640,47 @@ function AdjustmentDialog({ open, venue, onClose, onSaved }: AdjustmentDialogPro
 
 // ── Pagination ────────────────────────────────────────────────────────────────
 
-function PaginationControls({ pagination }: { pagination: PayoutsResponse["pagination"] }) {
+function PaginationControls({
+  pagination,
+  onPageChange
+}: {
+  pagination: PayoutsResponse["pagination"];
+  onPageChange: (page: number) => void;
+}) {
   const { page, pageSize, totalCount, totalPages } = pagination;
   const start = (page - 1) * pageSize + 1;
   const end = Math.min(start + pageSize - 1, totalCount);
   return (
-    <div className="flex items-center justify-between rounded-xl border border-synvora-border bg-white p-4 text-sm text-synvora-text-secondary shadow-sm">
+    <div className="flex flex-col gap-3 rounded-xl border border-synvora-border bg-white p-4 text-sm text-synvora-text-secondary shadow-sm sm:flex-row sm:items-center sm:justify-between">
       <span>
         Showing <span className="font-medium text-synvora-text">{start}–{end}</span> of{" "}
         <span className="font-medium text-synvora-text">{totalCount}</span>
       </span>
-      <span className="text-xs font-semibold uppercase tracking-wide">
-        Page {page} of {totalPages || 1}
-      </span>
+      <div className="flex items-center justify-between gap-3 sm:justify-end">
+        <span className="text-xs font-semibold uppercase tracking-wide">
+          Page {page} of {totalPages || 1}
+        </span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onPageChange(page - 1)}
+            disabled={page <= 1}
+            className="inline-flex items-center gap-1 rounded-lg border border-synvora-border px-3 py-1.5 text-xs font-medium text-synvora-text-secondary transition hover:bg-synvora-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <ChevronLeft className="h-3.5 w-3.5" />
+            Prev
+          </button>
+          <button
+            type="button"
+            onClick={() => onPageChange(page + 1)}
+            disabled={page >= totalPages}
+            className="inline-flex items-center gap-1 rounded-lg border border-synvora-border px-3 py-1.5 text-xs font-medium text-synvora-text-secondary transition hover:bg-synvora-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Next
+            <ChevronRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
