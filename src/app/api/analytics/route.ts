@@ -143,7 +143,7 @@ export async function GET(request: Request) {
   const currentLocalMonthIndex = localNow.getUTCMonth();
   const months: {
     month: string; label: string; orders: number; egpTotal: number;
-    aedTotal: number; revenue: number; payout: number;
+    aedTotal: number | null; revenue: number; payout: number;
   }[] = [];
 
   for (let i = 11; i >= 0; i--) {
@@ -170,7 +170,7 @@ export async function GET(request: Request) {
       label,
       orders: mo.length,
       egpTotal,
-      aedTotal: aedTotal - (deductionMonthTotals.get(key) ?? 0),
+      aedTotal: isAdmin ? aedTotal - (deductionMonthTotals.get(key) ?? 0) : null,
       revenue,
       payout
     });
@@ -204,8 +204,8 @@ export async function GET(request: Request) {
 
   // --- All-time accordion (month → days) for drill-down UI ---
   const allMonthMap = new Map<string, {
-    label: string; ordersCount: number; egpTotal: number; aedTotal: number; revenue: number; payout: number;
-    days: Map<string, { label: string; ordersCount: number; egpTotal: number; aedTotal: number; revenue: number; payout: number }>;
+    label: string; ordersCount: number; egpTotal: number; aedTotal: number | null; revenue: number; payout: number;
+    days: Map<string, { label: string; ordersCount: number; egpTotal: number; aedTotal: number | null; revenue: number; payout: number }>;
   }>();
 
   const ensureMonthEntry = (monthKey: string, monthLabel: string) => {
@@ -214,7 +214,7 @@ export async function GET(request: Request) {
         label: monthLabel,
         ordersCount: 0,
         egpTotal: 0,
-        aedTotal: 0,
+        aedTotal: isAdmin ? 0 : null,
         revenue: 0,
         payout: 0,
         days: new Map()
@@ -225,8 +225,8 @@ export async function GET(request: Request) {
 
   const ensureDayEntry = (
     monthEntry: {
-      label: string; ordersCount: number; egpTotal: number; aedTotal: number; revenue: number; payout: number;
-      days: Map<string, { label: string; ordersCount: number; egpTotal: number; aedTotal: number; revenue: number; payout: number }>;
+      label: string; ordersCount: number; egpTotal: number; aedTotal: number | null; revenue: number; payout: number;
+      days: Map<string, { label: string; ordersCount: number; egpTotal: number; aedTotal: number | null; revenue: number; payout: number }>;
     },
     dateKey: string,
     label: string
@@ -236,7 +236,7 @@ export async function GET(request: Request) {
         label,
         ordersCount: 0,
         egpTotal: 0,
-        aedTotal: 0,
+        aedTotal: isAdmin ? 0 : null,
         revenue: 0,
         payout: 0
       });
@@ -255,13 +255,13 @@ export async function GET(request: Request) {
     m.revenue += o.totalAmount;
     m.payout += calculatePayoutFromOrder(o);
     if (typeof o.originalAmount === "number" && o.originalAmount > 0) m.egpTotal += o.originalAmount;
-    m.aedTotal += calculateNetAedPayout(o);
+    if (m.aedTotal !== null) m.aedTotal += calculateNetAedPayout(o);
     const day = ensureDayEntry(m, dateKey, dayLabel);
     day.ordersCount++;
     day.revenue += o.totalAmount;
     day.payout += calculatePayoutFromOrder(o);
     if (typeof o.originalAmount === "number" && o.originalAmount > 0) day.egpTotal += o.originalAmount;
-    day.aedTotal += calculateNetAedPayout(o);
+    if (day.aedTotal !== null) day.aedTotal += calculateNetAedPayout(o);
   }
 
   for (const deduction of deductions) {
@@ -269,10 +269,10 @@ export async function GET(request: Request) {
     const monthMeta = getBusinessMonthMetaFromParts(year, monthIndex, day);
     const dateKey = `${year}-${String(monthIndex + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     const monthEntry = ensureMonthEntry(monthMeta.key, monthMeta.label);
-    monthEntry.aedTotal -= deduction.amount;
+    if (monthEntry.aedTotal !== null) monthEntry.aedTotal -= deduction.amount;
 
     const dayEntry = ensureDayEntry(monthEntry, dateKey, `${MONTH_SHORT[monthIndex]} ${day}`);
-    dayEntry.aedTotal -= deduction.amount;
+    if (dayEntry.aedTotal !== null) dayEntry.aedTotal -= deduction.amount;
   }
 
   const allMonths = Array.from(allMonthMap.entries())
@@ -292,7 +292,14 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     months,
-    totals: { totalOrders, totalRevenue, totalPayout, avgOrderValue, allTimeEGP, allTimeAED },
+    totals: {
+      totalOrders,
+      totalRevenue,
+      totalPayout,
+      avgOrderValue,
+      allTimeEGP,
+      allTimeAED: isAdmin ? allTimeAED : null
+    },
     breakdown,
     momPayoutChange,
     momOrdersChange,

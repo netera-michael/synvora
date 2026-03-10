@@ -26,7 +26,7 @@ type DayData = {
   label: string;
   ordersCount: number;
   egpTotal: number;
-  aedTotal: number;
+  aedTotal: number | null;
   revenue: number;
   payout: number;
 };
@@ -36,15 +36,15 @@ type MonthData = {
   label: string;
   ordersCount: number;
   egpTotal: number;
-  aedTotal: number;
+  aedTotal: number | null;
   revenue: number;
   payout: number;
   days: DayData[];
 };
 
 type AnalyticsData = {
-  months: { month: string; label: string; orders: number; egpTotal: number; aedTotal: number; revenue: number; payout: number }[];
-  totals: { totalOrders: number; totalRevenue: number; totalPayout: number; avgOrderValue: number; allTimeEGP: number; allTimeAED: number };
+  months: { month: string; label: string; orders: number; egpTotal: number; aedTotal: number | null; revenue: number; payout: number }[];
+  totals: { totalOrders: number; totalRevenue: number; totalPayout: number; avgOrderValue: number; allTimeEGP: number; allTimeAED: number | null };
   breakdown: Record<string, number>;
   momPayoutChange: number | null;
   momOrdersChange: number | null;
@@ -276,10 +276,14 @@ export default function AnalyticsPage() {
                         <span className="font-medium text-synvora-text tabular-nums">
                           {fmtNum(month.egpTotal)} EGP
                         </span>
-                        <span className="text-synvora-border hidden sm:inline">·</span>
-                        <span className="text-synvora-text-secondary tabular-nums hidden sm:inline">
-                          {fmtNum(month.aedTotal)} AED
-                        </span>
+                        {isAdmin ? (
+                          <>
+                            <span className="text-synvora-border hidden sm:inline">·</span>
+                            <span className="text-synvora-text-secondary tabular-nums hidden sm:inline">
+                              {fmtNum(month.aedTotal ?? 0)} AED
+                            </span>
+                          </>
+                        ) : null}
                         <span className="text-synvora-border hidden sm:inline">·</span>
                         <span className="text-synvora-text-secondary tabular-nums hidden sm:inline">
                           {fmt(month.revenue)}
@@ -289,7 +293,9 @@ export default function AnalyticsPage() {
                           {fmt(month.payout)} payout
                         </span>
                         <span className="text-synvora-text-secondary tabular-nums text-xs sm:hidden">
-                          {fmtNum(month.aedTotal)} AED · {fmt(month.revenue)} · {fmt(month.payout)} payout
+                          {isAdmin
+                            ? `${fmtNum(month.aedTotal ?? 0)} AED · ${fmt(month.revenue)} · ${fmt(month.payout)} payout`
+                            : `${fmt(month.revenue)} · ${fmt(month.payout)} payout`}
                         </span>
                       </div>
                     </div>
@@ -305,7 +311,9 @@ export default function AnalyticsPage() {
                       <div className="px-5 py-2 flex items-center gap-3 border-b border-synvora-border">
                         <div className="w-16 flex-shrink-0 text-xs font-medium uppercase tracking-wide text-synvora-text-secondary">Day</div>
                         <div className="flex-1 text-xs font-medium uppercase tracking-wide text-synvora-text-secondary">EGP</div>
-                        <div className="hidden sm:block w-24 text-right text-xs font-medium uppercase tracking-wide text-synvora-text-secondary">AED</div>
+                        {isAdmin ? (
+                          <div className="hidden sm:block w-24 text-right text-xs font-medium uppercase tracking-wide text-synvora-text-secondary">AED</div>
+                        ) : null}
                         <div className="hidden md:block w-28 text-right text-xs font-medium uppercase tracking-wide text-synvora-text-secondary">Revenue</div>
                         <div className="hidden lg:block w-28 text-right text-xs font-medium uppercase tracking-wide text-synvora-text-secondary">Payout</div>
                         <div className="w-14 text-right text-xs font-medium uppercase tracking-wide text-synvora-text-secondary">Orders</div>
@@ -325,9 +333,11 @@ export default function AnalyticsPage() {
                             <div className="flex-1 text-sm font-semibold text-synvora-text tabular-nums">
                               {fmtNum(day.egpTotal)}
                             </div>
-                            <div className="hidden sm:block w-24 text-right text-sm text-synvora-text-secondary tabular-nums">
-                              {day.aedTotal > 0 ? fmtNum(day.aedTotal) : "—"}
-                            </div>
+                            {isAdmin ? (
+                              <div className="hidden sm:block w-24 text-right text-sm text-synvora-text-secondary tabular-nums">
+                                {day.aedTotal && day.aedTotal > 0 ? fmtNum(day.aedTotal) : "—"}
+                              </div>
+                            ) : null}
                             <div className="hidden md:block w-28 text-right text-sm text-synvora-text-secondary tabular-nums">
                               {fmt(day.revenue)}
                             </div>
@@ -346,9 +356,11 @@ export default function AnalyticsPage() {
                       <div className="px-5 py-3 flex items-center gap-3 bg-synvora-surface border-t-2 border-synvora-border">
                         <div className="w-16 flex-shrink-0 text-xs font-semibold uppercase tracking-wide text-synvora-text-secondary">Total</div>
                         <div className="flex-1 text-sm font-bold text-synvora-text tabular-nums">{fmtNum(month.egpTotal)}</div>
-                        <div className="hidden sm:block w-24 text-right text-sm font-bold text-synvora-text tabular-nums">
-                          {month.aedTotal > 0 ? fmtNum(month.aedTotal) : "—"}
-                        </div>
+                        {isAdmin ? (
+                          <div className="hidden sm:block w-24 text-right text-sm font-bold text-synvora-text tabular-nums">
+                            {month.aedTotal && month.aedTotal > 0 ? fmtNum(month.aedTotal) : "—"}
+                          </div>
+                        ) : null}
                         <div className="hidden md:block w-28 text-right text-sm font-bold text-synvora-text tabular-nums">{fmt(month.revenue)}</div>
                         <div className="hidden lg:block w-28 text-right text-sm font-bold text-synvora-text tabular-nums">{fmt(month.payout)}</div>
                         <div className="w-14 text-right text-sm font-bold text-synvora-text">{month.ordersCount}</div>

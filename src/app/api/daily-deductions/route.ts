@@ -53,21 +53,14 @@ export async function GET(request: Request) {
     return NextResponse.json({ message: "Invalid date" }, { status: 400 });
   }
 
-  const isAdmin = session.user.role === "ADMIN";
-  const accessibleVenueIds = (session.user.venueIds ?? []).map(Number).filter((id) => !Number.isNaN(id));
-  const where: any = {
-    date: toUtcDate(parsed.data.date)
-  };
-
-  if (!isAdmin) {
-    if (!accessibleVenueIds.length) {
-      return NextResponse.json({ deductions: [], totalAmount: 0 });
-    }
-    where.venueId = { in: accessibleVenueIds };
+  if (session.user.role !== "ADMIN") {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
   const deductions = await prisma.dailyDeduction.findMany({
-    where,
+    where: {
+      date: toUtcDate(parsed.data.date)
+    },
     include: {
       venue: {
         select: { id: true, name: true, slug: true }

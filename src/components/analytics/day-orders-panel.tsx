@@ -99,7 +99,7 @@ export function DayOrdersPanel({ open, date, dateLabel, onClose }: DayOrdersPane
     open && param ? `/api/orders?startDate=${param}&endDate=${param}&page=all&tzOffset=${tzOffset}` : null,
     fetcher
   );
-  const deductionsKey = open && date ? `/api/daily-deductions?date=${date}` : null;
+  const deductionsKey = open && date && isAdmin ? `/api/daily-deductions?date=${date}` : null;
   const { data: deductionsData, isLoading: isDeductionsLoading, mutate: mutateDeductions } = useSWR<DeductionsResponse>(
     deductionsKey,
     fetcher
@@ -354,38 +354,38 @@ export function DayOrdersPanel({ open, date, dateLabel, onClose }: DayOrdersPane
                     </div>
                   )}
 
-                  <div className="border-t border-synvora-border bg-white px-5 py-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <h3 className="text-sm font-semibold text-synvora-text">Day Deductions</h3>
-                        <p className="mt-0.5 text-xs text-synvora-text-secondary">
-                          AED deductions are subtracted from the day and month payout totals.
-                        </p>
+                  {isAdmin ? (
+                    <div className="border-t border-synvora-border bg-white px-5 py-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <h3 className="text-sm font-semibold text-synvora-text">Day Deductions</h3>
+                          <p className="mt-0.5 text-xs text-synvora-text-secondary">
+                            AED deductions are subtracted from the day and month payout totals.
+                          </p>
+                        </div>
+                        {!isDeductionsLoading && (
+                          <span className="text-xs font-medium text-synvora-text-secondary">
+                            {fmt(totalDeductions)} AED deducted
+                          </span>
+                        )}
                       </div>
-                      {!isDeductionsLoading && (
-                        <span className="text-xs font-medium text-synvora-text-secondary">
-                          {fmt(totalDeductions)} AED deducted
-                        </span>
-                      )}
-                    </div>
 
-                    <div className="mt-4 space-y-2">
-                      {deductions.length === 0 ? (
-                        <p className="text-sm text-synvora-text-secondary">No deductions saved for this day.</p>
-                      ) : (
-                        deductions.map((deduction) => (
-                          <div
-                            key={deduction.id}
-                            className="flex items-start justify-between gap-3 rounded-xl border border-synvora-border bg-synvora-surface px-3 py-2"
-                          >
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium text-synvora-text">{deduction.venue.name}</p>
-                              <p className="text-xs text-synvora-text-secondary">
-                                {fmt(deduction.amount)} AED
-                                {deduction.note ? ` • ${deduction.note}` : ""}
-                              </p>
-                            </div>
-                            {isAdmin ? (
+                      <div className="mt-4 space-y-2">
+                        {deductions.length === 0 ? (
+                          <p className="text-sm text-synvora-text-secondary">No deductions saved for this day.</p>
+                        ) : (
+                          deductions.map((deduction) => (
+                            <div
+                              key={deduction.id}
+                              className="flex items-start justify-between gap-3 rounded-xl border border-synvora-border bg-synvora-surface px-3 py-2"
+                            >
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium text-synvora-text">{deduction.venue.name}</p>
+                                <p className="text-xs text-synvora-text-secondary">
+                                  {fmt(deduction.amount)} AED
+                                  {deduction.note ? ` • ${deduction.note}` : ""}
+                                </p>
+                              </div>
                               <div className="flex items-center gap-1">
                                 <button
                                   type="button"
@@ -403,13 +403,11 @@ export function DayOrdersPanel({ open, date, dateLabel, onClose }: DayOrdersPane
                                   <Trash2 className="h-4 w-4" />
                                 </button>
                               </div>
-                            ) : null}
-                          </div>
-                        ))
-                      )}
-                    </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
 
-                    {isAdmin ? (
                       <div className="mt-4 rounded-xl border border-synvora-border bg-synvora-surface px-4 py-3">
                         <div className="grid gap-3 sm:grid-cols-2">
                           <label className="block">
@@ -480,8 +478,8 @@ export function DayOrdersPanel({ open, date, dateLabel, onClose }: DayOrdersPane
                           </button>
                         </div>
                       </div>
-                    ) : null}
-                  </div>
+                    </div>
+                  ) : null}
                 </div>
 
                 {/* Footer totals */}
@@ -492,19 +490,27 @@ export function DayOrdersPanel({ open, date, dateLabel, onClose }: DayOrdersPane
                       <p className="text-sm font-semibold text-synvora-text tabular-nums">
                         {fmt(totalEGP)} EGP
                       </p>
-                      <p className="text-xs text-synvora-text-secondary tabular-nums">
-                        {fmtUSD(totalUSD)}{" "}
-                        <span className="text-synvora-border">·</span>{" "}
-                        {fmt(grossAED)} gross AED
-                      </p>
-                      {totalDeductions > 0 ? (
-                        <p className="text-xs text-rose-600 tabular-nums">
-                          -{fmt(totalDeductions)} AED deductions
+                      {isAdmin ? (
+                        <>
+                          <p className="text-xs text-synvora-text-secondary tabular-nums">
+                            {fmtUSD(totalUSD)}{" "}
+                            <span className="text-synvora-border">·</span>{" "}
+                            {fmt(grossAED)} gross AED
+                          </p>
+                          {totalDeductions > 0 ? (
+                            <p className="text-xs text-rose-600 tabular-nums">
+                              -{fmt(totalDeductions)} AED deductions
+                            </p>
+                          ) : null}
+                          <p className="text-sm font-semibold text-synvora-text tabular-nums">
+                            {fmt(totalAED)} net AED
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-xs text-synvora-text-secondary tabular-nums">
+                          {fmtUSD(totalUSD)}
                         </p>
-                      ) : null}
-                      <p className="text-sm font-semibold text-synvora-text tabular-nums">
-                        {fmt(totalAED)} net AED
-                      </p>
+                      )}
                     </div>
                   </div>
                 )}
