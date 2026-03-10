@@ -91,6 +91,7 @@ export async function POST(request: Request) {
           status: "Posted",
           description: transaction.memo || `Mercury: ${counterpartyName}`,
           account: "Mercury",
+          bank: null,
           processedAt: new Date(transaction.postedAt || transaction.createdAt || new Date().toISOString()),
           notes: transaction.memo || null,
           venueId,
@@ -119,4 +120,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

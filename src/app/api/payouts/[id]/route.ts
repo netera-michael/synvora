@@ -10,6 +10,7 @@ const payoutSchema = z.object({
   status: z.string().optional(),
   description: z.string().optional(),
   account: z.string().optional(),
+  bank: z.string().trim().max(100).optional().nullable(),
   period: z.string().optional().nullable(),
   processedAt: z.union([z.string(), z.date()]).optional(),
   notes: z.string().optional().nullable(),
@@ -23,6 +24,7 @@ const serialize = (payout: any) => ({
   status: payout.status,
   description: payout.description,
   account: payout.account,
+  bank: payout.bank ?? null,
   period: payout.period ?? null,
   processedAt: payout.processedAt.toISOString(),
   notes: payout.notes,
@@ -68,6 +70,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   if (parsed.data.status) data.status = parsed.data.status;
   if (parsed.data.description !== undefined) data.description = parsed.data.description;
   if (parsed.data.account !== undefined) data.account = parsed.data.account;
+  if (parsed.data.bank !== undefined) data.bank = parsed.data.bank?.trim() || null;
   if (parsed.data.period !== undefined) data.period = parsed.data.period;
   if (parsed.data.notes !== undefined) data.notes = parsed.data.notes;
   if (parsed.data.venueId !== undefined) data.venueId = parsed.data.venueId;

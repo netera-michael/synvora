@@ -167,6 +167,7 @@ model Payout {
   status            String    @default("Posted")
   description       String    @default("Payout")
   account           String    @default("Payouts")
+  bank              String?
   period            String?
   processedAt       DateTime
   notes             String?

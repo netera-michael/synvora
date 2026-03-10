@@ -5,6 +5,7 @@ export type PayoutDto = {
   status: string;
   description: string;
   account: string;
+  bank?: string | null;
   period?: string | null;
   processedAt: string;
   notes?: string | null;

@@ -16,6 +16,7 @@ const payoutSchema = z.object({
   status: z.string().default("Posted"),
   description: z.string().default("Payout"),
   account: z.string().default("Payouts"),
+  bank: z.string().trim().max(100).optional().nullable(),
   period: z.string().optional().nullable(),
   processedAt: z.union([z.string(), z.date()]),
   notes: z.string().optional().nullable(),
@@ -29,6 +30,7 @@ const serialize = (payout: any) => ({
   status: payout.status,
   description: payout.description,
   account: payout.account,
+  bank: payout.bank ?? null,
   period: payout.period ?? null,
   processedAt: payout.processedAt.toISOString(),
   notes: payout.notes,
@@ -94,7 +96,8 @@ export async function GET(request: Request) {
     where.OR = [
       { description: { contains: term, mode: "insensitive" } },
       { status: { contains: term, mode: "insensitive" } },
-      { account: { contains: term, mode: "insensitive" } }
+      { account: { contains: term, mode: "insensitive" } },
+      { bank: { contains: term, mode: "insensitive" } }
     ];
   }
 
@@ -152,6 +155,7 @@ export async function POST(request: Request) {
       status: parsed.data.status ?? "Posted",
       description: parsed.data.description ?? "Payout",
       account: parsed.data.account ?? "Payouts",
+      bank: parsed.data.bank?.trim() || null,
       processedAt: parsed.data.processedAt instanceof Date ? parsed.data.processedAt : new Date(parsed.data.processedAt),
       period: parsed.data.period ?? null,
       notes: parsed.data.notes ?? null,

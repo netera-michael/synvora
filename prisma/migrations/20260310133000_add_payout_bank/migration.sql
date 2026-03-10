@@ -1,0 +1,2 @@
+ALTER TABLE "Payout"
+ADD COLUMN "bank" TEXT;

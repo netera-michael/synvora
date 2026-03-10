@@ -226,6 +226,7 @@ export default function PayoutsPage() {
                 <tr>
                   <th className="px-5 py-3">Date</th>
                   <th className="px-5 py-3">Period</th>
+                  <th className="px-5 py-3">Bank</th>
                   {isAdmin && <th className="px-5 py-3">Venue</th>}
                   <th className="px-5 py-3 text-right">Amount</th>
                   <th className="px-5 py-3">Notes</th>
@@ -238,6 +239,7 @@ export default function PayoutsPage() {
                     <tr key={i}>
                       <td className="px-5 py-3.5"><Skeleton className="h-4 w-24" /></td>
                       <td className="px-5 py-3.5"><Skeleton className="h-4 w-28" /></td>
+                      <td className="px-5 py-3.5"><Skeleton className="h-4 w-24" /></td>
                       {isAdmin && <td className="px-5 py-3.5"><Skeleton className="h-4 w-20" /></td>}
                       <td className="px-5 py-3.5 text-right"><Skeleton className="ml-auto h-4 w-16" /></td>
                       <td className="px-5 py-3.5"><Skeleton className="h-4 w-32" /></td>
@@ -250,6 +252,9 @@ export default function PayoutsPage() {
                       <td className="px-5 py-3.5 text-synvora-text">{formatDate(payout.processedAt)}</td>
                       <td className="px-5 py-3.5 text-synvora-text-secondary">
                         {payout.period ?? <span className="text-synvora-text-secondary/50">—</span>}
+                      </td>
+                      <td className="px-5 py-3.5 text-synvora-text-secondary">
+                        {payout.bank ?? <span className="text-synvora-text-secondary/50">—</span>}
                       </td>
                       {isAdmin && (
                         <td className="px-5 py-3.5 text-synvora-text-secondary">
@@ -306,7 +311,7 @@ export default function PayoutsPage() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={isAdmin ? 6 : 4}>
+                    <td colSpan={isAdmin ? 7 : 5}>
                       <div className="flex flex-col items-center gap-3 px-6 py-12 text-center">
                         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-synvora-surface-active">
                           <CreditCard className="h-6 w-6 text-synvora-text-secondary" />
@@ -370,6 +375,7 @@ function PayoutDialog({ open, payout, venues, onClose, onSaved }: PayoutDialogPr
   const [submitting, setSubmitting] = useState(false);
   const empty = {
     amount: "" as string | number,
+    bank: "Mashreq Bank",
     period: "",
     processedAt: new Date().toISOString().slice(0, 10),
     notes: "",
@@ -382,6 +388,7 @@ function PayoutDialog({ open, payout, venues, onClose, onSaved }: PayoutDialogPr
     if (payout) {
       setForm({
         amount: payout.amount,
+        bank: payout.bank ?? "Mashreq Bank",
         period: payout.period ?? "",
         processedAt: payout.processedAt.slice(0, 10),
         notes: payout.notes ?? "",
@@ -400,6 +407,7 @@ function PayoutDialog({ open, payout, venues, onClose, onSaved }: PayoutDialogPr
     setSubmitting(true);
     const payload = {
       amount: Number(form.amount),
+      bank: form.bank.trim() || null,
       period: form.period.trim() || null,
       processedAt: new Date(form.processedAt).toISOString(),
       notes: form.notes.trim() || null,
@@ -475,6 +483,17 @@ function PayoutDialog({ open, payout, venues, onClose, onSaved }: PayoutDialogPr
                 />
               </label>
             </div>
+
+            <label className="flex flex-col gap-1.5 text-sm font-medium text-synvora-text">
+              Bank
+              <input
+                type="text"
+                placeholder="e.g. Mashreq Bank"
+                value={form.bank}
+                onChange={(e) => setForm((f) => ({ ...f, bank: e.target.value }))}
+                className="rounded-lg border border-synvora-border px-3 py-2 text-sm shadow-sm focus:border-synvora-primary focus:outline-none focus:ring-1 focus:ring-synvora-primary"
+              />
+            </label>
 
             <label className="flex flex-col gap-1.5 text-sm font-medium text-synvora-text">
               Period covered
