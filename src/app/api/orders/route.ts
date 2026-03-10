@@ -81,11 +81,11 @@ const mapTags = (tags: unknown): string[] => {
   return [];
 };
 
-const serializeOrder = (order: any) => ({
+const serializeOrder = (order: any, { includeShopifyOrderNumber = false }: { includeShopifyOrderNumber?: boolean } = {}) => ({
   id: order.id,
   externalId: order.externalId,
   orderNumber: order.orderNumber,
-  shopifyOrderNumber: order.shopifyOrderNumber,
+  shopifyOrderNumber: includeShopifyOrderNumber ? order.shopifyOrderNumber : null,
   customerName: order.customerName,
   venueId: order.venueId,
   venue: order.venue
@@ -319,7 +319,9 @@ export async function GET(request: Request) {
       })
   });
 
-  const serialized = orders.map(serializeOrder);
+  const serialized = orders.map((order) =>
+    serializeOrder(order, { includeShopifyOrderNumber: isAdmin })
+  );
 
   const ordersCount = totalCount;
   const totalRevenue = metricOrders.reduce((sum, order) => sum + Number(order.totalAmount ?? 0), 0);

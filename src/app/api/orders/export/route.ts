@@ -153,7 +153,7 @@ export async function GET(request: Request) {
   // CSV Headers
   const headers = [
     "Order Number",
-    "Shopify Order Number",
+    ...(isAdmin ? ["Shopify Order Number"] : []),
     "Customer Name",
     "Venue",
     "Date",
@@ -182,7 +182,7 @@ export async function GET(request: Request) {
 
     return [
       escapeCsvValue(order.orderNumber),
-      escapeCsvValue(order.shopifyOrderNumber || ""),
+      ...(isAdmin ? [escapeCsvValue(order.shopifyOrderNumber || "")] : []),
       escapeCsvValue(order.customerName),
       escapeCsvValue(order.venue?.name || "CICCIO"),
       escapeCsvValue(formatDate(order.processedAt)),
@@ -228,4 +228,3 @@ export async function GET(request: Request) {
     }
   });
 }
-
